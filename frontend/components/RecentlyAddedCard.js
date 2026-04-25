@@ -1,0 +1,123 @@
+'use client';
+import { useState } from 'react';
+import Link from 'next/link';
+
+export default function RecentlyAddedCard({ manga }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  
+  const coverUrl = (manga.image || manga.cover)
+    ? `/api/image?url=${encodeURIComponent(manga.image || manga.cover)}`
+    : '/placeholder-cover.jpg';
+
+  const description = manga.description || 'No description available.';
+  const isLong = description.length > 180;
+  const truncated = isLong ? description.slice(0, 180) + '...' : description;
+
+  return (
+    <div 
+      className="recent-added-card" 
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      style={{
+        display: 'flex',
+        gap: '16px',
+        background: 'var(--bg-2)',
+        borderRadius: '16px',
+        padding: '16px',
+        border: `1px solid ${isHovered ? 'var(--accent)' : 'var(--border)'}`,
+        transition: 'all 0.3s ease',
+        transform: isHovered ? 'translateY(-4px)' : 'translateY(0)',
+        boxShadow: isHovered ? '0 10px 25px rgba(0,0,0,0.3)' : 'none',
+        height: '100%',
+        position: 'relative'
+      }}
+    >
+      <Link href={`/manga/${manga.id}`} style={{ flexShrink: 0 }}>
+        <div style={{
+          width: '100px',
+          height: '140px',
+          borderRadius: '10px',
+          overflow: 'hidden',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+        }}>
+          <img 
+            src={coverUrl} 
+            alt={manga.title}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        </div>
+      </Link>
+
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        <Link href={`/manga/${manga.id}`}>
+          <h3 style={{ 
+            fontSize: '1.1rem', 
+            fontWeight: 700, 
+            marginBottom: '8px',
+            color: 'var(--text)',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap'
+          }}>
+            {manga.title}
+          </h3>
+        </Link>
+
+        <div style={{ 
+          fontSize: '0.85rem', 
+          color: 'var(--text-2)', 
+          lineHeight: '1.5',
+          marginBottom: '12px',
+          position: 'relative'
+        }}>
+          {isExpanded ? description : truncated}
+          {isLong && (
+            <button 
+              onClick={(e) => {
+                e.preventDefault();
+                setIsExpanded(!isExpanded);
+              }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--accent)',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                marginLeft: '6px',
+                padding: 0
+              }}
+            >
+              {isExpanded ? 'Read Less' : 'Read More'}
+            </button>
+          )}
+        </div>
+
+        <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--accent)', fontWeight: 600, fontSize: '0.9rem' }}>
+            <span className="material-icons" style={{ fontSize: '1rem' }}>auto_stories</span>
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {manga.lastChapterId ? (
+                <Link 
+                  href={`/manga/${manga.id}/${manga.lastChapterId}`}
+                  style={{ color: 'inherit', textDecoration: 'none' }}
+                  onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
+                  onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
+                >
+                  {manga.lastChapter || 'Read Now'}
+                </Link>
+              ) : (
+                manga.lastChapter || 'No chapters yet'
+              )}
+            </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-3)', fontSize: '0.8rem' }}>
+            <span className="material-icons" style={{ fontSize: '1rem' }}>schedule</span>
+            {manga.updateDate || 'Just now'}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

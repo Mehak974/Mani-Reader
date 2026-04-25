@@ -1,0 +1,277 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Manga Reader — Prisma Schema
+// ─────────────────────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Users ─────────────────────────────────────────────────────────────────────
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  nsfw      Boolean  @default(false)
+  role      String   @default("USER")
+  isVip     Boolean  @default(false)
+  adsWatched Int     @default(0)
+  adsClicked Int     @default(0)
+  pagesViewed Int     @default(0)
+  timeSpent  Int      @default(0) // Total time in ms
+  isBanned  Boolean  @default(false)
+  lastActiveAt DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  libraries  Library[]
+  bookmarks  Bookmark[]
+  history    History[]
+  progress   Progress[]
+  ratings    Rating[]
+
+  @@map("users")
+}
+
+// ── Analytics & Systems ──────────────────────────────────────────────────────
+model DailyMetric {
+  id            String   @id @default(uuid())
+  date          DateTime @unique @default(now()) // Midnight of the day
+  newUsers      Int      @default(0)
+  chaptersRead  Int      @default(0)
+  adsWatched    Int      @default(0)
+  adsClicked    Int      @default(0)
+  adImpressions Int      @default(0)
+  revenue       Float    @default(0)
+  traffic       Int      @default(0)
+  totalTimeMs   BigInt   @default(0)
+
+  @@map("daily_metrics")
+}
+model AuditLog {
+  id        String   @id @default(uuid())
+  adminId   String
+  action    String
+  target    String?
+  details   String?
+  createdAt DateTime @default(now())
+
+  @@map("audit_logs")
+}
+
+model SearchKeyword {
+  keyword   String   @id
+  count     Int      @default(1)
+  updatedAt DateTime @updatedAt
+
+  @@map("search_keywords")
+}
+
+model Announcement {
+  id        String   @id @default(uuid())
+  message   String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@map("announcements")
+}
+
+model SystemSetting {
+  key   String @id
+  value String
+
+  @@map("system_settings")
+}
+
+model BannedIp {
+  ip        String   @id
+  reason    String?
+  createdAt DateTime @default(now())
+
+  @@map("banned_ips")
+}
+
+// ── Manga (cache of external metadata) ────────────────────────────────────────
+model Manga {
+  id          String   @id          // External ID from Consumet (e.g. MangaDex UUID)
+  title       String
+  cover       String?
+  description String?
+  status      String?
+  genres      String[] @default([])
+  nsfw        Boolean  @default(false)
+  rating      String?
+  lastChapter String?
+  lastChapterId String?
+  updateDate  String?
+  source      String   @default("mangadex")
+  updatedAt   DateTime @updatedAt
+  cachedAt    DateTime @default(now())
+  readCount   Int      @default(0)
+  isHidden    Boolean  @default(false)
+
+  chapters     Chapter[]
+  libraryItems LibraryItem[]
+  bookmarks    Bookmark[]
+  history      History[]
+  progress     Progress[]
+  ratings      Rating[]
+  popularity   Popularity?
+  guestActivity GuestActivity[]
+
+  @@index([readCount])
+  @@index([isHidden])
+  @@map("manga")
+}
+
+model Popularity {
+  mangaId           String   @id
+  totalReadChapters Int      @default(0)
+  totalChapters     Int      @default(0)
+  uniqueUsersCount  Int      @default(0)
+  score             Float    @default(0)
+  updatedAt         DateTime @updatedAt
+
+  manga Manga @relation(fields: [mangaId], references: [id], onDelete: Cascade)
+
+  @@index([score])
+  @@map("popularity")
+}
+
+// ── Chapters (normalized, cached) ─────────────────────────────────────────────
+model Chapter {
+  id       String  @id              // External chapter ID from Consumet
+  mangaId  String
+  number   Float                    // parseFloat — canonical chapter number
+  title    String?
+  pages    Json    @default("[]")   // Array of page image URLs
+  sources  Json    @default("[]")   // Scanlation sources merged during normalization
+  cachedAt DateTime @default(now())
+
+  manga     Manga      @relation(fields: [mangaId], references: [id])
+  bookmarks Bookmark[]
+  progress  Progress[]
+  history   History[]
+
+  @@unique([mangaId, number])
+  @@map("chapters")
+}
+
+// ── Libraries ─────────────────────────────────────────────────────────────────
+model Library {
+  id        String   @id @default(uuid())
+  userId    String
+  name      String
+  createdAt DateTime @default(now())
+
+  user  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items LibraryItem[]
+
+  @@unique([userId, name])
+  @@map("libraries")
+}
+
+model LibraryItem {
+  libraryId String
+  mangaId   String
+  addedAt   DateTime @default(now())
+
+  library Library @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+  manga   Manga   @relation(fields: [mangaId], references: [id], onDelete: Cascade)
+
+  @@id([libraryId, mangaId])
+  @@map("library_items")
+}
+
+// ── Bookmarks ─────────────────────────────────────────────────────────────────
+model Bookmark {
+  userId    String
+  mangaId   String
+  chapterId String
+  page      Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  manga   Manga   @relation(fields: [mangaId], references: [id], onDelete: Cascade)
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  @@id([userId, mangaId])
+  @@map("bookmarks")
+}
+
+// ── History ───────────────────────────────────────────────────────────────────
+model History {
+  id        String   @id @default(uuid())
+  userId    String
+  mangaId   String
+  chapterId String
+  page      Int      @default(0)
+  timestamp DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  manga   Manga   @relation(fields: [mangaId], references: [id], onDelete: Cascade)
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  @@map("history")
+}
+
+// ── Progress ──────────────────────────────────────────────────────────────────
+model Progress {
+  userId    String
+  mangaId   String
+  chapterId String
+  page      Int     @default(0)
+  isRead    Boolean @default(false)
+  updatedAt DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  manga   Manga   @relation(fields: [mangaId], references: [id], onDelete: Cascade)
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  @@id([userId, chapterId])
+  @@map("progress")
+}
+
+// ── Ratings ───────────────────────────────────────────────────────────────────
+model Rating {
+  userId    String
+  mangaId   String
+  score     Int      // 1 to 5
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  manga Manga @relation(fields: [mangaId], references: [id], onDelete: Cascade)
+
+  @@id([userId, mangaId])
+  @@map("ratings")
+}
+
+// ── Contact Messages ──────────────────────────────────────────────────────────
+model ContactMessage {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  subject   String?
+  message   String
+  reply     String?
+  createdAt DateTime @default(now())
+
+  @@map("contact_messages")
+}
+
+model GuestActivity {
+  id        String   @id @default(uuid())
+  mangaId   String
+  guestId   String   // IP or other identifier
+  createdAt DateTime @default(now())
+
+  manga Manga @relation(fields: [mangaId], references: [id], onDelete: Cascade)
+
+  @@unique([mangaId, guestId])
+  @@map("guest_activity")
+}
