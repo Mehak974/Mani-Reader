@@ -36,9 +36,9 @@ module.exports = {
 
   cache: {
     redisUrl: process.env.REDIS_URL || null,
-    searchTtl: 3600,
+    searchTtl: 300, // 5 minutes for home page/search freshness
     chaptersTtl: 43200,
-    mangaTtl: 43200,
+    mangaTtl: 3600, // 1 hour for manga info updates
     authTtl: 3600,
   },
 

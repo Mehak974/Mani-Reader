@@ -24,7 +24,7 @@ function getReferer(imageUrl) {
   if (url.includes('mangadex')) return REFERERS.mangadex;
   if (url.includes('mangakakalot')) return REFERERS.mangakakalot;
   if (url.includes('mangahere')) return REFERERS.mangahere;
-  if (url.includes('mangakatana')) return REFERERS.mangakatana;
+  if (url.includes('mangakatana')) return 'https://mangakatana.com/'; // Strict trailing slash
   return REFERERS.default;
 }
 
