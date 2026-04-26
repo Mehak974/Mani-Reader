@@ -158,7 +158,7 @@ export default function MangaDetailClient({ id, initialManga }) {
     <div className="page-wrapper">
       <Navbar />
       <div className="container">
-        {/* 🏆 Refined Mobile-First Header Layout */}
+        {/* 🏆 Two-Phase Premium Layout */}
         <div className="manga-detail-container">
           <style jsx>{`
             .manga-detail-container {
@@ -168,7 +168,7 @@ export default function MangaDetailClient({ id, initialManga }) {
               padding: 40px 0;
             }
             .manga-header-row {
-              display: contents; /* Keeps image and meta as direct grid children on desktop */
+              display: contents;
             }
             .manga-detail-cover img {
               width: 100%;
@@ -181,7 +181,7 @@ export default function MangaDetailClient({ id, initialManga }) {
             .manga-detail-meta {
               display: flex;
               flex-direction: column;
-              gap: 20px;
+              gap: 16px;
             }
             .manga-title {
               font-size: 3rem;
@@ -190,47 +190,56 @@ export default function MangaDetailClient({ id, initialManga }) {
               letter-spacing: -0.02em;
             }
             
+            /* Action Row for Web/Tablet */
+            .action-row {
+              grid-column: 2;
+              display: flex;
+              gap: 16px;
+              margin-top: 24px;
+            }
+
+            @media (max-width: 1024px) {
+              .manga-detail-container {
+                grid-template-columns: 220px 1fr;
+                gap: 24px;
+              }
+              .manga-title { font-size: 2rem; }
+            }
+
             @media (max-width: 768px) {
               .manga-detail-container {
-                grid-template-columns: 1fr; /* Stack main lines */
-                gap: 24px;
+                grid-template-columns: 1fr;
+                gap: 20px;
                 padding: 20px 0;
               }
               
-              /* Line 1: Side-by-side Image and Title */
+              /* Line 1: Image & Title */
               .manga-header-row {
-                display: grid !important; /* Force visibility on mobile */
-                grid-template-columns: 120px 1fr;
+                display: grid !important;
+                grid-template-columns: 110px 1fr;
                 gap: 16px;
                 align-items: center;
               }
-              .manga-detail-cover {
-                width: 120px;
-              }
-              .manga-detail-cover img {
-                border-radius: 12px;
-              }
-              .manga-title {
-                font-size: 1.5rem !important;
-                margin-bottom: 4px !important;
-              }
+              .manga-detail-cover { width: 110px; }
+              .manga-title { font-size: 1.5rem !important; }
               
-              /* Line 2, 3, 4: Stacked below */
-              .manga-detail-desc {
-                font-size: 0.9rem !important;
-                margin-top: 8px;
-              }
-              .manga-detail-actions {
+              /* Line 2, 3, 4, 5: Stacked */
+              .description-line { order: 2; }
+              .tags-line { order: 3; }
+              .start-reading-line { order: 4; }
+              .collection-line { order: 5; }
+              
+              .action-row {
+                grid-column: 1;
                 flex-direction: column;
+                margin-top: 0;
                 width: 100%;
               }
-              .manga-detail-actions button, .manga-detail-actions a {
-                width: 100%;
-              }
+              .action-row a, .action-row button { width: 100%; }
             }
           `}</style>
 
-          {/* Line 1: Header Row (Side-by-side on Mobile) */}
+          {/* Line 1: Header (Web/Tablet: Side-by-side | Mobile: Side-by-side) */}
           <div className="manga-header-row">
             <div className="manga-detail-cover">
               <img src={coverUrl} alt={manga?.title} onError={(e) => { e.target.src = '/placeholder-cover.jpg'; }} />
@@ -255,68 +264,52 @@ export default function MangaDetailClient({ id, initialManga }) {
               </div>
 
               {readCount > 0 && (
-                <div style={{ color: 'var(--text-3)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                <div style={{ color: 'var(--text-3)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 6 }}>
                   <span className="material-icons" style={{ fontSize: '1.1rem', color: 'var(--accent)' }}>auto_stories</span>
                   <span>{readCount} / {chapters.length} chapters read</span>
                 </div>
               )}
+
+              {/* Description & Tags sit in meta for Web, but we can also use grid order */}
+              <div className="description-line">
+                {manga?.description && <p style={{ fontSize: '1rem', opacity: 0.9, lineHeight: 1.6 }}>{manga.description}</p>}
+              </div>
+
+              <div className="tags-line">
+                {manga?.genres?.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+                    {manga.genres.map((g, i) => (
+                      <span key={i} className="genre-tag" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text-2)', padding: '6px 14px', borderRadius: 99, fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase' }}>
+                        {typeof g === 'string' ? g : g.name || g.title}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Line 2: Description (Full Width) */}
-          <div style={{ gridColumn: '1 / -1' }}>
-            {manga?.description && (
-              <p className="manga-detail-desc" style={{ fontSize: '1rem', opacity: 0.9, lineHeight: 1.6 }}>
-                {manga.description}
-              </p>
-            )}
-          </div>
-
-          {/* Line 3: Tags (Full Width) */}
-          <div style={{ gridColumn: '1 / -1' }}>
-            {manga?.genres?.length > 0 && (
-              <div className="genre-tags" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                {manga.genres.map((g, i) => (
-                  <span key={i} className="genre-tag" style={{ 
-                    background: 'var(--surface-2)', 
-                    border: '1px solid var(--border)', 
-                    color: 'var(--text-2)', 
-                    padding: '6px 14px', 
-                    borderRadius: 99, 
-                    fontSize: '0.7rem',
-                    fontWeight: 600,
-                    textTransform: 'uppercase',
-                  }}>
-                    {typeof g === 'string' ? g : g.name || g.title}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Line 4: Actions (Full Width) */}
-          <div style={{ gridColumn: '1 / -1' }}>
-            <div className="manga-detail-actions" style={{ display: 'flex', gap: 12 }}>
-              {chapters.length > 0 && (
-                <a
-                  href={`/read/${lastRead ? chapters.find(c => c.id === lastRead.chapterId)?.id || chapters[0]?.id : chapters[0]?.id}?mangaId=${id}`}
-                  style={{ flex: 1 }}
-                >
-                  <button 
-                    className="btn btn-amethyst w-full" 
-                    style={{ padding: '14px 0', fontSize: '1rem', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
-                  >
+          {/* Action Row: Line 4/5 on Mobile | Line 2 on Web/Tablet */}
+          <div className="action-row">
+            {chapters.length > 0 && (
+              <div className="start-reading-line" style={{ flex: 1 }}>
+                <a href={`/read/${lastRead ? chapters.find(c => c.id === lastRead.chapterId)?.id || chapters[0]?.id : chapters[0]?.id}?mangaId=${id}`}>
+                  <button className="btn btn-amethyst w-full" style={{ padding: '14px 0', fontSize: '1rem', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                     <span className="material-icons">play_circle_filled</span>
                     Start Reading
                   </button>
                 </a>
-              )}
-              {user && (
-                <button className="btn btn-ghost" style={{ border: '1px solid var(--border)', padding: '14px 24px', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} onClick={() => setLibModal(true)}>
-                  <span className="material-icons">add_box</span>
-                  Add to Collection
-                </button>
-              )}
+              </div>
+            )}
+            <div className="collection-line" style={{ flex: 1 }}>
+              <button 
+                className="btn btn-ghost w-full" 
+                style={{ border: '1px solid var(--border)', padding: '14px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} 
+                onClick={() => user ? setLibModal(true) : showToast('Login to add to collection', 'error')}
+              >
+                <span className="material-icons">add_box</span>
+                Add to Collection
+              </button>
             </div>
           </div>
         </div>
