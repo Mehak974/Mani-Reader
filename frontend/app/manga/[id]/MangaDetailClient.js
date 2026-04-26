@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from '../../../lib/auth';
 import Navbar from '../../../components/Navbar';
 import MangaCard from '../../../components/MangaCard';
 import ChapterList from '../../../components/ChapterList';
+import AdBanner from '../../../components/AdBanner';
 import { mangaApi, libraryApi, progressApi, bookmarkApi } from '../../../lib/api';
 
 export default function MangaDetailClient({ id, initialManga }) {
