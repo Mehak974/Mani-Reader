@@ -14,9 +14,10 @@ router.get('/', async (req, res) => {
     return res.status(400).json({ error: 'Invalid URL encoding' });
   }
 
-  // Basic SSRF protection — only allow http/https
-  if (!decoded.startsWith('http://') && !decoded.startsWith('https://')) {
-    return res.status(400).json({ error: 'Only HTTP(S) URLs are allowed' });
+  // 🛡️ Cloudflare Bandwidth Shield: Redirect to worker if configured
+  const config = require('../config/env');
+  if (config.imageProxyUrl) {
+    return res.redirect(`${config.imageProxyUrl}?url=${encodeURIComponent(decoded)}`);
   }
 
   await proxyImage(decoded, res);

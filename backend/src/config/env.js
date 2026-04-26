@@ -28,6 +28,8 @@ module.exports = {
     fallback: process.env.CONSUMET_FALLBACK_PROVIDER || 'mangakakalot',
   },
 
+  imageProxyUrl: process.env.IMAGE_PROXY_URL || null,
+
   cache: {
     redisUrl: process.env.REDIS_URL || null,
     searchTtl: parseInt(process.env.CACHE_SEARCH_TTL || '300', 10),
