@@ -126,7 +126,7 @@ export default function MangaDetailClient({ id, initialManga }) {
   }
 
   const coverUrl = manga?.cover
-    ? `/api/image?url=${encodeURIComponent(manga.cover)}`
+    ? (manga.cover.startsWith('http') ? manga.cover : `/api/image?url=${encodeURIComponent(manga.cover)}`)
     : '/placeholder-cover.jpg';
 
   const readCount = progress.filter((p) => p.isRead).length;

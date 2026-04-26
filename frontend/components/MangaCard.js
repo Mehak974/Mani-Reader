@@ -6,8 +6,9 @@ export default function MangaCard({ manga, showNsfw = false }) {
   if (!manga) return null;
 
   const isBlurred = manga.nsfw && !showNsfw;
-  const coverUrl = (manga.image || manga.cover)
-    ? `/api/image?url=${encodeURIComponent(manga.image || manga.cover)}`
+  const rawCover = manga.image || manga.cover;
+  const coverUrl = rawCover
+    ? (rawCover.startsWith('http') ? rawCover : `/api/image?url=${encodeURIComponent(rawCover)}`)
     : '/placeholder-cover.jpg';
 
   return (

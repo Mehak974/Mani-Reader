@@ -6,8 +6,9 @@ export default function RecentlyAddedCard({ manga }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   
-  const coverUrl = (manga.image || manga.cover)
-    ? `/api/image?url=${encodeURIComponent(manga.image || manga.cover)}`
+  const rawCover = manga.image || manga.cover;
+  const coverUrl = rawCover
+    ? (rawCover.startsWith('http') ? rawCover : `/api/image?url=${encodeURIComponent(rawCover)}`)
     : '/placeholder-cover.jpg';
 
   const description = manga.description || 'No description available.';
