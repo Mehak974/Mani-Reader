@@ -11,7 +11,7 @@ export default function RecentlyAddedCard({ manga }) {
   const apiBase = process.env.NEXT_PUBLIC_API_URL || 'https://api.manireader.online/api';
   const rawCover = manga.image || manga.cover;
   const coverUrl = rawCover
-    ? (rawCover.startsWith('http') ? rawCover : `/api/image?url=${encodeURIComponent(rawCover)}`)
+    ? `/api/image?url=${encodeURIComponent(rawCover)}`
     : '/placeholder-cover.jpg';
 
   const description = manga.description || 'No description available.';

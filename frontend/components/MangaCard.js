@@ -8,7 +8,7 @@ export default function MangaCard({ manga, showNsfw = false }) {
   const isBlurred = manga.nsfw && !showNsfw;
   const rawCover = manga.image || manga.cover;
   const coverUrl = rawCover
-    ? (rawCover.startsWith('http') ? rawCover : `/api/image?url=${encodeURIComponent(rawCover)}`)
+    ? `/api/image?url=${encodeURIComponent(rawCover)}`
     : '/placeholder-cover.jpg';
 
   // 🛡️ Premium UI Component

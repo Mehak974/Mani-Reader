@@ -45,13 +45,24 @@ export default function HomeClient() {
     if (p && p > 0) setRecentPage(p);
   }, []);
 
+  // 🛡️ Content Shield: Filters out NSFW/Restricted tags from the Home Page
+  const filterManga = (mangaList) => {
+    const BLACKLIST = ['18+', 'Adult', 'Smut', 'Erotica', 'Sexual violence', 'Harem', 'Yaoi', 'Yuri'];
+    return mangaList.filter(m => {
+      const genres = m.genres || [];
+      const tagNames = genres.map(g => (typeof g === 'string' ? g : g.name || '').toLowerCase());
+      return !tagNames.some(tag => BLACKLIST.map(b => b.toLowerCase()).includes(tag)) && !m.nsfw;
+    });
+  };
+
   useEffect(() => {
     setUpdatesLoading(true);
     mangaApi.popular(1)
       .then((r) => {
         const data = r?.data || r || {};
         const results = Array.isArray(data) ? data : (data.results || []);
-        setPopularUpdates(results.slice(0, 20));
+        // Apply Shield
+        setPopularUpdates(filterManga(results).slice(0, 20));
       })
       .catch((err) => {
         console.error('Popular Manga fetch error:', err);
@@ -65,8 +76,9 @@ export default function HomeClient() {
     mangaApi.recent(recentPage)
       .then((r) => {
         const results = r?.data?.results || r?.results || r || [];
-        setRecent(Array.isArray(results) ? results.slice(0, 30) : []);
-        setTotalPages(r?.data?.totalPages || 500); // MangaKatana has lots of pages
+        // Apply Shield
+        setRecent(filterManga(Array.isArray(results) ? results : []).slice(0, 30));
+        setTotalPages(r?.data?.totalPages || 500);
       })
       .catch((err) => {
         console.error('Recent fetch error:', err);
