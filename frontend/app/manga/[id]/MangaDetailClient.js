@@ -175,7 +175,9 @@ export default function MangaDetailClient({ id, initialManga }) {
               <div style={{ marginBottom: 16, color: 'var(--text-3)', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span className="material-icons" style={{ fontSize: '1.2rem', color: 'var(--accent)' }}>auto_stories</span>
                 <span>{readCount} / {chapters.length} chapters read</span>
-                {lastRead && <span style={{ opacity: 0.6 }}> · Last: Ch. {chapters.find(c => c.id === lastRead.chapterId)?.number}</span>}
+                {lastRead && chapters.find(c => c.id === lastRead.chapterId) && (
+                  <span style={{ opacity: 0.6 }}> · Last: Ch. {chapters.find(c => c.id === lastRead.chapterId)?.number}</span>
+                )}
               </div>
             )}
 
@@ -206,7 +208,7 @@ export default function MangaDetailClient({ id, initialManga }) {
             <div className="manga-detail-actions" style={{ marginTop: 16 }}>
               {chapters.length > 0 && (
                 <a
-                  href={`/read/${lastRead ? chapters.find(c => c.id === lastRead.chapterId)?.id || chapters[0].id : chapters[0].id}?mangaId=${id}`}
+                  href={`/read/${lastRead ? chapters.find(c => c.id === lastRead.chapterId)?.id || chapters[0]?.id : chapters[0]?.id}?mangaId=${id}`}
                   style={{ display: 'inline-block' }}
                 >
                   <button 
