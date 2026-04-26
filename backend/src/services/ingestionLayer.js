@@ -79,7 +79,15 @@ async function getPopular(page = 1) {
   
   try {
     const res = await client.get(`/manga/${provider}/popular`, { params: { page } });
-    return { data: { results: (res.data.results || []).map(mapMangaFormat) } };
+    const results = res.data.results || res.data || [];
+    
+    if ((!results || results.length === 0) && provider === 'mangadex') {
+       // MangaDex fallback
+       const altRes = await client.get(`/manga/${provider}/filter`, { params: { order: 'popular', page } });
+       return { data: { results: (altRes.data.results || []).map(mapMangaFormat) } };
+    }
+    
+    return { data: { results: Array.isArray(results) ? results.map(mapMangaFormat) : [] } };
   } catch (err) {
     console.error(`[Ingestion] getPopular failed (${provider}):`, err.message);
     return { data: { results: [] } };
