@@ -12,7 +12,6 @@ export default function MangaCard({ manga, showNsfw = false }) {
     : '/placeholder-cover.jpg';
 
   return (
-  return (
     <Link 
       href={`/manga/${manga.id}`} 
       className="manga-card" 
