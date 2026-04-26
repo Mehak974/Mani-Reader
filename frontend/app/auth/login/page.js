@@ -5,12 +5,19 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 function LoginContent() {
-  const { login } = useAuth() || {};
+  const { login, user, loading: authLoading } = useAuth() || {};
   const router = useRouter();
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
   const [error,    setError]    = useState('');
   const [loading,  setLoading]  = useState(false);
+
+  // Auto-redirect if already logged in as ADMIN
+  useEffect(() => {
+    if (!authLoading && user?.role === 'ADMIN') {
+      router.push('/admin');
+    }
+  }, [user, authLoading, router]);
 
   async function handleSubmit(e) {
     e.preventDefault();
