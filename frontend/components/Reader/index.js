@@ -8,11 +8,11 @@ import { progressApi, bookmarkApi, historyApi } from '../../lib/api';
 export function VerticalReader({ pages, chapterId, mangaId, prevChapter, nextChapter, currentChapter }) {
   const [loaded, setLoaded] = useState(new Set());
   const [currentPage, setCurrentPage] = useState(0);
+  const [showControls, setShowControls] = useState(true); // 🤫 Immersive Mode
   const containerRef = useRef(null);
   const router = useRouter();
 
   const progress = pages.length > 0 ? Math.round((currentPage / pages.length) * 100) : 0;
-
   const chNum = currentChapter?.chapterNumber || currentChapter?.number || '';
 
   // Track scroll position → update current page
@@ -38,21 +38,14 @@ export function VerticalReader({ pages, chapterId, mangaId, prevChapter, nextCha
   // 👻 Ghost Mode: Buffer progress in local memory, sync once at the end
   useEffect(() => {
     if (!chapterId || !mangaId || currentPage === 0) return;
-    
-    // Save to LocalStorage instantly (0 requests)
     try {
       localStorage.setItem(`mv_progress_${mangaId}`, JSON.stringify({ chapterId, page: currentPage }));
     } catch {}
-
     const isRead = currentPage === pages.length - 1;
-    
-    // Only call the server if they actually FINISH the chapter
     if (isRead) {
       progressApi.set(mangaId, chapterId, currentPage, true).catch(() => {});
       historyApi.add(mangaId, chapterId, currentPage).catch(() => {});
     }
-
-    // Optional: Sync to server when they leave the reader
     return () => {
       if (currentPage > 0) {
         progressApi.set(mangaId, chapterId, currentPage, isRead).catch(() => {});
@@ -61,9 +54,36 @@ export function VerticalReader({ pages, chapterId, mangaId, prevChapter, nextCha
   }, [currentPage, chapterId, mangaId, pages.length]);
 
   return (
-    <div className="reader-wrapper">
+    <div className="reader-wrapper" onClick={(e) => {
+      if (e.target.closest('button') || e.target.closest('a')) return;
+      setShowControls(!showControls);
+    }}>
+      <style jsx>{`
+        .reader-topbar {
+          position: fixed;
+          top: 0; left: 0; right: 0;
+          z-index: 1000;
+          background: rgba(10, 10, 10, 0.9);
+          backdrop-filter: blur(15px);
+          transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          transform: ${showControls ? 'translateY(0)' : 'translateY(-100%)'};
+          border-bottom: 1px solid var(--border);
+        }
+        .reader-progress-bar {
+          position: fixed;
+          bottom: 0; left: 0; right: 0;
+          z-index: 1000;
+          transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          transform: ${showControls ? 'translateY(0)' : 'translateY(100%)'};
+        }
+        .reader-vertical {
+          padding-top: ${showControls ? '70px' : '0'};
+          transition: padding 0.4s ease;
+        }
+      `}</style>
+
       {/* Top bar */}
-      <div className="reader-topbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 16px' }}>
+      <div className="reader-topbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '65px', padding: '0 20px' }}>
         <div style={{ display: 'flex', gap: '8px' }}>
           <Link href={`/manga/${mangaId}`} className="btn btn-ghost btn-sm">
             <span className="material-icons" style={{ fontSize: '1.2rem', marginRight: 4 }}>arrow_back</span>
@@ -71,21 +91,21 @@ export function VerticalReader({ pages, chapterId, mangaId, prevChapter, nextCha
           </Link>
         </div>
 
-        <div style={{ fontWeight: 700, color: 'var(--text)', fontSize: '1rem' }}>
+        <div style={{ fontWeight: 800, color: 'var(--text)', fontSize: '1.1rem', letterSpacing: '-0.02em' }}>
           Chapter {chNum}
         </div>
 
         <div className="reader-controls" style={{ display: 'flex', gap: '8px' }}>
           <button 
             className="btn btn-ghost btn-sm" 
-            onClick={() => prevChapter && router.push(`/read/${prevChapter}?mangaId=${mangaId}`)}
+            onClick={(e) => { e.stopPropagation(); prevChapter && router.push(`/read/${prevChapter}?mangaId=${mangaId}`); }}
             disabled={!prevChapter}
           >
-            ← Previous
+            ← Prev
           </button>
           <button 
             className="btn btn-primary btn-sm" 
-            onClick={() => nextChapter && router.push(`/read/${nextChapter}?mangaId=${mangaId}`)}
+            onClick={(e) => { e.stopPropagation(); nextChapter && router.push(`/read/${nextChapter}?mangaId=${mangaId}`); }}
             disabled={!nextChapter}
           >
             Next →
@@ -102,31 +122,31 @@ export function VerticalReader({ pages, chapterId, mangaId, prevChapter, nextCha
               alt={`Page ${i + 1}`}
               loading={i < 3 ? 'eager' : 'lazy'}
               onLoad={() => setLoaded((prev) => new Set([...prev, i]))}
-              style={{ opacity: loaded.has(i) ? 1 : 0, transition: 'opacity 0.3s' }}
+              style={{ opacity: loaded.has(i) ? 1 : 0, transition: 'opacity 0.4s' }}
             />
             {!loaded.has(i) && (
-              <div className="skeleton" style={{ height: 600, marginBottom: 2 }} />
+              <div className="skeleton" style={{ height: 800, marginBottom: 2 }} />
             )}
           </div>
         ))}
 
-        {/* Next chapter prompt */}
         {nextChapter && (
-          <div style={{ textAlign: 'center', padding: '60px 0' }}>
-            <p style={{ color: 'var(--text-3)', marginBottom: 16 }}>End of chapter</p>
+          <div style={{ textAlign: 'center', padding: '80px 0', borderTop: '1px solid var(--border)' }}>
+            <p style={{ color: 'var(--text-3)', marginBottom: 20 }}>Finished Chapter {chNum}</p>
             <button
               className="btn btn-primary"
               onClick={() => router.push(`/read/${nextChapter}?mangaId=${mangaId}`)}
+              style={{ padding: '14px 40px', borderRadius: '14px' }}
             >
-              Continue to Next Chapter →
+              Next Chapter →
             </button>
           </div>
         )}
       </div>
 
       {/* Progress bar */}
-      <div className="reader-progress-bar">
-        <div className="reader-progress-fill" style={{ width: `${progress}%` }} />
+      <div className="reader-progress-bar" style={{ height: '4px', background: 'var(--surface-2)' }}>
+        <div className="reader-progress-fill" style={{ width: `${progress}%`, height: '100%', background: 'var(--accent)', boxShadow: '0 0 10px var(--accent)' }} />
       </div>
     </div>
   );
@@ -135,30 +155,22 @@ export function VerticalReader({ pages, chapterId, mangaId, prevChapter, nextCha
 // ── Paged Reader ───────────────────────────────────────────────────────────────
 export function PagedReader({ pages, chapterId, mangaId, prevChapter, nextChapter, currentChapter }) {
   const [current, setCurrent] = useState(0);
+  const [showControls, setShowControls] = useState(true); // 🤫 Immersive Mode
   const router = useRouter();
 
   const progress = pages.length > 0 ? Math.round(((current + 1) / pages.length) * 100) : 0;
-
   const chNum = currentChapter?.chapterNumber || currentChapter?.number || '';
 
-  // 👻 Ghost Mode: Buffer progress in local memory, sync once at the end
   useEffect(() => {
     if (!chapterId || !mangaId) return;
-
-    // Save to LocalStorage instantly (0 requests)
     try {
       localStorage.setItem(`mv_progress_${mangaId}`, JSON.stringify({ chapterId, page: current }));
     } catch {}
-
     const isRead = current === pages.length - 1;
-    
-    // Only call the server if they actually FINISH the chapter
     if (isRead) {
       progressApi.set(mangaId, chapterId, current, true).catch(() => {});
       historyApi.add(mangaId, chapterId, current).catch(() => {});
     }
-
-    // Optional: Sync to server when they leave the reader
     return () => {
       if (current > 0) {
         progressApi.set(mangaId, chapterId, current, isRead).catch(() => {});
@@ -181,8 +193,28 @@ export function PagedReader({ pages, chapterId, mangaId, prevChapter, nextChapte
   }, [pages.length]);
 
   return (
-    <div className="reader-wrapper">
-      <div className="reader-topbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 16px' }}>
+    <div className="reader-wrapper" style={{ height: '100vh', overflow: 'hidden' }}>
+      <style jsx>{`
+        .reader-topbar {
+          position: fixed;
+          top: 0; left: 0; right: 0;
+          z-index: 1000;
+          background: rgba(10, 10, 10, 0.9);
+          backdrop-filter: blur(15px);
+          transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          transform: ${showControls ? 'translateY(0)' : 'translateY(-100%)'};
+          border-bottom: 1px solid var(--border);
+        }
+        .reader-progress-bar {
+          position: fixed;
+          bottom: 0; left: 0; right: 0;
+          z-index: 1000;
+          transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          transform: ${showControls ? 'translateY(0)' : 'translateY(100%)'};
+        }
+      `}</style>
+
+      <div className="reader-topbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '65px', padding: '0 20px' }}>
         <div style={{ display: 'flex', gap: '8px' }}>
           <Link href={`/manga/${mangaId}`} className="btn btn-ghost btn-sm">
             <span className="material-icons" style={{ fontSize: '1.2rem', marginRight: 4 }}>arrow_back</span>
@@ -190,21 +222,21 @@ export function PagedReader({ pages, chapterId, mangaId, prevChapter, nextChapte
           </Link>
         </div>
 
-        <div style={{ fontWeight: 700, color: 'var(--text)', fontSize: '1rem' }}>
+        <div style={{ fontWeight: 800, color: 'var(--text)', fontSize: '1.1rem' }}>
           Chapter {chNum}
         </div>
 
         <div className="reader-controls" style={{ display: 'flex', gap: '8px' }}>
           <button 
             className="btn btn-ghost btn-sm" 
-            onClick={() => prevChapter && router.push(`/read/${prevChapter}?mangaId=${mangaId}`)}
+            onClick={(e) => { e.stopPropagation(); prevChapter && router.push(`/read/${prevChapter}?mangaId=${mangaId}`); }}
             disabled={!prevChapter}
           >
-            ← Previous
+            ← Prev
           </button>
           <button 
             className="btn btn-primary btn-sm" 
-            onClick={() => nextChapter && router.push(`/read/${nextChapter}?mangaId=${mangaId}`)}
+            onClick={(e) => { e.stopPropagation(); nextChapter && router.push(`/read/${nextChapter}?mangaId=${mangaId}`); }}
             disabled={!nextChapter}
           >
             Next →
@@ -215,18 +247,28 @@ export function PagedReader({ pages, chapterId, mangaId, prevChapter, nextChapte
       <div
         className="reader-paged"
         onClick={(e) => {
+          if (e.target.closest('button') || e.target.closest('a')) return;
+          
           const midX = window.innerWidth / 2;
+          const midY = window.innerHeight / 2;
+          
+          // 🤫 Immersive Mode Toggle: Clicking the center 30% of the screen toggles controls
+          if (e.clientX > midX * 0.7 && e.clientX < midX * 1.3 && e.clientY > midY * 0.7 && e.clientY < midY * 1.3) {
+            setShowControls(!showControls);
+            return;
+          }
+
           if (e.clientX > midX) setCurrent((p) => Math.min(p + 1, pages.length - 1));
           else setCurrent((p) => Math.max(p - 1, 0));
         }}
       >
         {pages[current] && (
-          <img src={pages[current]} alt={`Page ${current + 1}`} />
+          <img src={pages[current]} alt={`Page ${current + 1}`} style={{ maxHeight: '100vh', objectFit: 'contain' }} />
         )}
       </div>
 
-      <div className="reader-progress-bar">
-        <div className="reader-progress-fill" style={{ width: `${progress}%` }} />
+      <div className="reader-progress-bar" style={{ height: '4px', background: 'var(--surface-2)' }}>
+        <div className="reader-progress-fill" style={{ width: `${progress}%`, height: '100%', background: 'var(--accent)', boxShadow: '0 0 10px var(--accent)' }} />
       </div>
     </div>
   );
