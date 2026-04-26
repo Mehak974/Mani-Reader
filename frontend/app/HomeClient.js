@@ -49,8 +49,9 @@ export default function HomeClient() {
     setUpdatesLoading(true);
     mangaApi.popular(1)
       .then((r) => {
-        const results = r?.data || r || [];
-        setPopularUpdates(Array.isArray(results) ? results.slice(0, 20) : []);
+        const data = r?.data || r || {};
+        const results = Array.isArray(data) ? data : (data.results || []);
+        setPopularUpdates(results.slice(0, 20));
       })
       .catch((err) => {
         console.error('Popular Manga fetch error:', err);
