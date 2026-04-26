@@ -55,8 +55,8 @@ router.get('/most-read', optionalAuth, async (req, res) => {
   }
 });
 
-// GET /api/manga/browse/recent?page=
-router.get('/browse/recent', optionalAuth, async (req, res) => {
+// GET /api/manga/browse/recent?page= (and alias /latest)
+router.get(['/browse/recent', '/browse/latest'], optionalAuth, async (req, res) => {
   try {
     const page = parseInt(req.query.page || '1');
     const results = await mangaService.getRecent(page, req.user?.userId);
