@@ -7,15 +7,13 @@ export default function UserActivity() {
   const { user } = useAuth() || {};
 
   useEffect(() => {
-    // Send immediate heartbeat on mount
-    userActivityApi.heartbeat(30000).catch(() => {});
-
+    // Only send heartbeat every 5 minutes to save bandwidth/requests
     const interval = setInterval(() => {
-      userActivityApi.heartbeat(60000).catch(() => {});
-    }, 60000); // Every 1 minute
+      userActivityApi.heartbeat(300000).catch(() => {});
+    }, 300000); 
 
     return () => clearInterval(interval);
-  }, []); // Remove dependency on user to track guest sessions too
+  }, []); // Run once on app mount
 
   return null;
 }
