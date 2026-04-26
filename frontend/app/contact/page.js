@@ -44,7 +44,7 @@ export default function ContactPage() {
                 <span className="material-icons" style={{ fontSize: '3rem', color: '#fff' }}>check</span>
               </div>
               <h2 style={{ marginBottom: 12 }}>Message Sent!</h2>
-              <p style={{ color: 'var(--text-3)', marginBottom: 32 }}>Thank you for reaching out. We'll review your inquiry shortly.</p>
+              <p style={{ color: 'var(--text-3)', marginBottom: 32 }}>Thank you for reaching out. We&apos;ll review your inquiry shortly.</p>
               <button onClick={() => setSuccess(false)} className="btn btn-primary">Send Another Message</button>
             </div>
           ) : (
