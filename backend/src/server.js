@@ -113,8 +113,8 @@ app.use((err, req, res, next) => {
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────────
-app.listen(config.port, () => {
-  console.log(`\n🚀 Manga Reader API running on http://localhost:${config.port}`);
+app.listen(config.port, '0.0.0.0', () => {
+  console.log(`\n🚀 Manga Reader API running on http://0.0.0.0:${config.port}`);
   console.log(`   Consumet API: ${config.consumet.url}`);
   console.log(`   Environment: ${config.nodeEnv}\n`);
 });
