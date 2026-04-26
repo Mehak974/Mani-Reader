@@ -18,10 +18,13 @@ export default function MangaCard({ manga, showNsfw = false }) {
       className="manga-card" 
       style={{ display: 'block' }}
       onMouseEnter={() => {
-        // 🏎️ Pre-warm the cache before the user even clicks!
-        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://mani-reader-production.up.railway.app/api'}/manga/${manga.id}`).catch(() => {});
-        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://mani-reader-production.up.railway.app/api'}/chapters/${manga.id}`).catch(() => {});
+        // 🏎️ Only pre-warm if the user hovers for 150ms (prevents spamming during scroll)
+        window.mangaTimeout = setTimeout(() => {
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://mani-reader-production.up.railway.app/api'}/manga/${manga.id}`).catch(() => {});
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://mani-reader-production.up.railway.app/api'}/chapters/${manga.id}`).catch(() => {});
+        }, 150);
       }}
+      onMouseLeave={() => clearTimeout(window.mangaTimeout)}
     >
       <div className="manga-card-cover">
         <img

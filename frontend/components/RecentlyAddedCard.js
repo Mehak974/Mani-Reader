@@ -38,10 +38,13 @@ export default function RecentlyAddedCard({ manga }) {
         href={`/manga/${manga.id}`} 
         style={{ flexShrink: 0 }}
         onMouseEnter={() => {
-          // 🏎️ Pre-warm the cache before the user even clicks!
-          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://mani-reader-production.up.railway.app/api'}/manga/${manga.id}`).catch(() => {});
-          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://mani-reader-production.up.railway.app/api'}/chapters/${manga.id}`).catch(() => {});
+          // 🏎️ Only pre-warm if the user hovers for 150ms (prevents spamming during scroll)
+          window.recentTimeout = setTimeout(() => {
+            fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://mani-reader-production.up.railway.app/api'}/manga/${manga.id}`).catch(() => {});
+            fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://mani-reader-production.up.railway.app/api'}/chapters/${manga.id}`).catch(() => {});
+          }, 150);
         }}
+        onMouseLeave={() => clearTimeout(window.recentTimeout)}
       >
         <div style={{
           width: '100px',
