@@ -11,6 +11,7 @@ export default function MangaCard({ manga, showNsfw = false }) {
     ? (rawCover.startsWith('http') ? rawCover : `/api/image?url=${encodeURIComponent(rawCover)}`)
     : '/placeholder-cover.jpg';
 
+  // 🛡️ Premium UI Component
   return (
     <Link 
       href={`/manga/${manga.id}`} 
