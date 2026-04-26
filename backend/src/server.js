@@ -73,13 +73,21 @@ app.use(maintenanceMiddleware);
 // Global rate limit
 app.use(defaultLimiter);
 
-// ── Health check ──────────────────────────────────────────────────────────────
+// ── Health & Debug ────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     service: 'manga-reader-api',
     timestamp: new Date().toISOString(),
     consumetUrl: config.consumet.url,
+  });
+});
+
+app.get('/api/debug-config', (req, res) => {
+  res.json({
+    imageProxyUrl: config.imageProxyUrl,
+    nodeEnv: config.nodeEnv,
+    provider: config.consumet.primary
   });
 });
 
