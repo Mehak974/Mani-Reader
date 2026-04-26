@@ -34,7 +34,15 @@ export default function RecentlyAddedCard({ manga }) {
         position: 'relative'
       }}
     >
-      <Link href={`/manga/${manga.id}`} style={{ flexShrink: 0 }}>
+      <Link 
+        href={`/manga/${manga.id}`} 
+        style={{ flexShrink: 0 }}
+        onMouseEnter={() => {
+          // 🏎️ Pre-warm the cache before the user even clicks!
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://mani-reader-production.up.railway.app/api'}/manga/${manga.id}`).catch(() => {});
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://mani-reader-production.up.railway.app/api'}/chapters/${manga.id}`).catch(() => {});
+        }}
+      >
         <div style={{
           width: '100px',
           height: '140px',

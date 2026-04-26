@@ -12,7 +12,17 @@ export default function MangaCard({ manga, showNsfw = false }) {
     : '/placeholder-cover.jpg';
 
   return (
-    <Link href={`/manga/${manga.id}`} className="manga-card" style={{ display: 'block' }}>
+  return (
+    <Link 
+      href={`/manga/${manga.id}`} 
+      className="manga-card" 
+      style={{ display: 'block' }}
+      onMouseEnter={() => {
+        // 🏎️ Pre-warm the cache before the user even clicks!
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://mani-reader-production.up.railway.app/api'}/manga/${manga.id}`).catch(() => {});
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://mani-reader-production.up.railway.app/api'}/chapters/${manga.id}`).catch(() => {});
+      }}
+    >
       <div className="manga-card-cover">
         <img
           src={coverUrl}
