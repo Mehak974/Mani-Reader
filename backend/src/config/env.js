@@ -23,7 +23,7 @@ module.exports = {
   },
 
   clientUrl: process.env.CLIENT_URL || 'https://manireader.online',
-  apiUrl: process.env.API_URL || 'https://mani-reader-production.up.railway.app',
+  apiUrl: process.env.API_URL || 'https://api.manireader.online',
 
   consumet: {
     url: process.env.CONSUMET_URL || 'https://api.consumet.org',

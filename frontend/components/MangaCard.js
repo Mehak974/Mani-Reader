@@ -20,7 +20,7 @@ export default function MangaCard({ manga, showNsfw = false }) {
       onMouseEnter={() => {
         // 🏎️ Only pre-warm if the user hovers for 150ms (prevents spamming during scroll)
         window.mangaTimeout = setTimeout(() => {
-          const apiBase = process.env.NEXT_PUBLIC_API_URL || 'https://mani-reader-production.up.railway.app/api';
+          const apiBase = process.env.NEXT_PUBLIC_API_URL || 'https://api.manireader.online/api';
           fetch(`${apiBase}/manga/${manga.id}`).catch(() => {});
           fetch(`${apiBase}/chapters/${manga.id}`).catch(() => {});
         }, 150);
