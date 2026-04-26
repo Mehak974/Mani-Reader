@@ -233,12 +233,10 @@ async function getChapterPages(chapterId, mangaId) {
 }
 
 async function getPopular(page = 1, userId = null) {
-  const cacheKey = `popular:${page}`;
-  const results = await cache.getOrSet(cacheKey, cache.ttl.mangaTtl, async () => {
-    const { data } = await ingestion.getPopular(page);
-    return (data.results || data || []).map(mapManga);
-  });
-  return applyContentFilters(results, userId);
+  // 🛡️ Shield Upgrade: Use browse with 'Top Read' order to ensure we ALWAYS have genres
+  // This is critical for the home page content filter to work 100% of the time.
+  const data = await browse({ order: 2, page }, userId);
+  return data.results || [];
 }
 
 async function getRecent(page = 1, userId = null) {
