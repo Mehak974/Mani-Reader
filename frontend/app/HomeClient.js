@@ -47,7 +47,7 @@ export default function HomeClient() {
 
   useEffect(() => {
     setUpdatesLoading(true);
-    mangaApi.mostRead()
+    mangaApi.popular(1)
       .then((r) => {
         const results = r?.data || r || [];
         setPopularUpdates(Array.isArray(results) ? results.slice(0, 20) : []);
@@ -61,18 +61,11 @@ export default function HomeClient() {
 
   useEffect(() => {
     setLoading(true);
-    const p1 = mangaApi.browseRaw(`order=0&page=${(recentPage * 2) - 1}`).catch(() => ({ data: { results: [] } }));
-    const p2 = mangaApi.browseRaw(`order=0&page=${recentPage * 2}`).catch(() => ({ data: { results: [] } }));
-
-    Promise.all([p1, p2])
-      .then(([r1, r2]) => {
-        const res1 = r1?.data?.results || r1?.results || [];
-        const res2 = r2?.data?.results || r2?.results || [];
-        const all = [...res1, ...res2];
-        setRecent(Array.isArray(all) ? all.slice(0, 30) : []);
-
-        const apiTotalPages = r1?.data?.totalPages || 1;
-        setTotalPages(Math.ceil(apiTotalPages / 2));
+    mangaApi.recent(recentPage)
+      .then((r) => {
+        const results = r?.data?.results || r?.results || r || [];
+        setRecent(Array.isArray(results) ? results.slice(0, 30) : []);
+        setTotalPages(r?.data?.totalPages || 500); // MangaKatana has lots of pages
       })
       .catch((err) => {
         console.error('Recent fetch error:', err);
