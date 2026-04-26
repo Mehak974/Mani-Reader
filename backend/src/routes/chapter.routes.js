@@ -18,17 +18,11 @@ router.get('/:id(*)/pages', async (req, res) => {
   try {
     const { id } = req.params;
     const { mangaId } = req.query;
-    const { pages: rawPages, externalUrl } = await mangaService.getChapterPages(id, mangaId);
-
-    // Rewrite URLs through our image proxy so frontend never hits external directly
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
-    const proxiedPages = rawPages.map(
-      (url) => `${baseUrl}/api/image?url=${encodeURIComponent(url)}`
-    );
+    const { pages, externalUrl } = await mangaService.getChapterPages(id, mangaId);
 
     res.json({ 
-      pages: proxiedPages, 
-      total: proxiedPages.length, 
+      pages, 
+      total: pages.length, 
       chapterId: id,
       externalUrl 
     });
