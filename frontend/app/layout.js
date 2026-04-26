@@ -8,6 +8,10 @@ export const metadata = {
   metadataBase: new URL('https://manireader.online'),
   title: 'Mani Reader — Discover Your Next Hidden Gem',
   description: 'Mani Reader — Your premium manga sanctuary with libraries, bookmarks, and offline gems.',
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
+  },
 };
 
 export default function RootLayout({ children }) {
