@@ -76,7 +76,14 @@ async function getPopular(page = 1) {
     const data = await mangakatana.getPopular(page);
     return { data };
   }
-  return { data: { results: [] } };
+  
+  try {
+    const res = await client.get(`/manga/${provider}/popular`, { params: { page } });
+    return { data: { results: (res.data.results || []).map(mapMangaFormat) } };
+  } catch (err) {
+    console.error(`[Ingestion] getPopular failed (${provider}):`, err.message);
+    return { data: { results: [] } };
+  }
 }
 
 async function getRecent(page = 1) {
@@ -84,7 +91,14 @@ async function getRecent(page = 1) {
     const data = await mangakatana.getRecent(page);
     return { data };
   }
-  return { data: { results: [] } };
+
+  try {
+    const res = await client.get(`/manga/${provider}/recent-updates`, { params: { page } });
+    return { data: { results: (res.data.results || []).map(mapMangaFormat) } };
+  } catch (err) {
+    console.error(`[Ingestion] getRecent failed (${provider}):`, err.message);
+    return { data: { results: [] } };
+  }
 }
 
 async function getMangaInfo(mangaId) {
