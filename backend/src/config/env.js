@@ -23,18 +23,19 @@ module.exports = {
   },
 
   consumet: {
-    url: process.env.CONSUMET_URL || 'http://localhost:3000',
-    primary: process.env.CONSUMET_PRIMARY_PROVIDER || 'mangakatana',
+    url: process.env.CONSUMET_URL || 'https://api.consumet.org',
+    primary: process.env.PRIMARY_PROVIDER || 'mangakatana',
     fallback: process.env.CONSUMET_FALLBACK_PROVIDER || 'mangakakalot',
+    timeout: 30000,
   },
 
   imageProxyUrl: process.env.IMAGE_PROXY_URL || null,
 
   cache: {
     redisUrl: process.env.REDIS_URL || null,
-    searchTtl: parseInt(process.env.CACHE_SEARCH_TTL || '300', 10),
-    chaptersTtl: parseInt(process.env.CACHE_CHAPTERS_TTL || '600', 10),
-    mangaTtl: parseInt(process.env.CACHE_MANGA_TTL || '1800', 10),
+    searchTtl: 3600,
+    mangaTtl: 3600,
+    authTtl: 3600,
   },
 
   downloads: {

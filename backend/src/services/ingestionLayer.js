@@ -10,7 +10,7 @@ const mangakatana = require('./mangakatanaScraper');
 
 const client = axios.create({
   baseURL: config.consumet.url || 'https://api.consumet.org',
-  timeout: 20000,
+  timeout: 30000,
 });
 
 axiosRetry(client, {
