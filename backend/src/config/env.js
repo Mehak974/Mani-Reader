@@ -34,7 +34,8 @@ module.exports = {
   cache: {
     redisUrl: process.env.REDIS_URL || null,
     searchTtl: 3600,
-    mangaTtl: 3600,
+    chaptersTtl: 43200,
+    mangaTtl: 43200,
     authTtl: 3600,
   },
 

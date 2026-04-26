@@ -135,6 +135,13 @@ async function getMangaInfo(mangaId, userId = null) {
       create: dbData
     });
 
+    // ⚡ Optimization: Cache chapters while we have them
+    const chaptersCacheKey = `chapters:${mangaId}`;
+    const rawChapters = data.chapters || [];
+    const mappedChapters = rawChapters.map((ch) => mapRawChapter(ch, mangaId));
+    const normalizedChapters = normalize(mappedChapters, mangaId);
+    await cache.set(chaptersCacheKey, normalizedChapters, cache.ttl.chaptersTtl);
+
     return mapped;
   });
 
@@ -184,25 +191,29 @@ async function getMangaInfo(mangaId, userId = null) {
 async function getChapters(mangaId, userId = null) {
   const cacheKey = `chapters:${mangaId}`;
 
-  const normalized = await cache.getOrSet(cacheKey, cache.ttl.chaptersTtl, async () => {
+  return await cache.getOrSet(cacheKey, cache.ttl.chaptersTtl, async () => {
+    // ⚡ Optimization: Fetch info (which includes chapters) and cache it too
     const { data } = await ingestion.getMangaInfo(mangaId);
     const rawChapters = data.chapters || [];
     const mapped = rawChapters.map((ch) => mapRawChapter(ch, mangaId));
     const normalizedList = normalize(mapped, mangaId);
 
-    // Upsert chapters into DB so they can be bookmarked/progressed
+    // Save info cache while we are at it
+    const infoCacheKey = `manga:${mangaId}`;
+    const mappedInfo = mapManga(data);
+    await cache.set(infoCacheKey, mappedInfo, cache.ttl.mangaTtl);
+
+    // Upsert chapters into DB
     for (const ch of normalizedList) {
-      await prisma.chapter.upsert({
+      prisma.chapter.upsert({
         where: { id: ch.id },
         update: { title: ch.title, sources: ch.sources },
         create: { id: ch.id, mangaId, number: ch.number, title: ch.title, sources: ch.sources },
-      }).catch(err => console.error(`[MangaService] Failed to upsert chapter ${ch.id}:`, err.message));
+      }).catch(() => {});
     }
 
     return normalizedList;
   });
-
-  return normalized;
 }
 
 async function getChapterPages(chapterId, mangaId) {
