@@ -192,14 +192,22 @@ async function getPopular(page = 1) {
       const href = titleEl.attr('href') || '';
       const id = href.split('/').pop();
       const title = titleEl.text().trim();
-      const image = $(el).find('.wrap_img img').attr('src');
+      
+      // 🖼️ Fix: Check both src and data-src for images
+      const imgEl = $(el).find('.wrap_img img');
+      const image = imgEl.attr('data-src') || imgEl.attr('src');
+      
       const status = $(el).find('.status').text().trim();
+      
+      // 🧬 Shield Fix: Popular section often shows genres too
+      const genres = $(el).find('.genres a').map((i, g) => $(g).text().trim()).get();
       
       results.push({
         id,
         title,
         image,
         status,
+        genres,
         source: 'mangakatana'
       });
     });
@@ -225,10 +233,17 @@ async function getRecent(page = 1) {
       const href = titleEl.attr('href') || '';
       const id = href.split('/').pop();
       const title = titleEl.text().trim();
-      const image = $(el).find('.wrap_img img').attr('src');
+      
+      // 🖼️ Fix: Check both src and data-src for images
+      const imgEl = $(el).find('.wrap_img img');
+      const image = imgEl.attr('data-src') || imgEl.attr('src');
+      
       const description = $(el).find('.summary').text().trim();
       const status = $(el).find('.status').text().trim();
       const updateDate = $(el).find('.date').text().trim();
+      
+      // 🧬 Shield Fix: Grab genres so the filter can actually see them!
+      const genres = $(el).find('.genres a').map((i, g) => $(g).text().trim()).get();
       
       let lastChapterEl = $(el).find('.chapters .chapter a').first();
       if (lastChapterEl.length === 0) {
@@ -244,6 +259,7 @@ async function getRecent(page = 1) {
         image,
         description,
         status,
+        genres, // Now the shield can see the tags!
         updateDate,
         lastChapter,
         lastChapterId,

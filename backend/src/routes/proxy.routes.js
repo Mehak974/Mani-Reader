@@ -14,12 +14,8 @@ router.get('/', async (req, res) => {
     return res.status(400).json({ error: 'Invalid URL encoding' });
   }
 
-  // 🛡️ Cloudflare Bandwidth Shield: Redirect to worker if configured
-  const config = require('../config/env');
-  if (config.imageProxyUrl) {
-    return res.redirect(`${config.imageProxyUrl}?url=${encodeURIComponent(decoded)}`);
-  }
-
+  // 🛡️ Reliability Fix: Use internal proxyImage by default to ensure 100% visibility
+  // Redirection to workers often fails due to referrer/domain mismatch on new custom domains
   await proxyImage(decoded, res);
 });
 
