@@ -6,6 +6,9 @@ export default function RecentlyAddedCard({ manga }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   
+  if (!manga) return null;
+
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || 'https://api.manireader.online/api';
   const rawCover = manga.image || manga.cover;
   const coverUrl = rawCover
     ? (rawCover.startsWith('http') ? rawCover : `/api/image?url=${encodeURIComponent(rawCover)}`)
@@ -40,8 +43,8 @@ export default function RecentlyAddedCard({ manga }) {
         onMouseEnter={() => {
           // 🏎️ Only pre-warm if the user hovers for 150ms (prevents spamming during scroll)
           window.recentTimeout = setTimeout(() => {
-            fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://mani-reader-production.up.railway.app/api'}/manga/${manga.id}`).catch(() => {});
-            fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://mani-reader-production.up.railway.app/api'}/chapters/${manga.id}`).catch(() => {});
+            fetch(`${apiBase}/manga/${manga.id}`).catch(() => {});
+            fetch(`${apiBase}/chapters/${manga.id}`).catch(() => {});
           }, 150);
         }}
         onMouseLeave={() => clearTimeout(window.recentTimeout)}
