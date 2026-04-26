@@ -44,7 +44,7 @@ const app = express();
 
 // ── Critical Gatekeepers ──────────────────────────────────────────────────────
 const ipBanMiddleware = require('./middleware/ipBan');
-app.use(ipBanMiddleware);
+// app.use(ipBanMiddleware); // Temporarily disabled for debugging
 
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(cors({
@@ -55,6 +55,16 @@ app.use(morgan(config.nodeEnv === 'production' ? 'combined' : 'dev'));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+// ── Debug Early Access ────────────────────────────────────────────────────────
+app.get('/api/debug-config', (req, res) => {
+  const config = require('./config/env');
+  res.json({
+    imageProxyUrl: config.imageProxyUrl,
+    nodeEnv: config.nodeEnv,
+    provider: config.consumet.primary
+  });
+});
 
 // ── Global Activity Tracking ──────────────────────────────────────────────────
 app.use(async (req, res, next) => {
@@ -80,14 +90,6 @@ app.get('/api/health', (req, res) => {
     service: 'manga-reader-api',
     timestamp: new Date().toISOString(),
     consumetUrl: config.consumet.url,
-  });
-});
-
-app.get('/api/debug-config', (req, res) => {
-  res.json({
-    imageProxyUrl: config.imageProxyUrl,
-    nodeEnv: config.nodeEnv,
-    provider: config.consumet.primary
   });
 });
 
