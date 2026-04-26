@@ -61,8 +61,7 @@ app.use((req, res, next) => {
   const start = Date.now();
   res.on('finish', () => {
     const duration = Date.now() - start;
-    res.setHeader('X-Response-Time', `${duration}ms`);
-    if (duration > 1000) console.warn(`[Performance] Slow request: ${req.method} ${req.path} took ${duration}ms`);
+    if (duration > 2000) console.warn(`[Performance] Slow request: ${req.method} ${req.path} took ${duration}ms`);
   });
   next();
 });

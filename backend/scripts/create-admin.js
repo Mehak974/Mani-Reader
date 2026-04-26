@@ -23,8 +23,7 @@ async function createAdmin() {
         email,
         password: hashedPassword,
         role: 'ADMIN',
-        isVip: true,
-        displayName: 'Mani Admin'
+        isVip: true
       }
     });
 
