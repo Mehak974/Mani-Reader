@@ -1,3 +1,4 @@
+import { Analytics } from '@vercel/analytics/next';
 import ClientProviders from '../components/ClientProviders';
 import '../styles/globals.css';
 
@@ -19,6 +20,7 @@ export default function RootLayout({ children }) {
         <ClientProviders>
           {children}
         </ClientProviders>
+        <Analytics />
       </body>
     </html>
   );
