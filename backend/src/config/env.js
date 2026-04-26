@@ -22,7 +22,7 @@ module.exports = {
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
   },
 
-  clientUrl: process.env.CLIENT_URL || 'https://manireader.online',
+  clientUrl: process.env.FRONTEND_URL || process.env.CLIENT_URL || 'https://manireader.online',
   apiUrl: process.env.API_URL || 'https://api.manireader.online',
 
   consumet: {
