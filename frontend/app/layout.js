@@ -2,6 +2,8 @@ import { Analytics } from '@vercel/analytics/next';
 import ClientProviders from '../components/ClientProviders';
 import '../styles/globals.css';
 
+import Script from 'next/script';
+
 export const metadata = {
   metadataBase: new URL('https://manireader.online'),
   title: 'Mani Reader — Discover Your Next Hidden Gem',
@@ -16,6 +18,12 @@ export default function RootLayout({ children }) {
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
         <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+        <Script 
+          async 
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4938022536946038"
+          crossOrigin="anonymous"
+          strategy="lazyOnload"
+        />
       </head>
       <body>
         <ClientProviders>

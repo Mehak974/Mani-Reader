@@ -9,15 +9,15 @@ import { mangaApi, libraryApi, progressApi, bookmarkApi } from '../../../lib/api
 export default function MangaDetailClient({ id, initialManga }) {
   const { user } = useAuth() || {};
 
-  const [manga,    setManga]    = useState(initialManga);
+  const [manga, setManga] = useState(initialManga);
   const [chapters, setChapters] = useState([]);
   const [progress, setProgress] = useState([]);
-  const [libraries,setLibraries]= useState([]);
-  const [related,  setRelated]  = useState([]);
+  const [libraries, setLibraries] = useState([]);
+  const [related, setRelated] = useState([]);
 
-  const [loading,  setLoading]  = useState(!initialManga);
-  const [error,    setError]    = useState(null);
-  const [toast,    setToast]    = useState(null);
+  const [loading, setLoading] = useState(!initialManga);
+  const [error, setError] = useState(null);
+  const [toast, setToast] = useState(null);
   const [libModal, setLibModal] = useState(false);
 
   const showToast = (msg, type = 'success') => {
@@ -32,13 +32,13 @@ export default function MangaDetailClient({ id, initialManga }) {
           mangaApi.info(id),
           mangaApi.chapters(id)
         ]);
-        
+
         setManga(infoRes.data);
         setChapters(chaptersRes.data.chapters || []);
-        
+
         // If genres are missing, refresh after 2s
         if (!infoRes.data?.genres || infoRes.data.genres.length === 0) {
-           setTimeout(() => mangaApi.info(id).then(r2 => setManga(r2.data)), 2000);
+          setTimeout(() => mangaApi.info(id).then(r2 => setManga(r2.data)), 2000);
         }
       } catch (e) {
         if (!initialManga) setError(e.response?.data?.error || 'Failed to load manga');
@@ -50,12 +50,12 @@ export default function MangaDetailClient({ id, initialManga }) {
     fetchData();
 
     if (user) {
-      progressApi.forManga(id).then((r) => setProgress(r.data || [])).catch(() => {});
-      libraryApi.list().then((r) => setLibraries(r.data || [])).catch(() => {});
+      progressApi.forManga(id).then((r) => setProgress(r.data || [])).catch(() => { });
+      libraryApi.list().then((r) => setLibraries(r.data || [])).catch(() => { });
     }
 
     // Fetch related manga for internal linking architecture
-    mangaApi.related(id).then((r) => setRelated(r.data || [])).catch(() => {});
+    mangaApi.related(id).then((r) => setRelated(r.data || [])).catch(() => { });
   }, [id, user, initialManga]);
 
   async function addToCollection(libraryId) {
@@ -86,9 +86,9 @@ export default function MangaDetailClient({ id, initialManga }) {
       const res = await mangaApi.info(id);
       setManga(res.data);
       showToast('Rating saved ✓');
-    } catch (err) { 
+    } catch (err) {
       console.error('Rate failed:', err);
-      showToast('Failed to rate', 'error'); 
+      showToast('Failed to rate', 'error');
     }
   }
 
@@ -96,21 +96,21 @@ export default function MangaDetailClient({ id, initialManga }) {
     const [hover, setHover] = useState(0);
 
     return (
-      <div 
+      <div
         style={{ display: 'flex', gap: 4, alignItems: 'center' }}
         onMouseLeave={() => setHover(0)}
       >
         {[1, 2, 3, 4, 5].map(star => {
           const isActive = star <= (hover || rating);
           return (
-            <span 
-              key={star} 
+            <span
+              key={star}
               onClick={() => onRate && onRate(star)}
               onMouseEnter={() => setHover(star)}
               className="material-icons"
-              style={{ 
-                cursor: onRate ? 'pointer' : 'default', 
-                color: isActive ? '#facc15' : 'var(--border)', 
+              style={{
+                cursor: onRate ? 'pointer' : 'default',
+                color: isActive ? '#facc15' : 'var(--border)',
                 fontSize: '1.6rem',
                 transition: 'all 0.2s ease',
                 transform: star === hover ? 'scale(1.2)' : 'scale(1)',
@@ -130,7 +130,7 @@ export default function MangaDetailClient({ id, initialManga }) {
     : '/placeholder-cover.jpg';
 
   const readCount = progress.filter((p) => p.isRead).length;
-  const lastRead  = progress.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0];
+  const lastRead = progress.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0];
 
   if (loading) return (
     <div className="page-wrapper"><Navbar />
@@ -211,8 +211,8 @@ export default function MangaDetailClient({ id, initialManga }) {
                   href={`/read/${lastRead ? chapters.find(c => c.id === lastRead.chapterId)?.id || chapters[0]?.id : chapters[0]?.id}?mangaId=${id}`}
                   style={{ display: 'inline-block' }}
                 >
-                  <button 
-                    className="btn btn-amethyst" 
+                  <button
+                    className="btn btn-amethyst"
                     style={{ padding: '14px 40px', fontSize: '1.1rem', borderRadius: '12px' }}
                   >
                     <span className="material-icons" style={{ fontSize: '1.2rem', marginRight: 8 }}>play_circle_filled</span>
@@ -231,12 +231,12 @@ export default function MangaDetailClient({ id, initialManga }) {
             {manga?.genres?.length > 0 && (
               <div className="genre-tags" style={{ marginTop: 32, display: 'flex', flexWrap: 'wrap', gap: 10 }}>
                 {manga.genres.map((g, i) => (
-                  <span key={i} className="genre-tag" style={{ 
-                    background: 'var(--surface-2)', 
-                    border: '1px solid var(--border)', 
-                    color: 'var(--text-2)', 
-                    padding: '6px 16px', 
-                    borderRadius: 99, 
+                  <span key={i} className="genre-tag" style={{
+                    background: 'var(--surface-2)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text-2)',
+                    padding: '6px 16px',
+                    borderRadius: 99,
                     fontSize: '0.75rem',
                     fontWeight: 600,
                     textTransform: 'uppercase',
@@ -250,14 +250,16 @@ export default function MangaDetailClient({ id, initialManga }) {
           </div>
         </div>
 
+        <AdBanner slot="YOUR_SLOT_ID_HERE" />
+
         <section className="section" style={{ paddingTop: 0 }}>
           <h2 className="section-title" style={{ marginBottom: 24 }}>
             Chapters <span>({chapters.length})</span>
           </h2>
-          <ChapterList 
-            chapters={chapters} 
-            mangaId={id} 
-            progress={progress} 
+          <ChapterList
+            chapters={chapters}
+            mangaId={id}
+            progress={progress}
           />
         </section>
 
