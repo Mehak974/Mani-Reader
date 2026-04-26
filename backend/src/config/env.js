@@ -22,6 +22,9 @@ module.exports = {
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
   },
 
+  clientUrl: process.env.CLIENT_URL || 'https://manireader.online',
+  apiUrl: process.env.API_URL || 'https://mani-reader-production.up.railway.app',
+
   consumet: {
     url: process.env.CONSUMET_URL || 'https://api.consumet.org',
     primary: process.env.PRIMARY_PROVIDER || 'mangakatana',
