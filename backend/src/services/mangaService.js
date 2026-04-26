@@ -116,7 +116,7 @@ async function getMangaInfo(mangaId, userId = null) {
   const manga = await cache.getOrSet(cacheKey, cache.ttl.mangaTtl, async () => {
     const { data } = await ingestion.getMangaInfo(mangaId);
     const mapped = mapManga(data);
-    
+
     // Upsert into DB only when fetching fresh data
     const dbData = {
       id: mapped.id,
@@ -128,13 +128,13 @@ async function getMangaInfo(mangaId, userId = null) {
       nsfw: mapped.nsfw,
       source: mapped.source
     };
-    
+
     await prisma.manga.upsert({
       where: { id: mapped.id },
       update: dbData,
       create: dbData
     });
-    
+
     return mapped;
   });
 
@@ -143,8 +143,8 @@ async function getMangaInfo(mangaId, userId = null) {
     const { data } = await ingestion.getMangaInfo(mangaId);
     const fresh = mapManga(data);
     if (fresh.genres && fresh.genres.length > 0) {
-       manga.genres = fresh.genres;
-       await cache.set(cacheKey, manga, cache.ttl.mangaTtl);
+      manga.genres = fresh.genres;
+      await cache.set(cacheKey, manga, cache.ttl.mangaTtl);
     }
   }
 
@@ -170,7 +170,7 @@ async function getMangaInfo(mangaId, userId = null) {
     if (dbManga.ratings && dbManga.ratings.length > 0) {
       const total = dbManga.ratings.reduce((sum, r) => sum + r.score, 0);
       manga.averageRating = (total / dbManga.ratings.length).toFixed(1);
-      
+
       if (userId) {
         const userR = dbManga.ratings.find(r => r.userId === userId);
         if (userR) manga.userRating = userR.score;
@@ -243,7 +243,7 @@ async function getPopularByScore(limit = 20, userId = null) {
   try {
     // 1. Fetch from popularity table directly
     const popularRecords = await prisma.popularity.findMany({
-      where: { 
+      where: {
         manga: { isHidden: false },
         score: { gt: 0 }
       },
@@ -296,7 +296,7 @@ async function rateManga(userId, mangaId, score) {
       update: { score },
       create: { userId, mangaId, score },
     });
-    
+
     return rating;
   } catch (err) {
     console.error(`[MangaService] Failed to rate manga ${mangaId}:`, err.message);
@@ -330,7 +330,7 @@ async function trackSearch(keyword) {
     where: { keyword: keyword.toLowerCase() },
     update: { count: { increment: 1 } },
     create: { keyword: keyword.toLowerCase(), count: 1 }
-  }).catch(() => {});
+  }).catch(() => { });
 }
 
 module.exports = { search, getMangaInfo, getChapters, getChapterPages, getPopular, getRecent, getPopularByScore, browse, rateManga, getRelated, trackSearch };
