@@ -35,7 +35,7 @@ export function VerticalReader({ pages, chapterId, mangaId, prevChapter, nextCha
     return () => observer.disconnect();
   }, [pages]);
 
-  // Save progress on page change
+  // Save progress on page change (Optimized: only sync every 10 pages to save requests)
   useEffect(() => {
     if (!chapterId || !mangaId || currentPage === 0) return;
     
@@ -45,9 +45,13 @@ export function VerticalReader({ pages, chapterId, mangaId, prevChapter, nextCha
     if (isIncognito) return;
 
     const isRead = currentPage === pages.length - 1;
-    progressApi.set(mangaId, chapterId, currentPage, isRead).catch(() => {});
-    historyApi.add(mangaId, chapterId, currentPage).catch(() => {});
-  }, [currentPage]);
+    const shouldSync = isRead || currentPage % 10 === 0;
+
+    if (shouldSync) {
+      progressApi.set(mangaId, chapterId, currentPage, isRead).catch(() => {});
+      historyApi.add(mangaId, chapterId, currentPage).catch(() => {});
+    }
+  }, [currentPage, pages.length]);
 
   return (
     <div className="reader-wrapper">
@@ -139,9 +143,13 @@ export function PagedReader({ pages, chapterId, mangaId, prevChapter, nextChapte
     if (isIncognito) return;
 
     const isRead = current === pages.length - 1;
-    progressApi.set(mangaId, chapterId, current, isRead).catch(() => {});
-    historyApi.add(mangaId, chapterId, current).catch(() => {});
-  }, [current]);
+    const shouldSync = isRead || current % 10 === 0;
+
+    if (shouldSync) {
+      progressApi.set(mangaId, chapterId, current, isRead).catch(() => {});
+      historyApi.add(mangaId, chapterId, current).catch(() => {});
+    }
+  }, [current, pages.length]);
 
   // Keyboard navigation
   useEffect(() => {
