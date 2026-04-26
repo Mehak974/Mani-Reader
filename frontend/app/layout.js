@@ -3,6 +3,7 @@ import ClientProviders from '../components/ClientProviders';
 import '../styles/globals.css';
 
 export const metadata = {
+  metadataBase: new URL('https://manireader.online'),
   title: 'Mani Reader — Discover Your Next Hidden Gem',
   description: 'Mani Reader — Your premium manga sanctuary with libraries, bookmarks, and offline gems.',
 };
