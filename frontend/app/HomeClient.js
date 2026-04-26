@@ -47,27 +47,33 @@ export default function HomeClient() {
 
   // 🛡️ Content Shield: Filters out NSFW/Restricted tags from the Home Page
   const filterManga = (mangaList) => {
-    // Expanded Blacklist for "Nuclear" safety
     const BLACKLIST = [
       '18+', 'Adult', 'Smut', 'Erotica', 'Sexual violence', 'Harem', 'Yaoi', 'Yuri', 
       'Incest', 'Gore', 'Mature', 'Sexual Violence', 'Ecchi'
     ];
+    // 👃 Keyword Sniffer: Catch hidden bad stuff in descriptions
+    const BAD_WORDS = ['sexual', 'unfiltered', 'uncensored', 'erotic', 'smut', 'porn'];
+    
     return mangaList.filter(m => {
       const genres = m.genres || [];
       const tagNames = genres.map(g => (typeof g === 'string' ? g : g.name || '').toLowerCase());
-      const hasBlacklisted = tagNames.some(tag => BLACKLIST.map(b => b.toLowerCase()).includes(tag));
-      return !hasBlacklisted && !m.nsfw;
+      const desc = (m.description || '').toLowerCase();
+      
+      const hasBlacklistedTag = tagNames.some(tag => BLACKLIST.map(b => b.toLowerCase()).includes(tag));
+      const hasBadWord = BAD_WORDS.some(word => desc.includes(word));
+      
+      return !hasBlacklistedTag && !hasBadWord && !m.nsfw;
     });
   };
 
   useEffect(() => {
     setUpdatesLoading(true);
-    // 🚀 Cache Buster: Adding timestamp to force fresh scrape
     mangaApi.popular(1, { params: { _t: Date.now() } })
       .then((r) => {
         const data = r?.data || r || {};
         const results = Array.isArray(data) ? data : (data.results || []);
-        setPopularUpdates(filterManga(results).slice(0, 20));
+        // 🔥 Apply the shield to Popular Section
+        setPopularUpdates(filterManga(results).slice(0, 24));
       })
       .catch((err) => {
         console.error('Popular Manga fetch error:', err);
