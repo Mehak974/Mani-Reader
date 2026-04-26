@@ -158,96 +158,106 @@ export default function MangaDetailClient({ id, initialManga }) {
     <div className="page-wrapper">
       <Navbar />
       <div className="container">
-        {/* Header */}
-        <div className="manga-detail-header">
-          <div className="manga-detail-cover">
-            <img src={coverUrl} alt={manga?.title} onError={(e) => { e.target.src = '/placeholder-cover.jpg'; }} />
-          </div>
-          <div className="manga-detail-meta">
-            <h1 className="glow-text" style={{ fontSize: '2.5rem' }}>{manga?.title}</h1>
-            {manga?.status && (
-              <div className="manga-detail-status" style={{ border: '1px solid var(--border)', background: 'var(--surface-3)' }}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: manga.status === 'Ongoing' ? 'var(--green)' : 'var(--text-3)', display: 'inline-block', boxShadow: manga.status === 'Ongoing' ? '0 0 10px var(--green)' : 'none' }} />
-                {manga.status}
-              </div>
-            )}
+        {/* Header - Mobile Responsive */}
+        <div className="manga-detail-header" style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '24px',
+          padding: '20px 0'
+        }}>
+          {/* Main Content Area: Image + Text */}
+          <div style={{
+            display: 'flex',
+            flexDirection: 'var(--detail-flex-direction, row)',
+            gap: '32px',
+            alignItems: 'flex-start'
+          }}>
+            <style jsx>{`
+              @media (max-width: 768px) {
+                .manga-detail-header { --detail-flex-direction: column; }
+                .manga-detail-cover { margin: 0 auto; width: 100%; max-width: 220px; }
+                .manga-detail-meta { text-align: center; width: 100%; }
+                .manga-detail-actions { flex-direction: column; width: 100%; }
+                .manga-detail-actions button, .manga-detail-actions a { width: 100%; }
+                .genre-tags { justify-content: center; }
+                h1 { font-size: 1.8rem !important; }
+              }
+            `}</style>
 
-            {readCount > 0 && (
-              <div style={{ marginBottom: 16, color: 'var(--text-3)', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span className="material-icons" style={{ fontSize: '1.2rem', color: 'var(--accent)' }}>auto_stories</span>
-                <span>{readCount} / {chapters.length} chapters read</span>
-                {lastRead && chapters.find(c => c.id === lastRead.chapterId) && (
-                  <span style={{ opacity: 0.6 }}> · Last: Ch. {chapters.find(c => c.id === lastRead.chapterId)?.number}</span>
+            <div className="manga-detail-cover">
+              <img src={coverUrl} alt={manga?.title} onError={(e) => { e.target.src = '/placeholder-cover.jpg'; }} />
+            </div>
+
+            <div className="manga-detail-meta">
+              <h1 className="glow-text" style={{ fontSize: '2.5rem', marginBottom: '12px' }}>{manga?.title}</h1>
+              
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '20px', justifyContent: 'inherit' }}>
+                {manga?.status && (
+                  <div className="manga-detail-status" style={{ border: '1px solid var(--border)', background: 'var(--surface-3)', fontSize: '0.8rem' }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: manga.status === 'Ongoing' ? 'var(--green)' : 'var(--text-3)', display: 'inline-block', boxShadow: manga.status === 'Ongoing' ? '0 0 10px var(--green)' : 'none' }} />
+                    {manga.status}
+                  </div>
+                )}
+                {manga?.averageRating && (
+                  <div style={{ background: 'rgba(251, 191, 36, 0.1)', border: '1px solid rgba(251, 191, 36, 0.3)', padding: '4px 12px', borderRadius: '8px', fontSize: '0.8rem', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span className="material-icons" style={{ fontSize: '1rem' }}>star</span>
+                    <span style={{ fontWeight: 700 }}>{manga.averageRating}</span>
+                  </div>
                 )}
               </div>
-            )}
 
-            <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-2)' }}>Rate Manga...</span>
-                <RatingStars rating={manga?.userRating || 0} onRate={handleRate} />
+              {readCount > 0 && (
+                <div style={{ marginBottom: 20, color: 'var(--text-3)', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'inherit' }}>
+                  <span className="material-icons" style={{ fontSize: '1.2rem', color: 'var(--accent)' }}>auto_stories</span>
+                  <span>{readCount} / {chapters.length} chapters read</span>
+                </div>
+              )}
+
+              {manga?.description && (
+                <p className="manga-detail-desc" style={{ fontSize: '0.95rem', opacity: 0.9, lineHeight: 1.6, marginBottom: '24px' }}>{manga.description}</p>
+              )}
+
+              <div className="manga-detail-actions" style={{ display: 'flex', gap: 12, marginTop: 16 }}>
+                {chapters.length > 0 && (
+                  <a
+                    href={`/read/${lastRead ? chapters.find(c => c.id === lastRead.chapterId)?.id || chapters[0]?.id : chapters[0]?.id}?mangaId=${id}`}
+                  >
+                    <button 
+                      className="btn btn-amethyst" 
+                      style={{ padding: '14px 32px', fontSize: '1rem', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                    >
+                      <span className="material-icons">play_circle_filled</span>
+                      Start Reading
+                    </button>
+                  </a>
+                )}
+                {user && (
+                  <button className="btn btn-ghost" style={{ border: '1px solid var(--border)', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} onClick={() => setLibModal(true)}>
+                    <span className="material-icons">add_box</span>
+                    Add to Collection
+                  </button>
+                )}
               </div>
-              {manga?.averageRating && (
-                <div style={{ fontSize: '0.85rem', color: 'var(--text-3)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <span className="material-icons" style={{ fontSize: '1.1rem', color: '#fbbf24' }}>star</span>
-                  <span style={{ fontWeight: 700, color: 'var(--text)' }}>{manga.averageRating}</span> Avg
+
+              {manga?.genres?.length > 0 && (
+                <div className="genre-tags" style={{ marginTop: 32, display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                  {manga.genres.map((g, i) => (
+                    <span key={i} className="genre-tag" style={{ 
+                      background: 'var(--surface-2)', 
+                      border: '1px solid var(--border)', 
+                      color: 'var(--text-2)', 
+                      padding: '6px 14px', 
+                      borderRadius: 99, 
+                      fontSize: '0.7rem',
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                    }}>
+                      {typeof g === 'string' ? g : g.name || g.title}
+                    </span>
+                  ))}
                 </div>
               )}
             </div>
-
-            {user && user.role === 'ADMIN' && (
-              <div style={{ marginBottom: 16, padding: '6px 12px', background: 'rgba(255,165,0,0.1)', border: '1px solid rgba(255,165,0,0.3)', borderRadius: 8, display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: '0.75rem', color: 'orange', fontWeight: 700 }}>
-                <span className="material-icons" style={{ fontSize: '1rem' }}>admin_panel_settings</span>
-                Admin View: Total Reads System-Wide: {manga?.readCount || 0}
-              </div>
-            )}
-
-            {manga?.description && (
-              <p className="manga-detail-desc" style={{ fontSize: '0.95rem', opacity: 0.9 }}>{manga.description}</p>
-            )}
-
-            <div className="manga-detail-actions" style={{ marginTop: 16 }}>
-              {chapters.length > 0 && (
-                <a
-                  href={`/read/${lastRead ? chapters.find(c => c.id === lastRead.chapterId)?.id || chapters[0]?.id : chapters[0]?.id}?mangaId=${id}`}
-                  style={{ display: 'inline-block' }}
-                >
-                  <button
-                    className="btn btn-amethyst"
-                    style={{ padding: '14px 40px', fontSize: '1.1rem', borderRadius: '12px' }}
-                  >
-                    <span className="material-icons" style={{ fontSize: '1.2rem', marginRight: 8 }}>play_circle_filled</span>
-                    Start Reading
-                  </button>
-                </a>
-              )}
-              {user && (
-                <button className="btn btn-ghost" style={{ border: '1px solid var(--border)', padding: '14px 24px' }} onClick={() => setLibModal(true)}>
-                  <span className="material-icons" style={{ fontSize: '1.2rem', marginRight: 4 }}>add_box</span>
-                  Add to Collection
-                </button>
-              )}
-            </div>
-
-            {manga?.genres?.length > 0 && (
-              <div className="genre-tags" style={{ marginTop: 32, display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-                {manga.genres.map((g, i) => (
-                  <span key={i} className="genre-tag" style={{
-                    background: 'var(--surface-2)',
-                    border: '1px solid var(--border)',
-                    color: 'var(--text-2)',
-                    padding: '6px 16px',
-                    borderRadius: 99,
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.03em',
-                  }}>
-                    {typeof g === 'string' ? g : g.name || g.title || JSON.stringify(g)}
-                  </span>
-                ))}
-              </div>
-            )}
           </div>
         </div>
 

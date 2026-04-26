@@ -83,7 +83,23 @@ function BrowseContent() {
       qs.set('page', p);
 
       const { data } = await mangaApi.browseRaw(qs.toString());
-      setResults(data.results || []);
+      const rawResults = data.results || [];
+
+      // 🛡️ Safe-Gate Shield: Hide restricted content unless specifically requested
+      const BLACKLIST = [
+        '18+', 'Adult', 'Smut', 'Erotica', 'Sexual violence', 'Harem', 'Yaoi', 'Yuri', 
+        'Incest', 'Gore', 'Mature', 'Sexual Violence', 'Ecchi'
+      ];
+      
+      const isUnlocking = include.some(tag => BLACKLIST.map(b => b.toLowerCase()).includes(tag.toLowerCase()));
+
+      const filtered = isUnlocking ? rawResults : rawResults.filter(m => {
+        const genres = m.genres || [];
+        const tagNames = genres.map(g => (typeof g === 'string' ? g : g.name || '').toLowerCase());
+        return !tagNames.some(tag => BLACKLIST.map(b => b.toLowerCase()).includes(tag)) && !m.nsfw;
+      });
+
+      setResults(filtered);
       setTotalPages(data.totalPages || 1);
       setTotalResults(data.totalResults || 0);
       setPage(p);
