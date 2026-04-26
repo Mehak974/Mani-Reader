@@ -10,8 +10,17 @@ const prisma = require('../lib/prisma');
 const ingestion = require('./ingestionLayer');
 const { normalize } = require('./normalization');
 const cache = require('./cacheLayer');
+const config = require('../config/env');
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+/**
+ * 🛡️ Bandwidth Shield: Transforms any image URL to use the Cloudflare Worker proxy
+ */
+function imageShield(url) {
+  if (!url || !config.imageProxyUrl || url.includes(config.imageProxyUrl)) return url;
+  return `${config.imageProxyUrl}?url=${encodeURIComponent(url)}`;
+}
 
 async function applyContentFilters(results, userId = null) {
   if (!results || results.length === 0) return [];
@@ -53,7 +62,7 @@ function mapManga(raw) {
   return {
     id: raw.id,
     title: raw.title || 'Unknown Title',
-    cover: raw.image || raw.cover || null,
+    cover: imageShield(raw.image || raw.cover || null),
     description: raw.description || null,
     status: raw.status || null,
     genres: Array.isArray(raw.genres) ? raw.genres : [],
@@ -205,8 +214,8 @@ async function getChapterPages(chapterId, mangaId) {
 
     // Consumet returns array of { img } or { page, img } objects
     const pages = Array.isArray(data)
-      ? data.map((p) => p.img || p.page || p)
-      : data.images || data.pages || [];
+      ? data.map((p) => imageShield(p.img || p.page || p))
+      : (data.images || data.pages || []).map(p => imageShield(p));
 
     return { pages, externalUrl: externalUrl || null };
   });
