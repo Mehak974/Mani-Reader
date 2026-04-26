@@ -24,7 +24,7 @@ module.exports = {
 
   consumet: {
     url: process.env.CONSUMET_URL || 'http://localhost:3000',
-    primary: process.env.CONSUMET_PRIMARY_PROVIDER || 'mangadex',
+    primary: process.env.CONSUMET_PRIMARY_PROVIDER || 'mangakatana',
     fallback: process.env.CONSUMET_FALLBACK_PROVIDER || 'mangakakalot',
   },
 
