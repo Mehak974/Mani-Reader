@@ -35,23 +35,30 @@ export function VerticalReader({ pages, chapterId, mangaId, prevChapter, nextCha
     return () => observer.disconnect();
   }, [pages]);
 
-  // Save progress on page change (Optimized: only sync every 10 pages to save requests)
+  // 👻 Ghost Mode: Buffer progress in local memory, sync once at the end
   useEffect(() => {
     if (!chapterId || !mangaId || currentPage === 0) return;
     
-    // Check incognito mode
-    let isIncognito = false;
-    try { isIncognito = localStorage.getItem('mv_incognito') === 'true'; } catch {}
-    if (isIncognito) return;
+    // Save to LocalStorage instantly (0 requests)
+    try {
+      localStorage.setItem(`mv_progress_${mangaId}`, JSON.stringify({ chapterId, page: currentPage }));
+    } catch {}
 
     const isRead = currentPage === pages.length - 1;
-    const shouldSync = isRead || currentPage % 10 === 0;
-
-    if (shouldSync) {
-      progressApi.set(mangaId, chapterId, currentPage, isRead).catch(() => {});
+    
+    // Only call the server if they actually FINISH the chapter
+    if (isRead) {
+      progressApi.set(mangaId, chapterId, currentPage, true).catch(() => {});
       historyApi.add(mangaId, chapterId, currentPage).catch(() => {});
     }
-  }, [currentPage, pages.length]);
+
+    // Optional: Sync to server when they leave the reader
+    return () => {
+      if (currentPage > 0) {
+        progressApi.set(mangaId, chapterId, currentPage, isRead).catch(() => {});
+      }
+    };
+  }, [currentPage, chapterId, mangaId, pages.length]);
 
   return (
     <div className="reader-wrapper">
@@ -134,22 +141,30 @@ export function PagedReader({ pages, chapterId, mangaId, prevChapter, nextChapte
 
   const chNum = currentChapter?.chapterNumber || currentChapter?.number || '';
 
+  // 👻 Ghost Mode: Buffer progress in local memory, sync once at the end
   useEffect(() => {
     if (!chapterId || !mangaId) return;
 
-    // Check incognito mode
-    let isIncognito = false;
-    try { isIncognito = localStorage.getItem('mv_incognito') === 'true'; } catch {}
-    if (isIncognito) return;
+    // Save to LocalStorage instantly (0 requests)
+    try {
+      localStorage.setItem(`mv_progress_${mangaId}`, JSON.stringify({ chapterId, page: current }));
+    } catch {}
 
     const isRead = current === pages.length - 1;
-    const shouldSync = isRead || current % 10 === 0;
-
-    if (shouldSync) {
-      progressApi.set(mangaId, chapterId, current, isRead).catch(() => {});
+    
+    // Only call the server if they actually FINISH the chapter
+    if (isRead) {
+      progressApi.set(mangaId, chapterId, current, true).catch(() => {});
       historyApi.add(mangaId, chapterId, current).catch(() => {});
     }
-  }, [current, pages.length]);
+
+    // Optional: Sync to server when they leave the reader
+    return () => {
+      if (current > 0) {
+        progressApi.set(mangaId, chapterId, current, isRead).catch(() => {});
+      }
+    };
+  }, [current, chapterId, mangaId, pages.length]);
 
   // Keyboard navigation
   useEffect(() => {
