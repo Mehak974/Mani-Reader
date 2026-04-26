@@ -167,12 +167,16 @@ export default function MangaDetailClient({ id, initialManga }) {
               gap: 40px;
               padding: 40px 0;
             }
+            .manga-header-row {
+              display: contents; /* Keeps image and meta as direct grid children on desktop */
+            }
             .manga-detail-cover img {
               width: 100%;
               height: auto;
               border-radius: 18px;
               box-shadow: 0 20px 40px rgba(0,0,0,0.4);
               border: 1px solid var(--border);
+              display: block;
             }
             .manga-detail-meta {
               display: flex;
@@ -189,13 +193,13 @@ export default function MangaDetailClient({ id, initialManga }) {
             @media (max-width: 768px) {
               .manga-detail-container {
                 grid-template-columns: 1fr; /* Stack main lines */
-                gap: 20px;
+                gap: 24px;
                 padding: 20px 0;
               }
               
               /* Line 1: Side-by-side Image and Title */
               .manga-header-row {
-                display: grid;
+                display: grid !important; /* Force visibility on mobile */
                 grid-template-columns: 120px 1fr;
                 gap: 16px;
                 align-items: center;
@@ -227,7 +231,7 @@ export default function MangaDetailClient({ id, initialManga }) {
           `}</style>
 
           {/* Line 1: Header Row (Side-by-side on Mobile) */}
-          <div className="manga-header-row" style={{ display: 'contents' }}>
+          <div className="manga-header-row">
             <div className="manga-detail-cover">
               <img src={coverUrl} alt={manga?.title} onError={(e) => { e.target.src = '/placeholder-cover.jpg'; }} />
             </div>
