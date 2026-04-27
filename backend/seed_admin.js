@@ -3,8 +3,8 @@ const bcrypt = require('bcryptjs');
 const prisma = new PrismaClient(); 
 
 async function run() { 
-  const hashed = await bcrypt.hash('admin123', 12); 
-  const email = 'admin@admin.com';
+  const email = 'admin@manireader.com';
+  const hashed = await bcrypt.hash('admin12345', 12); 
   const existing = await prisma.user.findUnique({where: {email}});
   if(existing) {
     await prisma.user.update({where: {email}, data: {password: hashed, role: 'ADMIN'}});
