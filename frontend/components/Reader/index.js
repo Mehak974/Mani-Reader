@@ -37,18 +37,23 @@ export function VerticalReader({ pages, chapterId, mangaId, prevChapter, nextCha
 
   // 👻 Ghost Mode: Buffer progress in local memory, sync once at the end
   useEffect(() => {
-    if (!chapterId || !mangaId || currentPage === 0) return;
+    if (!chapterId || !mangaId) return;
     try {
       localStorage.setItem(`mv_progress_${mangaId}`, JSON.stringify({ chapterId, page: currentPage }));
     } catch {}
+
     const isRead = currentPage === pages.length - 1;
-    if (isRead) {
+    
+    // If finished chapter, sync immediately for instant feedback
+    if (isRead && currentPage > 0) {
       progressApi.set(mangaId, chapterId, currentPage, true).catch(() => {});
       historyApi.add(mangaId, chapterId, currentPage).catch(() => {});
     }
+
     return () => {
-      if (currentPage > 0) {
-        progressApi.set(mangaId, chapterId, currentPage, isRead).catch(() => {});
+      // Sync last known position when leaving, but only if it's NOT the last page (already synced)
+      if (currentPage > 0 && currentPage < pages.length - 1) {
+        progressApi.set(mangaId, chapterId, currentPage, false).catch(() => {});
       }
     };
   }, [currentPage, chapterId, mangaId, pages.length]);
@@ -192,14 +197,17 @@ export function PagedReader({ pages, chapterId, mangaId, prevChapter, nextChapte
     try {
       localStorage.setItem(`mv_progress_${mangaId}`, JSON.stringify({ chapterId, page: current }));
     } catch {}
+
     const isRead = current === pages.length - 1;
-    if (isRead) {
+    
+    if (isRead && current > 0) {
       progressApi.set(mangaId, chapterId, current, true).catch(() => {});
       historyApi.add(mangaId, chapterId, current).catch(() => {});
     }
+
     return () => {
-      if (current > 0) {
-        progressApi.set(mangaId, chapterId, current, isRead).catch(() => {});
+      if (current > 0 && current < pages.length - 1) {
+        progressApi.set(mangaId, chapterId, current, false).catch(() => {});
       }
     };
   }, [current, chapterId, mangaId, pages.length]);

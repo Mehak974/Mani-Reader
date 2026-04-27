@@ -40,18 +40,19 @@ module.exports = async (req, res, next) => {
          create: { mangaId: 'SITE_WIDE', guestId }
        }).catch(() => {});
 
-       // Track unique Guest User globally
-       prisma.guestUser.upsert({
-         where: { ip_deviceId: { ip, deviceId } },
-         update: { lastActive: new Date(), userAgent: req.headers['user-agent'] },
-         create: { ip, deviceId, userAgent: req.headers['user-agent'] }
-       }).then((guest) => {
-         // If it was just created (approx), track as new guest
-         const isJustCreated = (new Date() - new Date(guest.createdAt)) < 5000;
-         if (isJustCreated) {
-            analyticsService.trackNewGuest().catch(() => {});
-         }
-       }).catch(() => {});
+       // Track unique Guest User globally (Priority: DeviceID)
+       if (deviceId) {
+         prisma.guestUser.upsert({
+           where: { deviceId },
+           update: { lastActive: new Date(), ip, userAgent: req.headers['user-agent'] },
+           create: { deviceId, ip, userAgent: req.headers['user-agent'] }
+         }).then((guest) => {
+           const isJustCreated = (new Date() - new Date(guest.createdAt)) < 5000;
+           if (isJustCreated) {
+              analyticsService.trackNewGuest().catch(() => {});
+           }
+         }).catch(() => {});
+       }
     }
   }
 

@@ -283,12 +283,21 @@ model GuestActivity {
 
 model GuestUser {
   id        String   @id @default(uuid())
-  ip        String
-  deviceId  String?
+  ip        String?
+  deviceId  String   @unique
   userAgent String?
   lastActive DateTime @default(now())
   createdAt DateTime @default(now())
 
-  @@unique([ip, deviceId])
   @@map("guest_users")
+}
+
+model GuestChapterRead {
+  id        String   @id @default(uuid())
+  chapterId String
+  guestId   String   // DeviceID or IP
+  createdAt DateTime @default(now())
+
+  @@unique([chapterId, guestId])
+  @@map("guest_chapter_reads")
 }

@@ -163,16 +163,34 @@ async function updatePopularity(mangaId, userId, guestId = null) {
 }
 
 async function upsertProgress(userId, mangaId, chapterId, page, isRead = false, guestId = null) {
+  let isNewRead = false;
+  
   if (!userId) {
-    // Guest read: skip progress saving but update popularity if it's a "read" event
-    if (isRead) {
-      await prisma.manga.update({
-        where: { id: mangaId },
-        data: { readCount: { increment: 1 } }
-      }).catch(() => {});
-      await updatePopularity(mangaId, null, guestId);
+    // Guest read: skip progress saving but update popularity if it's a NEW "read" event
+    if (isRead && guestId) {
+      try {
+        await prisma.guestChapterRead.create({
+          data: { chapterId, guestId }
+        });
+        isNewRead = true;
+
+        await prisma.manga.update({
+          where: { id: mangaId },
+          data: { readCount: { increment: 1 } }
+        }).catch(() => {});
+        
+        await updatePopularity(mangaId, null, guestId);
+        
+        const analyticsService = require('./analyticsService');
+        analyticsService.trackChapterRead(true).catch(() => {});
+      } catch (err) {
+        // P2002 is unique constraint violation (already read this chapter)
+        if (err.code !== 'P2002') {
+          console.error('[Progress] Guest read tracking failed:', err.message);
+        }
+      }
     }
-    return { guest: true, isRead };
+    return { guest: true, isRead, isNewRead };
   }
 
   const existing = await prisma.progress.findUnique({
@@ -189,6 +207,7 @@ async function upsertProgress(userId, mangaId, chapterId, page, isRead = false, 
 
   // If newly marked as read
   if (isRead && !wasAlreadyRead) {
+    isNewRead = true;
     await prisma.manga.update({
       where: { id: mangaId },
       data: { readCount: { increment: 1 } }
@@ -196,9 +215,12 @@ async function upsertProgress(userId, mangaId, chapterId, page, isRead = false, 
 
     // Update the new Popularity entity
     await updatePopularity(mangaId, userId);
+
+    const analyticsService = require('./analyticsService');
+    analyticsService.trackChapterRead(false).catch(() => {});
   }
 
-  return result;
+  return { ...result, isNewRead };
 }
 
 async function getProgressForManga(userId, mangaId) {

@@ -23,12 +23,6 @@ router.post('/', optionalAuth, validate(schemas.progress), async (req, res) => {
     const guestId = req.headers['x-device-id'] || req.ip || req.connection.remoteAddress;
     const prog = await userState.upsertProgress(userId, mangaId, chapterId, page, isRead, guestId);
     
-    // Analytics: Track chapter read
-    if (isRead) {
-      const analyticsService = require('../services/analyticsService');
-      analyticsService.trackChapterRead(!userId);
-    }
-
     res.status(201).json(prog);
   } catch (err) {
     res.status(err.status || 500).json({ error: err.message });
