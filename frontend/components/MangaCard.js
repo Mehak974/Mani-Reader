@@ -7,8 +7,11 @@ export default function MangaCard({ manga, showNsfw = false, priority = false })
 
   const isBlurred = manga.nsfw && !showNsfw;
   const rawCover = manga.image || manga.cover;
+  // 🏎️ Smart Proxy: Only wrap in local /api/image if it's an external HTTP link AND not already proxied
   const coverUrl = rawCover
-    ? `/api/image?url=${encodeURIComponent(rawCover)}`
+    ? (rawCover.startsWith('http') && !rawCover.includes('/api/image') 
+        ? `/api/image?url=${encodeURIComponent(rawCover)}` 
+        : rawCover)
     : '/placeholder-cover.jpg';
 
   // 🛡️ Premium UI Component

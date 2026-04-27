@@ -11,8 +11,11 @@ export default function RecentlyAddedCard({ manga }) {
 
   const apiBase = process.env.NEXT_PUBLIC_API_URL || 'https://api.manireader.online/api';
   const rawCover = manga.image || manga.cover;
+  // 🏎️ Smart Proxy: Only wrap in local /api/image if it's an external HTTP link AND not already proxied
   const coverUrl = rawCover
-    ? `/api/image?url=${encodeURIComponent(rawCover)}`
+    ? (rawCover.startsWith('http') && !rawCover.includes('/api/image') 
+        ? `/api/image?url=${encodeURIComponent(rawCover)}` 
+        : rawCover)
     : '/placeholder-cover.jpg';
 
   const description = manga.description || 'No description available.';
