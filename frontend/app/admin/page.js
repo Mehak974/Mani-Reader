@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthProvider, useAuth } from '../../lib/auth';
@@ -965,8 +965,6 @@ function AdminDashboardContent() {
       )}
 
       {toast && <div className={`toast toast-${toast.type}`}>{toast.msg}</div>}
-        </div>
-      </div>
     </div>
 
   );
