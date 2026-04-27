@@ -1230,3 +1230,29 @@ button {
     display: none; /* Hide source provider name on small mobile */
   }
 }
+
+/* ── Admin Dashboard Extra ─────────────────────────────────────────────────── */
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+
+@media (max-width: 1023px) {
+  .admin-sidebar {
+    width: 280px !important;
+  }
+  .mobile-only {
+    display: flex !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .admin-sidebar {
+    position: relative !important;
+    transform: none !important;
+  }
+  .mobile-only {
+    display: none !important;
+  }
+}

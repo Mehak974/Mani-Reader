@@ -334,7 +334,6 @@ function AdminDashboardContent() {
         position: 'fixed', top: 0, bottom: 0, left: 0, zIndex: 2000,
         transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
         transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        '@media (min-width: 1024px)': { position: 'relative', transform: 'translateX(0)' }
       }} className="admin-sidebar">
         <div style={{ padding: '24px', borderBottom: '1px solid #f1f5f9', marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -461,7 +460,7 @@ function AdminDashboardContent() {
                       LIVE
                     </div>
                   </div>
-                  <style jsx>{` @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } } `}</style>
+                  </div>
                 </div>
               </div>
 
@@ -968,41 +967,8 @@ function AdminDashboardContent() {
 
       {toast && <div className={`toast toast-${toast.type}`}>{toast.msg}</div>}
 
-      <style jsx>{`
-        @media (max-width: 1023px) {
-          .admin-sidebar {
-            width: 280px !important;
-          }
-          .mobile-only {
-            display: flex !important;
-          }
-          .dashboard-grid {
-            grid-template-columns: 1fr !important;
-          }
-        }
-        @media (min-width: 1024px) {
-          .admin-sidebar {
-            position: relative !important;
-            transform: none !important;
-          }
-          .mobile-only {
-            display: none !important;
-          }
-          .admin-layout {
-            padding-left: 0;
-          }
-          .dashboard-grid {
-            flex-direction: row !important;
-          }
-          .dashboard-grid > div:first-child {
-            flex: 1.6;
-          }
-          .dashboard-grid > div:last-child {
-            flex: 1;
-          }
-        }
-      `}</style>
     </div>
+
   );
 }
 
