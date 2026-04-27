@@ -127,6 +127,22 @@ export function VerticalReader({ pages, chapterId, mangaId, prevChapter, nextCha
 
         <div className="reader-controls" style={{ display: 'flex', gap: '8px' }}>
           <button 
+            className="btn btn-ghost btn-sm"
+            style={{ color: 'var(--text-3)' }}
+            title="Bookmark this page"
+            onClick={async (e) => {
+              e.stopPropagation();
+              try {
+                await bookmarkApi.set(mangaId, chapterId, currentPage);
+                alert('Position bookmarked! 🔖');
+              } catch {
+                alert('Login to bookmark chapters');
+              }
+            }}
+          >
+            <span className="material-icons" style={{ fontSize: '1.2rem' }}>bookmark_add</span>
+          </button>
+          <button 
             className="btn btn-ghost btn-sm" 
             onClick={(e) => { e.stopPropagation(); prevChapter && router.push(`/read/${prevChapter}?mangaId=${mangaId}`); }}
             disabled={!prevChapter}
@@ -260,6 +276,22 @@ export function PagedReader({ pages, chapterId, mangaId, prevChapter, nextChapte
         </div>
 
         <div className="reader-controls" style={{ display: 'flex', gap: '8px' }}>
+          <button 
+            className="btn btn-ghost btn-sm"
+            style={{ color: 'var(--text-3)' }}
+            title="Bookmark this page"
+            onClick={async (e) => {
+              e.stopPropagation();
+              try {
+                await bookmarkApi.set(mangaId, chapterId, current);
+                alert('Position bookmarked! 🔖');
+              } catch {
+                alert('Login to bookmark chapters');
+              }
+            }}
+          >
+            <span className="material-icons" style={{ fontSize: '1.2rem' }}>bookmark_add</span>
+          </button>
           <button 
             className="btn btn-ghost btn-sm" 
             onClick={(e) => { e.stopPropagation(); prevChapter && router.push(`/read/${prevChapter}?mangaId=${mangaId}`); }}
