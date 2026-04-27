@@ -30,6 +30,31 @@ router.get('/graph-data', async (req, res) => {
 // GET /api/admin/stats
 router.get('/stats', async (req, res) => {
   try {
+    // 🧹 Auto-deduplicate GuestUser table (Fix for previous IP+DeviceID tracking)
+    try {
+      const allGuests = await prisma.guestUser.findMany();
+      const deviceMap = {};
+      const toDelete = [];
+      
+      for (const guest of allGuests) {
+        if (!guest.deviceId) continue;
+        if (deviceMap[guest.deviceId]) {
+          toDelete.push(guest.id);
+        } else {
+          deviceMap[guest.deviceId] = guest.id;
+        }
+      }
+      
+      if (toDelete.length > 0) {
+        await prisma.guestUser.deleteMany({
+          where: { id: { in: toDelete } }
+        });
+        console.log(`[Admin] Cleaned up ${toDelete.length} duplicate guest records.`);
+      }
+    } catch (cleanErr) {
+      console.error('[Admin] Guest cleanup failed:', cleanErr.message);
+    }
+
     const totalUsers = await prisma.user.count();
     const totalLibraries = await prisma.library.count();
     const totalReadCounts = await prisma.manga.aggregate({

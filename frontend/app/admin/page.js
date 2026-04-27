@@ -703,7 +703,7 @@ function AdminDashboardContent() {
               <div style={{ padding: '24px 32px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <h2 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#0f172a' }}>Unique Guest Users</h2>
-                  <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: 4 }}>Tracked by IP and Device ID to prevent double counting.</p>
+                  <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: 4 }}>Tracked by unique Device ID to prevent double counting (Carrier NAT IPs merged).</p>
                 </div>
                 <div style={{ padding: '8px 16px', background: '#fef3c7', color: '#92400e', borderRadius: 12, fontSize: '0.8rem', fontWeight: 800 }}>
                   {guestUsers.length} UNIQUE GUESTS
