@@ -27,11 +27,7 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  useEffect(() => {
-    if (user && user.role === 'ADMIN' && !pathname.startsWith('/admin')) {
-      router.push('/admin');
-    }
-  }, [user, pathname, router]);
+
 
   const links = [
     { href: '/', label: 'Home' },

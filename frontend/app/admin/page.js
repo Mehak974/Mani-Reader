@@ -513,12 +513,12 @@ function AdminDashboardContent() {
                     Performance Deep Dive (Today)
                  </h3>
                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20, marginBottom: 32 }}>
-                    <MetricCard label="New Users" value={analytics?.today.newUsers || 0} trend="up" icon="person_add" color="#6366f1" />
-                    <MetricCard label="Chapters Read" value={analytics?.today.chaptersRead || 0} trend="up" icon="menu_book" color="#10b981" />
-                    <MetricCard label="Ads Watched" value={analytics?.today.adsWatched || 0} trend="up" icon="ads_click" color="#f59e0b" />
-                    <MetricCard label="Monthly Revenue" value={`$${analytics?.month.revenue || '0.00'}`} trend="up" icon="payments" color="#ec4899" />
-                    <MetricCard label="Traffic (Pages)" value={analytics?.today.traffic || 0} trend="up" icon="trending_up" color="#06b6d4" />
-                    <MetricCard label="Time Spent" value={formatTime(analytics?.today.timeSpent || 0)} trend="up" icon="timer" color="#8b5cf6" />
+                    <MetricCard label="New Users" value={analytics?.today?.newUsers || 0} trend="up" icon="person_add" color="#6366f1" />
+                    <MetricCard label="Chapters Read" value={analytics?.today?.chaptersRead || 0} trend="up" icon="menu_book" color="#10b981" />
+                    <MetricCard label="Ads Watched" value={analytics?.today?.adsWatched || 0} trend="up" icon="ads_click" color="#f59e0b" />
+                    <MetricCard label="Monthly Revenue" value={`$${analytics?.month?.revenue || '0.00'}`} trend="up" icon="payments" color="#ec4899" />
+                    <MetricCard label="Traffic (Pages)" value={analytics?.today?.traffic || 0} trend="up" icon="trending_up" color="#06b6d4" />
+                    <MetricCard label="Time Spent" value={formatTime(analytics?.today?.timeSpent || 0)} trend="up" icon="timer" color="#8b5cf6" />
                  </div>
               </div>
 
