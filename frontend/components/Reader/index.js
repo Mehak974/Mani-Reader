@@ -43,10 +43,10 @@ export function VerticalReader({ pages, chapterId, mangaId, prevChapter, nextCha
       localStorage.setItem(`mv_progress_${mangaId}`, JSON.stringify({ chapterId, page: currentPage }));
     } catch {}
 
-    const isRead = currentPage === pages.length - 1;
+    // If 90% through or on the last page, mark as read
+    const isRead = currentPage >= pages.length - 2 || (pages.length > 0 && currentPage === pages.length - 1);
     
-    // If finished chapter, sync immediately for instant feedback
-    if (isRead && currentPage > 0) {
+    if (isRead) {
       progressApi.set(mangaId, chapterId, currentPage, true).catch(() => {});
       historyApi.add(mangaId, chapterId, currentPage).catch(() => {});
     }
@@ -219,9 +219,9 @@ export function PagedReader({ pages, chapterId, mangaId, prevChapter, nextChapte
       localStorage.setItem(`mv_progress_${mangaId}`, JSON.stringify({ chapterId, page: current }));
     } catch {}
 
-    const isRead = current === pages.length - 1;
+    const isRead = current >= pages.length - 2 || (pages.length > 0 && current === pages.length - 1);
     
-    if (isRead && current > 0) {
+    if (isRead) {
       progressApi.set(mangaId, chapterId, current, true).catch(() => {});
       historyApi.add(mangaId, chapterId, current).catch(() => {});
     }

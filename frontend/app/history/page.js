@@ -73,7 +73,7 @@ function HistoryContent() {
           <div style={{ textAlign: 'center', color: 'var(--text-3)', padding: '80px 0' }}>
             <div style={{ fontSize: '3rem', marginBottom: 16 }}>📖</div>
             <p>No reading history yet.</p>
-            <Link href="/search" className="btn btn-primary" style={{ display: 'inline-flex', marginTop: 20 }}>
+            <Link href="/browse" className="btn btn-primary" style={{ display: 'inline-flex', marginTop: 20 }}>
               Browse Manga →
             </Link>
           </div>

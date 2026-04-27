@@ -1,6 +1,7 @@
 'use strict';
 const router = require('express').Router();
 const userState = require('../services/userStateService');
+const auth = require('../middleware/auth');
 const { validate, schemas } = require('../middleware/validate');
 
 // Optional auth — pass userId if logged in
@@ -42,7 +43,7 @@ router.get('/', optionalAuth, async (req, res) => {
 });
 
 // DELETE /api/history — clear all history
-router.delete('/', async (req, res) => {
+router.delete('/', auth, async (req, res) => {
   try {
     await userState.clearHistory(req.user.userId);
     res.json({ message: 'History cleared' });
