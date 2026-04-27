@@ -120,7 +120,7 @@ export default function ChapterList({ chapters = [], mangaId, progress = [] }) {
           }
 
           return (
-            <div key={ch.id} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div key={ch.id} className="chapter-list-item-wrapper" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               {selectionMode && (
                 <input 
                   type="checkbox" 
@@ -137,7 +137,12 @@ export default function ChapterList({ chapters = [], mangaId, progress = [] }) {
                   background: bg,
                   color: textColor,
                   border: `1px solid ${borderColor}`,
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '12px 18px',
+                  borderRadius: '14px',
+                  textDecoration: 'none'
                 }}
               >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 80 }}>
@@ -151,44 +156,43 @@ export default function ChapterList({ chapters = [], mangaId, progress = [] }) {
                   whiteSpace: 'nowrap', 
                   opacity: isRead ? 0.6 : 1, 
                   paddingRight: 12,
-                  minWidth: 0 // Crucial for ellipsis in flexbox
+                  minWidth: 0
                 }}>
                   {ch.title || `Chapter ${ch.number}`}
                 </span>
-                <span className="chapter-sources" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ opacity: 0.6, fontSize: '0.75rem', fontWeight: 500 }}>
-                    {ch.sources?.[0] || 'Source'}
-                  </span>
-                  
-                  {/* Read/Unread Toggle */}
-                  <button
-                    onClick={(e) => handleToggleRead(e, ch.id, isRead)}
-                    style={{ background: 'none', color: isRead ? 'var(--green)' : 'var(--text-3)', padding: 4, display: 'flex', borderRadius: '50%', transition: 'var(--transition)' }}
-                    title={isRead ? 'Mark as Unread' : 'Mark as Read'}
-                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'none'}
-                  >
-                    <span className="material-icons" style={{ fontSize: '1.4rem' }}>
-                      {isRead ? 'check_circle' : 'radio_button_unchecked'}
-                    </span>
-                  </button>
-
-                  {/* Bookmark Icon */}
-                  <button 
-                    onClick={(e) => handleBookmark(e, ch.id)}
-                    style={{ 
-                      background: 'none', padding: 4, borderRadius: 6,
-                      color: 'var(--text-3)', transition: 'var(--transition)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center'
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
-                    onMouseLeave={e => e.currentTarget.style.color = 'var(--text-3)'}
-                    title="Bookmark Chapter"
-                  >
-                    <span className="material-icons" style={{ fontSize: '1.2rem' }}>bookmark_border</span>
-                  </button>
+                <span style={{ opacity: 0.6, fontSize: '0.75rem', fontWeight: 500 }}>
+                  {ch.sources?.[0] || 'Source'}
                 </span>
               </Link>
+
+              <div className="chapter-actions" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                {/* Read/Unread Toggle */}
+                <button
+                  onClick={(e) => handleToggleRead(e, ch.id, isRead)}
+                  style={{ background: 'none', border: 'none', color: isRead ? 'var(--green)' : 'var(--text-3)', padding: 8, display: 'flex', borderRadius: '50%', transition: 'var(--transition)', cursor: 'pointer' }}
+                  title={isRead ? 'Mark as Unread' : 'Mark as Read'}
+                >
+                  <span className="material-icons" style={{ fontSize: '1.4rem' }}>
+                    {isRead ? 'check_circle' : 'radio_button_unchecked'}
+                  </span>
+                </button>
+
+                {/* Bookmark Icon */}
+                <button 
+                  onClick={(e) => handleBookmark(e, ch.id)}
+                  style={{ 
+                    background: 'none', border: 'none', padding: 8, borderRadius: 50,
+                    color: 'var(--text-3)', transition: 'var(--transition)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer'
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.color = 'var(--accent)'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-3)'; e.currentTarget.style.background = 'none'; }}
+                  title="Bookmark Chapter"
+                >
+                  <span className="material-icons" style={{ fontSize: '1.4rem' }}>bookmark_border</span>
+                </button>
+              </div>
             </div>
           );
         })}

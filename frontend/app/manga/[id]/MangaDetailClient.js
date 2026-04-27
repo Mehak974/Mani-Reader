@@ -320,29 +320,14 @@ export default function MangaDetailClient({ id, initialManga }) {
                 </a>
               </div>
             )}
-            <div className="collection-line" style={{ display: 'flex', gap: '8px', flex: 1 }}>
+            <div className="collection-line" style={{ flex: 1 }}>
               <button 
-                className="btn btn-ghost" 
-                style={{ flex: 1, border: '1px solid var(--border)', padding: '14px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} 
+                className="btn btn-ghost w-full" 
+                style={{ border: '1px solid var(--border)', padding: '14px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} 
                 onClick={() => user ? setLibModal(true) : showToast('Login to add to collection', 'error')}
               >
                 <span className="material-icons">add_box</span>
-                Collection
-              </button>
-              <button 
-                className="btn btn-ghost" 
-                style={{ flex: 1, border: '1px solid var(--border)', padding: '14px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} 
-                onClick={async () => {
-                  if (!user) return showToast('Login to bookmark', 'error');
-                  if (!chapters[0]) return showToast('No chapters available', 'error');
-                  try {
-                    await bookmarkApi.set(id, chapters[0].id, 0);
-                    showToast('Bookmarked! 🔖');
-                  } catch { showToast('Failed to bookmark', 'error'); }
-                }}
-              >
-                <span className="material-icons">bookmark_add</span>
-                Bookmark
+                Add to Collection
               </button>
             </div>
           </div>
