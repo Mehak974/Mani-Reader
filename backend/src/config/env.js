@@ -47,8 +47,8 @@ module.exports = {
   },
   
   google: {
-    clientId: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    clientId: process.env.GOOGLE_CLIENT_ID || null,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET || null,
     callbackUrl: process.env.GOOGLE_CALLBACK_URL || 'https://api.manireader.online/auth/google/callback',
   },
 };
