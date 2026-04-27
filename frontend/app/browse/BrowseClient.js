@@ -85,15 +85,17 @@ function BrowseContent() {
       const { data } = await mangaApi.browseRaw(qs.toString());
       const rawResults = data.results || [];
 
-      // 🛡️ Safe-Gate Shield: Hide restricted content unless specifically requested
+      // 🛡️ Safe-Gate Shield: Hide restricted content unless specifically requested or searched
       const BLACKLIST = [
         '18+', 'Adult', 'Smut', 'Erotica', 'Sexual violence', 'Harem', 'Yaoi', 'Yuri', 
         'Incest', 'Gore', 'Mature', 'Sexual Violence', 'Ecchi'
       ];
       
-      const isUnlocking = include.some(tag => BLACKLIST.map(b => b.toLowerCase()).includes(tag.toLowerCase()));
+      const hasRestrictedTag = include.some(tag => BLACKLIST.map(b => b.toLowerCase()).includes(tag.toLowerCase()));
+      // 🚀 UNLOCK: Bypass filter if there's an explicit search keyword OR a restricted tag is included
+      const shouldBypassFilter = !!keyword || hasRestrictedTag;
 
-      const filtered = isUnlocking ? rawResults : rawResults.filter(m => {
+      const filtered = shouldBypassFilter ? rawResults : rawResults.filter(m => {
         const genres = m.genres || [];
         const tagNames = genres.map(g => (typeof g === 'string' ? g : g.name || '').toLowerCase());
         return !tagNames.some(tag => BLACKLIST.map(b => b.toLowerCase()).includes(tag)) && !m.nsfw;
