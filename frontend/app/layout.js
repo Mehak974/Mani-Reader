@@ -9,8 +9,9 @@ export const metadata = {
   title: 'Mani Reader — Discover Your Next Hidden Gem',
   description: 'Mani Reader — Your premium manga sanctuary with libraries, bookmarks, and offline gems.',
   icons: {
-    icon: '/favicon.ico',
-    apple: '/apple-touch-icon.png',
+    icon: '/icon.png',
+    shortcut: '/icon.png',
+    apple: '/icon.png',
   },
 };
 
