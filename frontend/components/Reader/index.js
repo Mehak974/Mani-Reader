@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '../../lib/auth';
 import { progressApi, bookmarkApi, historyApi } from '../../lib/api';
 
 // ── Vertical Reader ────────────────────────────────────────────────────────────
@@ -135,8 +136,13 @@ export function VerticalReader({ pages, chapterId, mangaId, prevChapter, nextCha
               try {
                 await bookmarkApi.set(mangaId, chapterId, currentPage);
                 alert('Position bookmarked! 🔖');
-              } catch {
-                alert('Login to bookmark chapters');
+              } catch (err) {
+                const msg = err.response?.data?.error || err.message;
+                if (err.response?.status === 401) {
+                  alert('Please login to bookmark chapters');
+                } else {
+                  alert(`Failed to bookmark: ${msg}`);
+                }
               }
             }}
           >
@@ -285,8 +291,13 @@ export function PagedReader({ pages, chapterId, mangaId, prevChapter, nextChapte
               try {
                 await bookmarkApi.set(mangaId, chapterId, current);
                 alert('Position bookmarked! 🔖');
-              } catch {
-                alert('Login to bookmark chapters');
+              } catch (err) {
+                const msg = err.response?.data?.error || err.message;
+                if (err.response?.status === 401) {
+                  alert('Please login to bookmark chapters');
+                } else {
+                  alert(`Failed to bookmark: ${msg}`);
+                }
               }
             }}
           >
