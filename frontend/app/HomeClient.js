@@ -174,9 +174,9 @@ export default function HomeClient() {
 
             {updatesLoading ? <SkeletonCarousel count={12} /> : (
               <div style={{ display: 'flex', gap: '20px', overflowX: 'auto', paddingBottom: '20px', scrollSnapType: 'x mandatory' }}>
-                {popularUpdates.length > 0 ? popularUpdates.map((m) => (
+                {popularUpdates.length > 0 ? popularUpdates.map((m, index) => (
                   <div key={m.id} style={{ minWidth: '200px', scrollSnapAlign: 'start' }}>
-                    <MangaCard manga={m} />
+                    <MangaCard manga={m} priority={index < 4} />
                   </div>
                 )) : (
                   <div style={{ padding: '40px', textAlign: 'center', width: '100%', color: 'var(--text-3)' }}>

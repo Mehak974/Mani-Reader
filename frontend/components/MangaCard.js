@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 
-export default function MangaCard({ manga, showNsfw = false }) {
+export default function MangaCard({ manga, showNsfw = false, priority = false }) {
   if (!manga) return null;
 
   const isBlurred = manga.nsfw && !showNsfw;
@@ -36,6 +36,8 @@ export default function MangaCard({ manga, showNsfw = false }) {
           className={isBlurred ? 'blur-nsfw' : ''}
           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           unoptimized={coverUrl.includes('/api/image')} // Disable double optimization if already proxied
+          priority={priority}
+          sizes="(max-width: 768px) 150px, 220px"
           onError={(e) => { e.target.src = '/placeholder-cover.jpg'; }}
         />
         <div className="manga-card-overlay" />
