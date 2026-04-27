@@ -20,12 +20,20 @@ const REFERERS = {
 
 function getReferer(imageUrl) {
   if (!imageUrl) return REFERERS.default;
-  const url = imageUrl.toLowerCase();
-  if (url.includes('mangadex')) return REFERERS.mangadex;
-  if (url.includes('mangakakalot')) return REFERERS.mangakakalot;
-  if (url.includes('mangahere')) return REFERERS.mangahere;
-  if (url.includes('mangakatana')) return 'https://mangakatana.com/'; // Strict trailing slash
-  return REFERERS.default;
+  try {
+    const url = new URL(imageUrl);
+    const domain = url.hostname.replace('www.', '');
+    
+    if (domain.includes('mangadex')) return 'https://mangadex.org';
+    if (domain.includes('mangakatana')) return 'https://mangakatana.com/';
+    if (domain.includes('manganato')) return 'https://manganato.com';
+    if (domain.includes('mangakakalot')) return 'https://mangakakalot.com';
+    
+    // Default to the domain of the image itself (often works for WP sites/Imgur)
+    return `https://${domain}`;
+  } catch {
+    return REFERERS.default;
+  }
 }
 
 /**
@@ -46,9 +54,27 @@ async function proxyImage(imageUrl, res) {
     'mangahere.cc',
     'mangakatana.com',
     'manganato.com',
+    'chapmanganato.com',
+    'chapmanganato.to',
+    'manganato.to',
+    'manganato.tv',
+    'mangaclash.com',
+    'mangatigre.net',
+    'mangatigre.com',
+    'asuracomics.com',
+    'reaperscans.com',
+    'flamescans.org',
     'nhentai.net',
-    'image.tmdb.org', // For covers if needed
-    'placehold.co',    // For dev placeholders
+    'image.tmdb.org',
+    'placehold.co',
+    'cloudinary.com',
+    'wp.com', // Often used by Jetpack/WordPress manga sites
+    'imgur.com',
+    'blogspot.com',
+    'wp-manga.com',
+    'manga-swat.com',
+    'manhwa68.com',
+    'manhuas.net'
   ];
 
   const urlObj = new URL(imageUrl);
