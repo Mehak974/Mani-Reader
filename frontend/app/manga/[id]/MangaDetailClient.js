@@ -127,7 +127,7 @@ export default function MangaDetailClient({ id, initialManga }) {
   }
 
   const coverUrl = manga?.cover
-    ? (manga.cover.startsWith('http') && !manga.cover.includes('/api/image') 
+    ? (manga.cover.startsWith('http') && !manga.cover.includes('/api/image') && !manga.cover.includes('workers.dev')
         ? `/api/image?url=${encodeURIComponent(manga.cover)}` 
         : manga.cover)
     : '/placeholder-cover.jpg';

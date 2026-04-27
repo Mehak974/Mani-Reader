@@ -13,7 +13,7 @@ export default function RecentlyAddedCard({ manga }) {
   const rawCover = manga.image || manga.cover;
   // 🏎️ Smart Proxy: Only wrap in local /api/image if it's an external HTTP link AND not already proxied
   const coverUrl = rawCover
-    ? (rawCover.startsWith('http') && !rawCover.includes('/api/image') 
+    ? (rawCover.startsWith('http') && !rawCover.includes('/api/image') && !rawCover.includes('workers.dev')
         ? `/api/image?url=${encodeURIComponent(rawCover)}` 
         : rawCover)
     : '/placeholder-cover.jpg';
