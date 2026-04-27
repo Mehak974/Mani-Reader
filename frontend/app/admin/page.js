@@ -36,7 +36,7 @@ import {
   Tooltip, ResponsiveContainer, AreaChart, Area 
 } from 'recharts';
 
-function MetricCard({ label, value, trend, icon, color }) {
+function MetricCard({ label, value, trend, icon, color, subValue }) {
   const isUp = trend === 'up';
   return (
     <div style={{ background: '#fff', padding: '24px', borderRadius: 24, border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)' }}>
@@ -51,6 +51,7 @@ function MetricCard({ label, value, trend, icon, color }) {
       </div>
       <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>{label}</div>
       <div style={{ fontSize: '1.75rem', fontWeight: 900, color: '#0f172a' }}>{value}</div>
+      {subValue && <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: 6, fontWeight: 700 }}>{subValue}</div>}
     </div>
   );
 }
@@ -521,7 +522,12 @@ function AdminDashboardContent() {
                     Performance Deep Dive (Today)
                  </h3>
                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20, marginBottom: 32 }}>
-                    <MetricCard label="New Users" value={analytics?.today?.newUsers || 0} trend="up" icon="person_add" color="#6366f1" />
+                    <MetricCard 
+                      label="New Users" 
+                      value={analytics?.today?.newUsers || 0} 
+                      subValue={`REG: ${analytics?.today?.regUsers || 0} | GUESTS: ${analytics?.today?.guestUsers || 0}`}
+                      trend="up" icon="person_add" color="#6366f1" 
+                    />
                     <MetricCard label="Chapters Read" value={analytics?.today?.chaptersRead || 0} trend="up" icon="menu_book" color="#10b981" />
                     <MetricCard label="Ads Watched" value={analytics?.today?.adsWatched || 0} trend="up" icon="ads_click" color="#f59e0b" />
                     <MetricCard label="Monthly Revenue" value={`$${analytics?.month?.revenue || '0.00'}`} trend="up" icon="payments" color="#ec4899" />

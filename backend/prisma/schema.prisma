@@ -44,6 +44,7 @@ model DailyMetric {
   id            String   @id @default(uuid())
   date          DateTime @unique @default(now()) // Midnight of the day
   newUsers      Int      @default(0)
+  newGuests     Int      @default(0)
   chaptersRead  Int      @default(0)
   guestChaptersRead Int  @default(0)
   adsWatched    Int      @default(0)

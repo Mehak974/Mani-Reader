@@ -20,10 +20,7 @@ router.get('/:id(*)/pages', async (req, res) => {
     const { mangaId } = req.query;
     const { pages, externalUrl } = await mangaService.getChapterPages(id, mangaId);
 
-    // Track analytics
-    const analyticsService = require('../services/analyticsService');
-    const isGuest = !req.user?.userId;
-    analyticsService.trackChapterRead(isGuest).catch(() => {});
+    // Tracking moved to progress update (when isRead: true)
 
     res.json({ 
       pages, 

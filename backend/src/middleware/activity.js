@@ -45,6 +45,12 @@ module.exports = async (req, res, next) => {
          where: { ip_deviceId: { ip, deviceId } },
          update: { lastActive: new Date(), userAgent: req.headers['user-agent'] },
          create: { ip, deviceId, userAgent: req.headers['user-agent'] }
+       }).then((guest) => {
+         // If it was just created (approx), track as new guest
+         const isJustCreated = (new Date() - new Date(guest.createdAt)) < 5000;
+         if (isJustCreated) {
+            analyticsService.trackNewGuest().catch(() => {});
+         }
        }).catch(() => {});
     }
   }

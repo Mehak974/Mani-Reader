@@ -47,6 +47,10 @@ class AnalyticsService {
   async trackNewUser() {
     return this.trackMetric('newUsers');
   }
+  
+  async trackNewGuest() {
+    return this.trackMetric('newGuests');
+  }
 
   async trackChapterRead(isGuest = false) {
     return this.trackMetric(isGuest ? 'guestChaptersRead' : 'chaptersRead');
@@ -104,6 +108,7 @@ class AnalyticsService {
         where: { date: { gte: start } },
         _sum: {
           newUsers: true,
+          newGuests: true,
           chaptersRead: true,
           guestChaptersRead: true,
           adsWatched: true,
@@ -125,7 +130,9 @@ class AnalyticsService {
       registeredUsers,
       guestUsersCount,
       today: {
-        newUsers: todayData.newUsers || 0,
+        newUsers: (todayData.newUsers || 0) + (todayData.newGuests || 0),
+        regUsers: todayData.newUsers || 0,
+        guestUsers: todayData.newGuests || 0,
         chaptersRead: (todayData.chaptersRead || 0) + (todayData.guestChaptersRead || 0),
         userChapters: todayData.chaptersRead || 0,
         guestChapters: todayData.guestChaptersRead || 0,
@@ -137,7 +144,9 @@ class AnalyticsService {
         timeSpent: Math.round(Number(todayData.totalTimeMs || 0n) / 1000 / 60)
       },
       month: {
-        newUsers: monthData._sum.newUsers || 0,
+        newUsers: (monthData._sum.newUsers || 0) + (monthData._sum.newGuests || 0),
+        regUsers: monthData._sum.newUsers || 0,
+        guestUsers: monthData._sum.newGuests || 0,
         chaptersRead: (monthData._sum.chaptersRead || 0) + (monthData._sum.guestChaptersRead || 0),
         traffic: (monthData._sum.traffic || 0) + (monthData._sum.guestTraffic || 0),
         adsWatched: monthData._sum.adsWatched || 0,

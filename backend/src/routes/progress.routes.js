@@ -26,7 +26,7 @@ router.post('/', optionalAuth, validate(schemas.progress), async (req, res) => {
     // Analytics: Track chapter read
     if (isRead) {
       const analyticsService = require('../services/analyticsService');
-      analyticsService.trackChapterRead();
+      analyticsService.trackChapterRead(!userId);
     }
 
     res.status(201).json(prog);
