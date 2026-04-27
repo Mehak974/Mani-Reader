@@ -144,7 +144,7 @@ export default function ChapterList({ chapters = [], mangaId, progress = [] }) {
                   <span className="chapter-num" style={{ color: isRead ? 'inherit' : 'var(--accent)', fontWeight: 700, fontSize: '1rem' }}>Ch. {ch.number}</span>
                   {ch.releasedAt && <span style={{ fontSize: '0.65rem', opacity: 0.5, letterSpacing: '0.02em' }}>{ch.releasedAt}</span>}
                 </div>
-                <span className="chapter-title" style={{ 
+                <span className={`chapter-title mobile-trim`} style={{ 
                   flex: 1, 
                   overflow: 'hidden', 
                   textOverflow: 'ellipsis', 

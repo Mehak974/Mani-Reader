@@ -1229,8 +1229,9 @@ button {
     min-width: 60px !important;
     font-size: 0.9rem !important;
   }
-  .chapter-title {
+  .chapter-title.mobile-trim {
     font-size: 0.8rem !important;
+    max-width: 140px; /* Force trimming on mobile */
   }
   .chapter-sources {
     gap: 8px !important;
