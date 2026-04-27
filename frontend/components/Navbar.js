@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -50,7 +51,14 @@ export default function Navbar() {
           {/* Desktop Layout */}
           <div className="desktop-nav-content" style={{ display: 'flex', width: '100%', alignItems: 'center' }}>
             <Link href="/" className="navbar-logo">
-              <img src="/logo.png?v=1.2" alt="Mani Reader" className="logo-desktop" />
+              <Image 
+                src="/logo.png" 
+                alt="Mani Reader" 
+                width={180} 
+                height={40} 
+                className="logo-desktop"
+                priority
+              />
             </Link>
 
             <div className="navbar-links" style={{
@@ -84,7 +92,13 @@ export default function Navbar() {
             {/* Line 1 */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: '8px' }}>
               <Link href="/" style={{ flexShrink: 0 }}>
-                <img src="/icon.png?v=1.2" alt="Mani Reader" style={{ height: 40, width: 40, borderRadius: 8, objectFit: 'cover' }} />
+                <Image 
+                  src="/icon.png" 
+                  alt="Mani Reader" 
+                  width={40} 
+                  height={40} 
+                  style={{ borderRadius: 8, objectFit: 'cover' }} 
+                />
               </Link>
               
               <div style={{ flex: 1, margin: '0 12px', position: 'relative', maxWidth: '70%', marginLeft: 'auto', marginRight: 'auto' }}>

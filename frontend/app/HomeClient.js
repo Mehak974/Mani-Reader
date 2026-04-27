@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { AuthProvider, useAuth } from '../lib/auth';
 import Navbar from '../components/Navbar';
 import MangaCard from '../components/MangaCard';
@@ -137,7 +138,14 @@ export default function HomeClient() {
               </p>
               <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', alignItems: 'center' }}>
                 <a href="/browse" className="start-reading-btn" style={{ position: 'relative', top: '-20px', left: '-10px', display: 'inline-block', transition: 'transform 0.3s ease' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05) translateY(-20px) translateX(-10px)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1) translateY(-20px) translateX(-10px)'}>
-                  <img src="/start_reading.png" alt="Start Reading" style={{ width: '320px', height: 'auto' }} />
+                  <Image 
+                    src="/start_reading.png" 
+                    alt="Start Reading" 
+                    width={320} 
+                    height={100} 
+                    style={{ width: '320px', height: 'auto' }}
+                    priority 
+                  />
                 </a>
               </div>
             </div>

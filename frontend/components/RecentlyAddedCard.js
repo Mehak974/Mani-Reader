@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function RecentlyAddedCard({ manga }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -56,10 +57,13 @@ export default function RecentlyAddedCard({ manga }) {
           overflow: 'hidden',
           boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
         }}>
-          <img 
+          <Image 
             src={coverUrl} 
             alt={manga.title}
+            width={100}
+            height={140}
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            unoptimized={coverUrl.includes('/api/image')}
           />
         </div>
       </Link>
