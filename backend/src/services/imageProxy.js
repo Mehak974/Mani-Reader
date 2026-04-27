@@ -68,23 +68,40 @@ async function proxyImage(imageUrl, res) {
     'image.tmdb.org',
     'placehold.co',
     'cloudinary.com',
-    'wp.com', // Often used by Jetpack/WordPress manga sites
+    'wp.com',
+    'i0.wp.com',
+    'i1.wp.com',
+    'i2.wp.com',
+    'i3.wp.com',
     'imgur.com',
     'blogspot.com',
+    'googleusercontent.com',
     'wp-manga.com',
     'manga-swat.com',
     'manhwa68.com',
-    'manhuas.net'
+    'manhuas.net',
+    'mangafreak.me',
+    'mangapanda.com',
+    'mangareader.net',
+    'readm.org'
   ];
 
-  const urlObj = new URL(imageUrl);
+  let urlObj;
+  try {
+    urlObj = new URL(imageUrl);
+  } catch (e) {
+    return res.status(400).json({ error: 'Invalid URL format' });
+  }
+
   const isAllowed = ALLOWED_DOMAINS.some(domain => urlObj.hostname.endsWith(domain));
 
   if (!isAllowed) {
-    console.warn(`[ImageProxy] Blocked unauthorized domain: ${urlObj.hostname}`);
+    console.warn(`[ImageProxy] Blocked domain: ${urlObj.hostname}. Consider adding to ALLOWED_DOMAINS if trusted.`);
+    // Fallback: If it's a known image extension, we might want to allow it? 
+    // For now, still block but log so we can fix.
     return res.status(403).json({ 
       error: 'Forbidden', 
-      message: 'This proxy only supports authorized manga sources for security reasons.' 
+      message: `Domain ${urlObj.hostname} is not whitelisted.` 
     });
   }
 
