@@ -4,6 +4,8 @@ const authService = require('../services/authService');
 const { validate, schemas } = require('../middleware/validate');
 const { authLimiter } = require('../middleware/rateLimiter');
 const authMiddleware = require('../middleware/auth');
+const passport = require('../config/passport');
+const { clientUrl } = require('../config/env');
 
 // POST /api/auth/register
 router.post('/register', authLimiter, validate(schemas.register), async (req, res) => {
@@ -93,6 +95,19 @@ router.delete('/me', authMiddleware, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// GET /api/auth/google
+router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+
+// GET /api/auth/google/callback
+router.get('/google/callback', passport.authenticate('google', { session: false, failureRedirect: `${clientUrl}/auth/login?error=google_failed` }), (req, res) => {
+  const { accessToken, refreshToken } = req.user;
+  
+  res.cookie('token', accessToken, { httpOnly: true, sameSite: 'lax', maxAge: 15 * 60 * 1000 });
+  res.cookie('refreshToken', refreshToken, { httpOnly: true, sameSite: 'lax', maxAge: 7 * 24 * 60 * 60 * 1000 });
+  
+  res.redirect(`${clientUrl}/auth/callback?token=${accessToken}&refreshToken=${refreshToken}`);
 });
 
 module.exports = router;

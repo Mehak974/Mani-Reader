@@ -59,6 +59,11 @@ export function VerticalReader({ pages, chapterId, mangaId, prevChapter, nextCha
       setShowControls(!showControls);
     }}>
       <style jsx>{`
+        .reader-wrapper {
+          background: #000;
+          min-height: 100vh;
+          -webkit-overflow-scrolling: touch; /* Smooth iOS scroll */
+        }
         .reader-topbar {
           position: fixed;
           top: 0; left: 0; right: 0;
@@ -79,6 +84,27 @@ export function VerticalReader({ pages, chapterId, mangaId, prevChapter, nextCha
         .reader-vertical {
           padding-top: ${showControls ? '70px' : '0'};
           transition: padding 0.4s ease;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 4px;
+          scroll-behavior: smooth;
+          will-change: transform; /* Hardware acceleration */
+        }
+        .reader-page {
+          width: 100%;
+          max-width: 900px;
+          min-height: 600px; /* Prevent layout collapse */
+          display: flex;
+          justify-content: center;
+          background: #050505;
+          contain: layout paint; /* Optimization */
+        }
+        .reader-page img {
+          width: 100%;
+          height: auto;
+          display: block;
+          image-rendering: -webkit-optimize-contrast;
         }
       `}</style>
 
@@ -120,12 +146,12 @@ export function VerticalReader({ pages, chapterId, mangaId, prevChapter, nextCha
             <img
               src={url}
               alt={`Page ${i + 1}`}
-              loading={i < 3 ? 'eager' : 'lazy'}
+              loading={i < 5 ? 'eager' : 'lazy'}
               onLoad={() => setLoaded((prev) => new Set([...prev, i]))}
-              style={{ opacity: loaded.has(i) ? 1 : 0, transition: 'opacity 0.4s' }}
+              style={{ opacity: loaded.has(i) ? 1 : 0, transition: 'opacity 0.6s ease' }}
             />
             {!loaded.has(i) && (
-              <div className="skeleton" style={{ height: 800, marginBottom: 2 }} />
+              <div className="skeleton" style={{ width: '100%', height: 800 }} />
             )}
           </div>
         ))}

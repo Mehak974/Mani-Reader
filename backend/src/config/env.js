@@ -45,4 +45,10 @@ module.exports = {
   downloads: {
     dir: process.env.DOWNLOADS_DIR || './downloads',
   },
+  
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackUrl: process.env.GOOGLE_CALLBACK_URL || 'https://api.manireader.online/auth/google/callback',
+  },
 };

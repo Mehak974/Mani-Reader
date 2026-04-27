@@ -78,6 +78,35 @@ function RegisterContent() {
           </button>
         </form>
 
+        <div className="divider" style={{ display: 'flex', alignItems: 'center', margin: '24px 0', color: 'var(--text-3)', fontSize: '0.8rem' }}>
+          <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+          <span style={{ margin: '0 12px', fontWeight: 600 }}>OR</span>
+          <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+        </div>
+
+        <button
+          type="button"
+          className="btn btn-ghost w-full"
+          style={{ 
+            width: '100%', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            gap: 12, 
+            padding: '12px',
+            border: '1px solid var(--border)',
+            borderRadius: '12px',
+            background: 'white',
+            color: '#000',
+            fontWeight: 600,
+            transition: 'all 0.2s'
+          }}
+          onClick={() => window.location.href = '/api/auth/google'}
+        >
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style={{ width: 18 }} />
+          Sign up with Google
+        </button>
+
         <p style={{ marginTop: 24, textAlign: 'center', fontSize: '0.875rem', color: 'var(--text-3)' }}>
           Already have an account?{' '}
           <Link href="/auth/login" style={{ color: 'var(--accent)' }}>Sign in</Link>

@@ -76,4 +76,33 @@ async function deleteAccount(userId) {
   return prisma.user.delete({ where: { id: userId } });
 }
 
-module.exports = { register, login, refresh, updateNsfw, deleteAccount };
+async function googleLogin(email, googleId) {
+  let user = await prisma.user.findUnique({ where: { email } });
+  
+  if (!user) {
+    // Create new user for Google signup
+    user = await prisma.user.create({
+      data: { 
+        email, 
+        googleId,
+        password: null, // Password is null for social login users
+        role: 'USER'
+      },
+    });
+  } else if (!user.googleId) {
+    // Link existing email account to Google if not already linked
+    user = await prisma.user.update({
+      where: { id: user.id },
+      data: { googleId }
+    });
+  }
+
+  const payload = { userId: user.id, email: user.email, role: user.role };
+  return {
+    user: safeUser(user),
+    accessToken: signAccessToken(payload),
+    refreshToken: signRefreshToken(payload),
+  };
+}
+
+module.exports = { register, login, refresh, updateNsfw, deleteAccount, googleLogin };

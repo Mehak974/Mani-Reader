@@ -43,9 +43,19 @@ function ReaderContent() {
   if (loading) return (
     <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center', color: 'var(--text-3)' }}>
-        <div style={{ fontSize: '2rem', marginBottom: 12 }}>⚡</div>
-        Loading chapter...
+        <div className="loading-bolt" style={{ fontSize: '3rem', marginBottom: 12, filter: 'drop-shadow(0 0 10px rgba(234, 179, 8, 0.4))' }}>⚡</div>
+        <p style={{ letterSpacing: '0.05em', fontSize: '0.9rem', opacity: 0.8 }}>PREPARING CHAPTER</p>
       </div>
+      <style jsx>{`
+        .loading-bolt {
+          animation: bolt-pulse 1.2s ease-in-out infinite;
+        }
+        @keyframes bolt-pulse {
+          0% { transform: scale(1); opacity: 0.6; filter: drop-shadow(0 0 5px #eab308); }
+          50% { transform: scale(1.2); opacity: 1; filter: drop-shadow(0 0 20px #eab308); }
+          100% { transform: scale(1); opacity: 0.6; filter: drop-shadow(0 0 5px #eab308); }
+        }
+      `}</style>
     </div>
   );
 
