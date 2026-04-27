@@ -86,12 +86,15 @@ function BrowseContent() {
       const rawResults = data.results || [];
 
       // 🛡️ Safe-Gate Shield: Hide restricted content unless specifically requested or searched
-      const BLACKLIST = [
-        '18+', 'Adult', 'Smut', 'Erotica', 'Sexual violence', 'Harem', 'Yaoi', 'Yuri', 
-        'Incest', 'Gore', 'Mature', 'Sexual Violence', 'Ecchi'
+      const BLACKLIST_SLUGS = [
+        '18+', 'adult', 'smut', 'erotica', 'sexual-violence', 'harem', 'yaoi', 'yuri', 
+        'incest', 'gore', 'mature', 'ecchi'
       ];
       
-      const hasRestrictedTag = include.some(tag => BLACKLIST.map(b => b.toLowerCase()).includes(tag.toLowerCase()));
+      const hasRestrictedTag = include.some(tag => 
+        BLACKLIST_SLUGS.includes(tag.toLowerCase()) || 
+        BLACKLIST_SLUGS.includes(tag.toLowerCase().replace(/\s+/g, '-'))
+      );
       // 🚀 UNLOCK: Bypass filter if there's an explicit search keyword OR a restricted tag is included
       const shouldBypassFilter = !!keyword || hasRestrictedTag;
 

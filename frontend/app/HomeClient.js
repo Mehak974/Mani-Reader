@@ -49,8 +49,8 @@ export default function HomeClient() {
   // 🛡️ Content Shield: Filters out NSFW/Restricted tags from the Home Page
   const filterManga = (mangaList) => {
     const BLACKLIST = [
-      '18+', 'Adult', 'Smut', 'Erotica', 'Sexual violence', 'Harem', 'Yaoi', 'Yuri', 
-      'Incest', 'Gore', 'Mature', 'Sexual Violence', 'Ecchi'
+      '18+', 'adult', 'smut', 'erotica', 'sexual-violence', 'sexual violence', 'harem', 'yaoi', 'yuri', 
+      'incest', 'gore', 'mature', 'ecchi'
     ];
     // 👃 Keyword Sniffer: Catch hidden bad stuff in descriptions
     const BAD_WORDS = ['sexual', 'unfiltered', 'uncensored', 'erotic', 'smut', 'porn'];
@@ -60,7 +60,7 @@ export default function HomeClient() {
       const tagNames = genres.map(g => (typeof g === 'string' ? g : g.name || '').toLowerCase());
       const desc = (m.description || '').toLowerCase();
       
-      const hasBlacklistedTag = tagNames.some(tag => BLACKLIST.map(b => b.toLowerCase()).includes(tag));
+      const hasBlacklistedTag = tagNames.some(tag => BLACKLIST.includes(tag));
       const hasBadWord = BAD_WORDS.some(word => desc.includes(word));
       
       return !hasBlacklistedTag && !hasBadWord && !m.nsfw;
