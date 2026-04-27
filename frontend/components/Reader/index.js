@@ -92,17 +92,16 @@ export function VerticalReader({ pages, chapterId, mangaId, prevChapter, nextCha
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 4px;
+          gap: 0;
           scroll-behavior: smooth;
           will-change: transform; /* Hardware acceleration */
         }
         .reader-page {
           width: 100%;
           max-width: 900px;
-          min-height: 600px; /* Prevent layout collapse */
           display: flex;
           justify-content: center;
-          background: #050505;
+          background: #000;
           contain: layout paint; /* Optimization */
         }
         .reader-page img {
