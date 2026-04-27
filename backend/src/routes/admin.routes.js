@@ -568,6 +568,24 @@ router.patch('/settings', async (req, res) => {
 // GET /api/admin/guest-users
 router.get('/guest-users', async (req, res) => {
   try {
+    // 🧹 Auto-deduplicate GuestUser table
+    try {
+      const allGuests = await prisma.guestUser.findMany();
+      const deviceMap = {};
+      const toDelete = [];
+      for (const guest of allGuests) {
+        if (!guest.deviceId) continue;
+        if (deviceMap[guest.deviceId]) {
+          toDelete.push(guest.id);
+        } else {
+          deviceMap[guest.deviceId] = guest.id;
+        }
+      }
+      if (toDelete.length > 0) {
+        await prisma.guestUser.deleteMany({ where: { id: { in: toDelete } } });
+      }
+    } catch (e) {}
+
     const guests = await prisma.guestUser.findMany({
       orderBy: { lastActive: 'desc' },
       take: 200
