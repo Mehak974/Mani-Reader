@@ -79,6 +79,10 @@ function LoginContent() {
           Don&apos;t have an account?{' '}
           <Link href="/auth/register" style={{ color: 'var(--accent)' }}>Sign up</Link>
         </p>
+        
+        <p style={{ marginTop: 24, textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-3)', opacity: 0.7 }}>
+          By signing in, you agree to our <a href="/terms" style={{ textDecoration: 'underline' }}>Terms</a> and <a href="/privacy" style={{ textDecoration: 'underline' }}>Privacy Policy</a>.
+        </p>
       </div>
     </div>
   );

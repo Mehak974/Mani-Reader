@@ -302,9 +302,14 @@ export default function HomeClient() {
           </div>
         </section>
 
-        <footer style={{ textAlign: 'center', padding: '0', color: 'var(--text-3)', fontSize: '0.85rem', borderTop: '1px solid var(--border)' }}>
-          <div style={{ marginBottom: 12, fontWeight: 700, color: 'var(--text-2)', marginTop: '20px' }}>💜 Mani Reader</div>
-          <div style={{ paddingBottom: '40px' }}>© 2026 Mani Reader. All Rights Reserved.</div>
+        <footer style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-3)', fontSize: '0.85rem', borderTop: '1px solid var(--border)' }}>
+          <div style={{ marginBottom: 12, fontWeight: 700, color: 'var(--text-2)' }}>💜 Mani Reader</div>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginBottom: '16px' }}>
+            <a href="/privacy" style={{ color: 'var(--text-3)', textDecoration: 'none' }}>Privacy Policy</a>
+            <a href="/terms" style={{ color: 'var(--text-3)', textDecoration: 'none' }}>Terms of Service</a>
+            <a href="/contact" style={{ color: 'var(--text-3)', textDecoration: 'none' }}>Contact Us</a>
+          </div>
+          <div>© 2026 Mani Reader. All Rights Reserved.</div>
         </footer>
 
         <style jsx>{`

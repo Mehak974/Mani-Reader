@@ -82,6 +82,10 @@ function RegisterContent() {
           Already have an account?{' '}
           <Link href="/auth/login" style={{ color: 'var(--accent)' }}>Sign in</Link>
         </p>
+
+        <p style={{ marginTop: 24, textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-3)', opacity: 0.7 }}>
+          By creating an account, you agree to our <a href="/terms" style={{ textDecoration: 'underline' }}>Terms</a> and <a href="/privacy" style={{ textDecoration: 'underline' }}>Privacy Policy</a>.
+        </p>
       </div>
     </div>
   );
