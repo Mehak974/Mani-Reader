@@ -57,13 +57,12 @@ export default function RecentlyAddedCard({ manga }) {
           overflow: 'hidden',
           boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
         }}>
-          <Image 
+          <img 
             src={coverUrl} 
             alt={manga.title}
-            width={100}
-            height={140}
+            loading="lazy"
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            unoptimized={coverUrl.includes('/api/image')}
+            onError={(e) => { e.target.src = '/placeholder-cover.jpg'; }}
           />
         </div>
       </Link>

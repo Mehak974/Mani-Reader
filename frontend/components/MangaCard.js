@@ -28,16 +28,12 @@ export default function MangaCard({ manga, showNsfw = false, priority = false })
       onMouseLeave={() => clearTimeout(window.mangaTimeout)}
     >
       <div className="manga-card-cover">
-        <Image
+        <img
           src={coverUrl}
           alt={manga.title}
-          width={220}
-          height={320}
+          loading={priority ? 'eager' : 'lazy'}
           className={isBlurred ? 'blur-nsfw' : ''}
           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          unoptimized={coverUrl.includes('/api/image')} // Disable double optimization if already proxied
-          priority={priority}
-          sizes="(max-width: 768px) 150px, 220px"
           onError={(e) => { e.target.src = '/placeholder-cover.jpg'; }}
         />
         <div className="manga-card-overlay" />
