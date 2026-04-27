@@ -279,3 +279,15 @@ model GuestActivity {
   @@unique([mangaId, guestId])
   @@map("guest_activity")
 }
+
+model GuestUser {
+  id        String   @id @default(uuid())
+  ip        String
+  deviceId  String?
+  userAgent String?
+  lastActive DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@unique([ip, deviceId])
+  @@map("guest_users")
+}

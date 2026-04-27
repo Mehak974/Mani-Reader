@@ -115,6 +115,7 @@ export const adminApi = {
   toggleVip:  (id, v)  => api.patch(`/admin/users/${id}/vip`, { isVip: v }),
   mangaStats: ()       => api.get('/admin/manga'),
   messages:   ()       => api.get('/admin/messages'),
+  guestUsers: ()       => api.get('/admin/guest-users'),
   replyToMessage: (id, reply) => api.patch(`/admin/messages/${id}/reply`, { reply }),
   deleteMessage: (id)  => api.delete(`/admin/messages/${id}`),
   topReaders: ()       => api.get('/admin/top-readers'),

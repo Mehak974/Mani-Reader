@@ -540,4 +540,17 @@ router.patch('/settings', async (req, res) => {
   }
 });
 
+// GET /api/admin/guest-users
+router.get('/guest-users', async (req, res) => {
+  try {
+    const guests = await prisma.guestUser.findMany({
+      orderBy: { lastActive: 'desc' },
+      take: 200
+    });
+    res.json(guests);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

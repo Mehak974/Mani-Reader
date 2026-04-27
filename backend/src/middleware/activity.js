@@ -27,14 +27,24 @@ module.exports = async (req, res, next) => {
       }
     }).catch(() => {});
   } else {
-    // For guests, track "active" by creating/updating a GuestActivity record
-    // We use a simple cookie or IP as guest identifier
-    const guestId = req.cookies?.mani_guest_id || req.ip;
+    // For guests, track "active" by creating/updating a GuestUser record
+    const guestId = req.headers['x-device-id'] || req.cookies?.mani_guest_id || req.ip;
+    const deviceId = req.headers['x-device-id'] || null;
+    const ip = req.ip;
+
     if (guestId && req.method === 'GET' && !isExcluded) {
+       // Track site-wide activity for leaderboard/active stats
        prisma.guestActivity.upsert({
          where: { mangaId_guestId: { mangaId: 'SITE_WIDE', guestId } },
          update: { createdAt: new Date() },
          create: { mangaId: 'SITE_WIDE', guestId }
+       }).catch(() => {});
+
+       // Track unique Guest User globally
+       prisma.guestUser.upsert({
+         where: { ip_deviceId: { ip, deviceId } },
+         update: { lastActive: new Date(), userAgent: req.headers['user-agent'] },
+         create: { ip, deviceId, userAgent: req.headers['user-agent'] }
        }).catch(() => {});
     }
   }

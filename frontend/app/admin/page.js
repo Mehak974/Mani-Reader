@@ -108,9 +108,10 @@ function AdminDashboardContent() {
   const { user, loading: authLoading, logout } = useAuth() || {};
   const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState('overview'); // overview, users, manga, vips, messages, system, settings
+  const [activeTab, setActiveTab] = useState('overview'); // overview, users, guests, manga, vips, messages, system, settings
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
+  const [guestUsers, setGuestUsers] = useState([]);
   const [mangas, setMangas] = useState([]);
   const [messages, setMessages] = useState([]);
   const [topReaders, setTopReaders] = useState([]);
@@ -232,6 +233,9 @@ function AdminDashboardContent() {
       } else if (activeTab === 'messages') {
         const res = await adminApi.messages();
         setMessages(res.data);
+      } else if (activeTab === 'guests') {
+        const res = await adminApi.guestUsers();
+        setGuestUsers(res.data);
       } else if (activeTab === 'system') {
         const [logRes, ipRes] = await Promise.all([adminApi.auditLogs(), adminApi.getBannedIps()]);
         setAuditLogs(logRes.data);
@@ -348,6 +352,7 @@ function AdminDashboardContent() {
         <div style={{ flex: 1, padding: '0 16px', overflowY: 'auto' }}>
           <NavItem id="overview" label="Dashboard" icon="dashboard" />
           <NavItem id="users" label="User Accounts" icon="group" />
+          <NavItem id="guests" label="Guest Data" icon="no_accounts" />
           <NavItem id="manga" label="Manga Data" icon="library_books" />
           <NavItem id="vips" label="VIP Subscriptions" icon="verified" />
           <NavItem id="messages" label="User Inquiries" icon="forum" />
@@ -404,6 +409,10 @@ function AdminDashboardContent() {
                     <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Users</span>
                   </div>
                   <div style={{ fontSize: '2rem', fontWeight: 900, color: '#0f172a' }}>{analytics?.totalUsers || 0}</div>
+                  <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+                    <div style={{ fontSize: '0.7rem', color: '#64748b' }}>Reg: <span style={{ fontWeight: 800, color: '#6366f1' }}>{analytics?.registeredUsers || 0}</span></div>
+                    <div style={{ fontSize: '0.7rem', color: '#64748b' }}>Guests: <span style={{ fontWeight: 800, color: '#f59e0b' }}>{analytics?.guestUsersCount || 0}</span></div>
+                  </div>
                 </div>
 
                 <div style={{ background: '#fff', padding: '24px', borderRadius: 24, border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)' }}>
@@ -680,6 +689,55 @@ function AdminDashboardContent() {
                     ))}
                   </tbody>
                </table>
+            </div>
+          )}
+
+          {activeTab === 'guests' && (
+            <div style={{ background: '#fff', borderRadius: 24, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+              <div style={{ padding: '24px 32px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h2 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#0f172a' }}>Unique Guest Users</h2>
+                  <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: 4 }}>Tracked by IP and Device ID to prevent double counting.</p>
+                </div>
+                <div style={{ padding: '8px 16px', background: '#fef3c7', color: '#92400e', borderRadius: 12, fontSize: '0.8rem', fontWeight: 800 }}>
+                  {guestUsers.length} UNIQUE GUESTS
+                </div>
+              </div>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                  <thead>
+                    <tr style={{ background: '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>
+                      <th style={{ padding: '16px 32px', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>IP Address</th>
+                      <th style={{ padding: '16px 32px', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Device ID</th>
+                      <th style={{ padding: '16px 32px', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Last Active</th>
+                      <th style={{ padding: '16px 32px', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>User Agent</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {guestUsers.map((g) => (
+                      <tr key={g.id} style={{ borderBottom: '1px solid #f8fafc', transition: 'background 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+                        <td style={{ padding: '16px 32px' }}>
+                          <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.9rem' }}>{g.ip}</div>
+                        </td>
+                        <td style={{ padding: '16px 32px' }}>
+                          <div style={{ fontSize: '0.75rem', color: '#64748b', fontFamily: 'monospace', background: '#f1f5f9', padding: '4px 8px', borderRadius: 6, display: 'inline-block' }}>{g.deviceId || 'Unknown'}</div>
+                        </td>
+                        <td style={{ padding: '16px 32px', fontSize: '0.85rem', color: '#475569' }}>
+                          {new Date(g.lastActive).toLocaleString()}
+                        </td>
+                        <td style={{ padding: '16px 32px', fontSize: '0.7rem', color: '#94a3b8', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={g.userAgent}>
+                          {g.userAgent || 'N/A'}
+                        </td>
+                      </tr>
+                    ))}
+                    {guestUsers.length === 0 && (
+                      <tr>
+                        <td colSpan="4" style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>No guest data captured yet.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 

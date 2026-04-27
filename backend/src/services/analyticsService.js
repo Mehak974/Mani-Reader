@@ -82,7 +82,9 @@ class AnalyticsService {
     const currentYear = now.getFullYear();
 
     // All time stats
-    const totalUsers = await prisma.user.count();
+    const registeredUsers = await prisma.user.count();
+    const guestUsersCount = await prisma.guestUser.count();
+    const totalUsers = registeredUsers + guestUsersCount;
     
     // Active Now (Realtime - last 5 mins)
     const activeUsers = await prisma.user.count({
@@ -120,6 +122,8 @@ class AnalyticsService {
     return {
       activeNow: activeUsers + activeGuests,
       totalUsers,
+      registeredUsers,
+      guestUsersCount,
       today: {
         newUsers: todayData.newUsers || 0,
         chaptersRead: (todayData.chaptersRead || 0) + (todayData.guestChaptersRead || 0),

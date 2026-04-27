@@ -200,48 +200,59 @@ export default function MangaDetailClient({ id, initialManga }) {
 
             @media (max-width: 1024px) {
               .manga-detail-container {
-                grid-template-columns: 220px 1fr;
+                grid-template-columns: 200px 1fr;
                 gap: 24px;
               }
-              .manga-title { font-size: 2rem; }
+              .manga-title { font-size: 2.2rem; }
             }
 
             @media (max-width: 768px) {
               .manga-detail-container {
                 grid-template-columns: 1fr;
-                gap: 20px;
-                padding: 20px 0;
+                gap: 24px;
+                padding: 16px 0;
               }
               
-              /* Line 1: Image & Title */
               .manga-header-row {
-                display: grid !important;
-                grid-template-columns: 110px 1fr;
-                gap: 16px;
+                display: flex !important;
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
                 align-items: center;
               }
-              .manga-detail-cover { width: 110px; }
-              .manga-title { font-size: 1.5rem !important; }
-              
-              /* Line 2, 3, 4, 5: Stacked */
-              .description-line { order: 2; }
-              .tags-line { order: 3; }
-              .start-reading-line { order: 4; }
-              .collection-line { order: 5; }
-              
+
+              .manga-detail-cover {
+                width: 180px;
+                margin: 0 auto;
+                box-shadow: 0 15px 30px rgba(0,0,0,0.5);
+              }
+
+              .manga-detail-meta {
+                align-items: center;
+              }
+
+              .manga-title { 
+                font-size: 1.8rem !important; 
+                text-align: center;
+              }
+
               .action-row {
                 grid-column: 1;
-                flex-direction: row; /* Single line on mobile */
-                margin-top: 10px;
+                flex-direction: column;
                 width: 100%;
-                gap: 10px;
+                gap: 12px;
+                margin-top: 0;
               }
-              .action-row a, .action-row button { 
-                flex: 1; 
-                padding: 10px 4px !important; 
-                font-size: 0.85rem !important; 
+
+              .action-row a, .action-row button {
+                width: 100%;
+                padding: 16px !important;
               }
-              .action-row .material-icons { font-size: 1.1rem; }
+
+              .genre-tag {
+                padding: 4px 10px !important;
+                font-size: 0.65rem !important;
+              }
             }
           `}</style>
 
