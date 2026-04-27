@@ -101,7 +101,7 @@ function BrowseContent() {
       const filtered = shouldBypassFilter ? rawResults : rawResults.filter(m => {
         const genres = m.genres || [];
         const tagNames = genres.map(g => (typeof g === 'string' ? g : g.name || '').toLowerCase());
-        return !tagNames.some(tag => BLACKLIST.map(b => b.toLowerCase()).includes(tag)) && !m.nsfw;
+        return !tagNames.some(tag => BLACKLIST_SLUGS.includes(tag)) && !m.nsfw;
       });
 
       setResults(filtered);
