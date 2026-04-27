@@ -284,11 +284,12 @@ model GuestActivity {
 model GuestUser {
   id        String   @id @default(uuid())
   ip        String?
-  deviceId  String   @unique
+  deviceId  String   // Removed @unique temporarily to allow server startup with dupes
   userAgent String?
   lastActive DateTime @default(now())
   createdAt DateTime @default(now())
 
+  @@index([deviceId]) // Add index instead for performance
   @@map("guest_users")
 }
 
