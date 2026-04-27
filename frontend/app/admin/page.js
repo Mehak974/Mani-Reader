@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthProvider, useAuth } from '../../lib/auth';
@@ -620,7 +620,7 @@ function AdminDashboardContent() {
                         </td>
                         <td style={{ padding: '14px 16px', fontWeight: 700, fontSize: '0.8rem' }}>{m.readCount.toLocaleString()}</td>
                         <td style={{ padding: '14px 16px', fontWeight: 700, fontSize: '0.8rem', color: 'var(--accent)' }}>{m.uniqueUsers.toLocaleString()}</td>
-                        <td style={{ padding: '14px 16px', fontSize: '0.8rem', fontWeight: 700 }}>⭐ {m.averageRating}</td>
+                        <td style={{ padding: '14px 16px', fontSize: '0.8rem', fontWeight: 700 }}>Rating: {m.averageRating}</td>
                         <td style={{ padding: '14px 16px', textAlign: 'right' }}>
                           <button 
                             onClick={async () => {
@@ -758,7 +758,7 @@ function AdminDashboardContent() {
                       <div key={b.ip} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#fff1f2', borderRadius: 10, border: '1px solid #fecaca' }}>
                         <div>
                           <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#991b1b' }}>{b.ip}</div>
-                          <div style={{ fontSize: '0.7rem', color: '#b91c1c' }}>{b.reason || 'No reason provided'} • {new Date(b.createdAt).toLocaleDateString()}</div>
+                          <div style={{ fontSize: '0.7rem', color: '#b91c1c' }}>{b.reason || 'No reason provided'} | {new Date(b.createdAt).toLocaleDateString()}</div>
                         </div>
                         <button 
                           onClick={async () => {
