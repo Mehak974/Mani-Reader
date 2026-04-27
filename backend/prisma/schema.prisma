@@ -45,11 +45,13 @@ model DailyMetric {
   date          DateTime @unique @default(now()) // Midnight of the day
   newUsers      Int      @default(0)
   chaptersRead  Int      @default(0)
+  guestChaptersRead Int  @default(0)
   adsWatched    Int      @default(0)
   adsClicked    Int      @default(0)
   adImpressions Int      @default(0)
   revenue       Float    @default(0)
   traffic       Int      @default(0)
+  guestTraffic   Int      @default(0)
   totalTimeMs   BigInt   @default(0)
 
   @@map("daily_metrics")

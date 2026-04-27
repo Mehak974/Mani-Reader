@@ -1196,3 +1196,37 @@ button {
     font-size: 2rem;
   }
 }
+
+/* ── Admin Dashboard ───────────────────────────────────────────────────────── */
+.dashboard-bottom {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+@media (max-width: 768px) {
+  .dashboard-bottom {
+    grid-template-columns: 1fr !important;
+    gap: 16px;
+  }
+}
+
+/* ── Chapter List Mobile Optimizations ────────────────────────────────────── */
+@media (max-width: 640px) {
+  .chapter-item {
+    padding: 10px 12px !important;
+  }
+  .chapter-num {
+    min-width: 60px !important;
+    font-size: 0.9rem !important;
+  }
+  .chapter-title {
+    font-size: 0.8rem !important;
+  }
+  .chapter-sources {
+    gap: 8px !important;
+  }
+  .chapter-sources > span:first-child {
+    display: none; /* Hide source provider name on small mobile */
+  }
+}

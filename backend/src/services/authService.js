@@ -30,6 +30,9 @@ async function register(email, password) {
     data: { email, password: hashed },
   });
 
+  const analyticsService = require('./analyticsService');
+  analyticsService.trackNewUser().catch(() => {});
+
   const payload = { userId: user.id, email: user.email, role: user.role };
   return {
     user: safeUser(user),
@@ -89,6 +92,8 @@ async function googleLogin(email, googleId) {
         role: 'USER'
       },
     });
+    const analyticsService = require('./analyticsService');
+    analyticsService.trackNewUser().catch(() => {});
   } else if (!user.googleId) {
     // Link existing email account to Google if not already linked
     user = await prisma.user.update({

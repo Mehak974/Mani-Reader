@@ -231,11 +231,17 @@ export default function MangaDetailClient({ id, initialManga }) {
               
               .action-row {
                 grid-column: 1;
-                flex-direction: column;
-                margin-top: 0;
+                flex-direction: row; /* Single line on mobile */
+                margin-top: 10px;
                 width: 100%;
+                gap: 10px;
               }
-              .action-row a, .action-row button { width: 100%; }
+              .action-row a, .action-row button { 
+                flex: 1; 
+                padding: 10px 4px !important; 
+                font-size: 0.85rem !important; 
+              }
+              .action-row .material-icons { font-size: 1.1rem; }
             }
           `}</style>
 

@@ -395,30 +395,91 @@ function AdminDashboardContent() {
           
           {activeTab === 'overview' && (
             <>
-              {/* All-Time Stat Cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 16, marginBottom: 32 }}>
-                <StatCard icon="people" label="Total Users" value={stats?.totalUsers} color="#6366f1" />
-                <StatCard icon="visibility" label="Total Reads" value={stats?.totalReads} color="#10b981" />
-                <StatCard icon="task_alt" label="Chapters Read" value={stats?.totalChaptersRead} color="#f59e0b" />
-                <StatCard icon="mail" label="Total Messages" value={stats?.totalMessages} color="#ec4899" />
+              {/* Section 1: Real-time & Core Cards */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20, marginBottom: 32 }}>
+                <div style={{ background: '#fff', padding: '24px', borderRadius: 24, border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 12, background: '#6366f110', color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span className="material-icons">people</span>
+                    </div>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Users</span>
+                  </div>
+                  <div style={{ fontSize: '2rem', fontWeight: 900, color: '#0f172a' }}>{analytics?.totalUsers || 0}</div>
+                </div>
+
+                <div style={{ background: '#fff', padding: '24px', borderRadius: 24, border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 12, background: '#10b98110', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span className="material-icons">menu_book</span>
+                    </div>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Chapters Read</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 20 }}>
+                    <div>
+                      <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#0f172a' }}>{analytics?.today.userChapters || 0}</div>
+                      <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8' }}>USERS</div>
+                    </div>
+                    <div style={{ width: 1, height: 30, background: '#e2e8f0' }} />
+                    <div>
+                      <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#10b981' }}>{analytics?.today.guestChapters || 0}</div>
+                      <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8' }}>GUESTS</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ background: '#fff', padding: '24px', borderRadius: 24, border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 12, background: '#06b6d410', color: '#06b6d4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span className="material-icons">visibility</span>
+                    </div>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Pages Viewed</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 20 }}>
+                    <div>
+                      <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#0f172a' }}>{analytics?.today.userTraffic || 0}</div>
+                      <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8' }}>USERS</div>
+                    </div>
+                    <div style={{ width: 1, height: 30, background: '#e2e8f0' }} />
+                    <div>
+                      <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#06b6d4' }}>{analytics?.today.guestTraffic || 0}</div>
+                      <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8' }}>GUESTS</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ background: '#fff', padding: '24px', borderRadius: 24, border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)', position: 'relative', overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 12, background: '#ef444410', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span className="material-icons">sensors</span>
+                    </div>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Active Now</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                    <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#0f172a' }}>{analytics?.activeNow || 0}</div>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#22c55e', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e', animation: 'pulse 2s infinite' }} />
+                      LIVE
+                    </div>
+                  </div>
+                  <style jsx>{` @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } } `}</style>
+                </div>
               </div>
 
-              {/* Graphical Representation */}
+              {/* Section 2: Graphs with Filters */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                 <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>Growth & Engagement</h3>
+                 <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>Traffic & Engagement Trends</h3>
                  <div style={{ display: 'flex', background: '#e2e8f0', padding: 4, borderRadius: 12 }}>
-                    <button 
-                      onClick={() => setGraphType('monthly')}
-                      style={{ padding: '6px 16px', borderRadius: 10, border: 'none', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer', background: graphType === 'monthly' ? '#fff' : 'transparent', color: graphType === 'monthly' ? '#0f172a' : '#64748b', transition: 'all 0.2s' }}
-                    >Monthly</button>
-                    <button 
-                      onClick={() => setGraphType('annually')}
-                      style={{ padding: '6px 16px', borderRadius: 10, border: 'none', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer', background: graphType === 'annually' ? '#fff' : 'transparent', color: graphType === 'annually' ? '#0f172a' : '#64748b', transition: 'all 0.2s' }}
-                    >Annually</button>
+                    {['today', 'monthly', 'yearly'].map(t => (
+                      <button 
+                        key={t}
+                        onClick={() => setGraphType(t)}
+                        style={{ padding: '6px 16px', borderRadius: 10, border: 'none', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer', background: graphType === t ? '#fff' : 'transparent', color: graphType === t ? '#0f172a' : '#64748b', transition: 'all 0.2s', textTransform: 'capitalize' }}
+                      >{t}</button>
+                    ))}
                  </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 24, marginBottom: 32 }}>
-                <GraphBox title="Users & Traffic Growth">
+                <GraphBox title="Activity Overview">
                   <AreaChart data={graphData}>
                     <defs>
                       <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
@@ -430,59 +491,39 @@ function AdminDashboardContent() {
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
                     <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
                     <Tooltip contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
-                    <Area type="monotone" dataKey="users" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorUsers)" />
-                    <Area type="monotone" dataKey="traffic" stroke="#06b6d4" strokeWidth={3} fill="transparent" />
+                    <Area type="monotone" dataKey="chapters" name="Chapters Read" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorUsers)" />
+                    <Area type="monotone" dataKey="traffic" name="Traffic" stroke="#06b6d4" strokeWidth={3} fill="transparent" />
                   </AreaChart>
                 </GraphBox>
 
-                <GraphBox title="Content Engagement (Chapters Read)">
-                  <BarChart data={graphData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
-                    <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
-                    <Bar dataKey="chapters" fill="#10b981" radius={[6, 6, 0, 0]} barSize={20} />
-                  </BarChart>
-                </GraphBox>
-
-                <GraphBox title="Revenue Performance ($)">
+                <GraphBox title="Financial Performance">
                   <LineChart data={graphData}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
                     <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
                     <Tooltip contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
-                    <Line type="stepAfter" dataKey="revenue" stroke="#ec4899" strokeWidth={4} dot={{ r: 6, fill: '#ec4899', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} />
+                    <Line type="monotone" dataKey="revenue" name="Revenue ($)" stroke="#ec4899" strokeWidth={4} dot={{ r: 6, fill: '#ec4899', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} />
                   </LineChart>
-                </GraphBox>
-
-                <GraphBox title="Session Duration (Minutes)">
-                  <BarChart data={graphData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
-                    <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
-                    <Bar dataKey="time" fill="#8b5cf6" radius={[6, 6, 0, 0]} barSize={20} />
-                  </BarChart>
                 </GraphBox>
               </div>
 
-              {/* Monthly Performance (Trends) */}
+              {/* Section 3: Performance Cards */}
               <div style={{ marginBottom: 24 }}>
                  <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span className="material-icons" style={{ fontSize: '1.2rem', color: 'var(--accent)' }}>trending_up</span>
-                    Monthly Performance Metrics
+                    <span className="material-icons" style={{ fontSize: '1.2rem', color: 'var(--accent)' }}>assessment</span>
+                    Performance Deep Dive (Today)
                  </h3>
-                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20, marginBottom: 32 }}>
-                    <MetricCard label="New Users" value={analytics?.cards.newUsers.count || 0} trend={analytics?.cards.newUsers.trend} icon="person_add" color="#6366f1" />
-                    <MetricCard label="Chapters Read" value={analytics?.cards.chaptersRead.count || 0} trend={analytics?.cards.chaptersRead.trend} icon="menu_book" color="#10b981" />
-                    <MetricCard label="Ad Watches" value={analytics?.cards.ads.count || 0} trend={analytics?.cards.ads.trend} icon="ads_click" color="#f59e0b" />
-                    <MetricCard label="Monthly Revenue" value={`$${analytics?.cards.revenue.count || '0.00'}`} trend={analytics?.cards.revenue.trend} icon="payments" color="#ec4899" />
-                    <MetricCard label="Traffic" value={analytics?.cards.traffic.count || 0} trend={analytics?.cards.traffic.trend} icon="trending_up" color="#06b6d4" />
-                    <MetricCard label="Time Spent" value={formatTime(analytics?.cards.timeStayed.count || 0)} trend={analytics?.cards.timeStayed.trend} icon="timer" color="#8b5cf6" />
+                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20, marginBottom: 32 }}>
+                    <MetricCard label="New Users" value={analytics?.today.newUsers || 0} trend="up" icon="person_add" color="#6366f1" />
+                    <MetricCard label="Chapters Read" value={analytics?.today.chaptersRead || 0} trend="up" icon="menu_book" color="#10b981" />
+                    <MetricCard label="Ads Watched" value={analytics?.today.adsWatched || 0} trend="up" icon="ads_click" color="#f59e0b" />
+                    <MetricCard label="Monthly Revenue" value={`$${analytics?.month.revenue || '0.00'}`} trend="up" icon="payments" color="#ec4899" />
+                    <MetricCard label="Traffic (Pages)" value={analytics?.today.traffic || 0} trend="up" icon="trending_up" color="#06b6d4" />
+                    <MetricCard label="Time Spent" value={formatTime(analytics?.today.timeSpent || 0)} trend="up" icon="timer" color="#8b5cf6" />
                  </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 24 }} className="dashboard-bottom">
+              <div className="dashboard-bottom">
                 <div style={{ background: '#fff', borderRadius: 24, border: '1px solid #e2e8f0', padding: 24 }}>
                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                      <h3 style={{ fontSize: '1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -495,9 +536,12 @@ function AdminDashboardContent() {
                      {topReaders.map((r, i) => (
                        <div key={r.id} style={{ display: 'flex', alignItems: 'center', padding: '16px', background: '#f8fafc', borderRadius: 16, border: '1px solid #f1f5f9' }}>
                          <div style={{ width: 32, height: 32, borderRadius: 10, background: i < 3 ? 'var(--accent)' : '#fff', color: i < 3 ? '#fff' : '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, marginRight: 16, fontSize: '0.9rem', border: i < 3 ? 'none' : '1px solid #e2e8f0' }}>{i+1}</div>
-                         <div style={{ flex: 1 }}>
-                           <div style={{ fontWeight: 800, color: '#1e293b', fontSize: '0.9rem' }}>{r.email}</div>
-                           <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600 }}>Active Member</div>
+                         <div style={{ flex: 1, minWidth: 0 }}>
+                           <div style={{ fontWeight: 800, color: '#1e293b', fontSize: '0.85rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.email}</div>
+                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <div style={{ width: 8, height: 8, borderRadius: '50%', background: (new Date() - new Date(r.lastActiveAt)) < 5 * 60 * 1000 ? '#22c55e' : '#cbd5e1' }} />
+                              <div style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 600 }}>{formatTime(Math.round((new Date() - new Date(r.lastActiveAt)) / 1000 / 60))} ago</div>
+                           </div>
                          </div>
                          <div style={{ textAlign: 'right' }}>
                            <div style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--accent)' }}>{r.chaptersRead}</div>
