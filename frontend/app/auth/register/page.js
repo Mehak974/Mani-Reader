@@ -101,7 +101,7 @@ function RegisterContent() {
             fontWeight: 600,
             transition: 'all 0.2s'
           }}
-          onClick={() => window.location.href = '/api/auth/google'}
+          onClick={() => window.location.href = 'https://api.manireader.online/api/auth/google'}
         >
           <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style={{ width: 18 }} />
           Sign up with Google
