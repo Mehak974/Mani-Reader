@@ -456,10 +456,9 @@ function AdminDashboardContent() {
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                     <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#0f172a' }}>{analytics?.activeNow || 0}</div>
                     <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#22c55e', display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e', animation: 'pulse 2s infinite' }} />
+                      <div className="pulse-dot" style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e' }} />
                       LIVE
                     </div>
-                  </div>
                   </div>
                 </div>
               </div>
@@ -966,7 +965,8 @@ function AdminDashboardContent() {
       )}
 
       {toast && <div className={`toast toast-${toast.type}`}>{toast.msg}</div>}
-
+        </div>
+      </div>
     </div>
 
   );
