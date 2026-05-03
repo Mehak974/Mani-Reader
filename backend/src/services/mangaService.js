@@ -291,31 +291,28 @@ async function browse(filters = {}, userId = null) {
   let currentPage = filters.page || 1;
   let attempts = 0;
 
-  // If we have a keyword, we don't loop (to avoid infinite search depth)
-  if (filters.keyword) {
-    const res = await ingestion.browseManga(filters);
+  // Fill strategy: keep fetching until we have targetCount safe results
+  while (results.length < targetCount && attempts < 10) {
+    const res = await ingestion.browseManga({ ...filters, page: currentPage });
+    if (!res.data.results || res.data.results.length === 0) break;
+    
     totalData = res.data;
-    results = await applyContentFilters(res.data.results || [], userId, true);
-  } else {
-    // Fill strategy for guests: keep fetching until we have targetCount safe results
-    while (results.length < targetCount && attempts < 3) {
-      const res = await ingestion.browseManga({ ...filters, page: currentPage });
-      if (!res.data.results || res.data.results.length === 0) break;
-      
-      totalData = res.data;
-      const filtered = await applyContentFilters(res.data.results, userId, false);
-      results = [...results, ...filtered];
-      
-      if (results.length >= targetCount) break;
-      currentPage++;
-      attempts++;
-    }
+    // For keywords, use strict explicit mode; for general browse, use safe guest filtering
+    const isExplicit = !!filters.keyword;
+    const filtered = await applyContentFilters(res.data.results, userId, isExplicit);
+    
+    results = [...results, ...filtered];
+    if (results.length >= targetCount) break;
+    
+    currentPage++;
+    attempts++;
   }
 
   const finalData = {
     ...totalData,
     results: results.slice(0, targetCount),
-    currentPage: filters.page || 1
+    currentPage: filters.page || 1,
+    totalResults: totalData.totalResults || results.length
   };
 
   return finalData;
