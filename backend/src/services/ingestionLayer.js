@@ -65,29 +65,32 @@ async function searchManga(query, page = 1) {
 
   // 2. If no results, try Fallback Providers (Deep Search)
   if (!primaryData.results || primaryData.results.length === 0) {
-    const fallbacks = ['mangadex', 'mangakakalot'];
+    const fallbacks = ['manganato', 'mangakakalot', 'mangadex'];
     
     for (const fallback of fallbacks) {
       if (fallback === provider) continue;
       
       try {
-        console.log(`[Ingestion] Deep Search: Trying fallback provider: ${fallback}`);
-        const fallbackRes = await client.get(`/manga/${fallback}/${encodeURIComponent(query)}`, { params: { page } });
+        console.log(`[Ingestion] Deep Search: Trying ${fallback}...`);
+        // Use a shorter timeout for fallbacks to keep the UI responsive
+        const fallbackRes = await client.get(`/manga/${fallback}/${encodeURIComponent(query)}`, { 
+          params: { page },
+          timeout: 10000 
+        });
         
-        // Handle different response structures
         const rawResults = fallbackRes.data.results || fallbackRes.data || [];
         const fallbackResults = (Array.isArray(rawResults) ? rawResults : []).map(m => {
           const mapped = mapMangaFormat(m);
-          mapped.id = `${fallback}:${mapped.id}`; // Prefix ID for source-awareness
+          mapped.id = `${fallback}:${mapped.id}`; 
           return mapped;
         });
 
         if (fallbackResults.length > 0) {
-          console.log(`[Ingestion] Deep Search: Found ${fallbackResults.length} results on ${fallback}`);
+          console.log(`[Ingestion] Success! Found ${fallbackResults.length} on ${fallback}`);
           return { data: { currentPage: page, results: fallbackResults } };
         }
       } catch (err) {
-        console.error(`[Ingestion] Deep Search failed for ${fallback}:`, err.message);
+        console.warn(`[Ingestion] Deep Search skipped ${fallback}: ${err.message}`);
       }
     }
   }
