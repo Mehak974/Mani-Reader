@@ -109,14 +109,10 @@ function mapRawChapter(raw, mangaId) {
 // ── Service Methods ───────────────────────────────────────────────────────────
 
 async function search(query, page = 1, userId = null) {
-  const cacheKey = `search:${query}:${page}`;
-
-  const results = await cache.getOrSet(cacheKey, cache.ttl.searchTtl, async () => {
-    const { data } = await ingestion.searchManga(query, page);
-    const results = data.results || data || [];
-    return results.map(mapManga);
-  });
-
+  // ⚡ Bypass cache for explicit searches to ensure fresh multi-source results
+  const { data } = await ingestion.searchManga(query, page);
+  const results = data.results || data || [];
+  
   return applyContentFilters(results, userId, true); // Explicit search
 }
 
@@ -285,18 +281,20 @@ async function getPopularByScore(limit = 20, userId = null) {
 }
 
 async function browse(filters = {}, userId = null) {
+  // ⚡ Bypass cache for keyword searches to ensure we hit all providers fresh
+  const useCache = !filters.keyword;
   const cacheKey = `browse:${JSON.stringify(filters)}`;
 
-  const data = await cache.getOrSet(cacheKey, cache.ttl.searchTtl, async () => {
-    const { data } = await ingestion.browseManga(filters);
-    return {
-      results: (data.results || []).map(mapManga),
-      currentPage: data.currentPage || 1,
-      totalPages: data.totalPages || 1,
-      totalResults: data.totalResults || 0,
-      hasNextPage: data.hasNextPage || false
-    };
-  });
+  let data;
+  if (useCache) {
+    data = await cache.getOrSet(cacheKey, cache.ttl.searchTtl, async () => {
+      const res = await ingestion.browseManga(filters);
+      return res.data;
+    });
+  } else {
+    const res = await ingestion.browseManga(filters);
+    data = res.data;
+  }
 
   data.results = await applyContentFilters(data.results, userId, !!filters.keyword);
   return data;

@@ -123,6 +123,17 @@ function BrowseContent() {
     fetchResults(page);
   }, [keyword, page, selectedOrder, genreState, selectedStatus, genreMode]);
 
+  // ⚡ INSTANT SEARCH: Fetch results as user types (with debounce)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (inputKeyword !== keyword) {
+        setKeyword(inputKeyword);
+        setPage(1);
+      }
+    }, 600); // 600ms debounce
+    return () => clearTimeout(timer);
+  }, [inputKeyword, keyword]);
+
   const handleSearch = (e) => {
     e.preventDefault();
     setKeyword(inputKeyword);
