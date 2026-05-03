@@ -22,7 +22,7 @@ function imageShield(url) {
   return `${config.imageProxyUrl}?url=${encodeURIComponent(url)}`;
 }
 
-async function applyContentFilters(results, userId = null) {
+async function applyContentFilters(results, userId = null, isExplicitSearch = false) {
   if (!results || results.length === 0) return [];
 
   // 1. Fetch Global Settings
@@ -40,16 +40,20 @@ async function applyContentFilters(results, userId = null) {
   let filtered = results.filter(m => !hiddenSet.has(m.id));
 
   // 3. Apply NSFW filters
-  if (globalNsfw) {
-    filtered = filtered.filter(m => !m.nsfw);
-  } else if (userId) {
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { nsfw: true } });
-    if (user && !user.nsfw) {
+  // ⚡ Rule: If it's an explicit search, we allow everything. 
+  // Otherwise, we filter based on user settings or guest status.
+  if (!isExplicitSearch) {
+    if (globalNsfw) {
+      filtered = filtered.filter(m => !m.nsfw);
+    } else if (userId) {
+      const user = await prisma.user.findUnique({ where: { id: userId }, select: { nsfw: true } });
+      if (user && !user.nsfw) {
+        filtered = filtered.filter(m => !m.nsfw);
+      }
+    } else {
+      // Guest users hide NSFW by default in browse/related
       filtered = filtered.filter(m => !m.nsfw);
     }
-  } else {
-    // Guest users hide NSFW by default
-    filtered = filtered.filter(m => !m.nsfw);
   }
 
   return filtered;
@@ -113,7 +117,7 @@ async function search(query, page = 1, userId = null) {
     return results.map(mapManga);
   });
 
-  return applyContentFilters(results, userId);
+  return applyContentFilters(results, userId, true); // Explicit search
 }
 
 async function getMangaInfo(mangaId, userId = null) {
@@ -251,7 +255,7 @@ async function getRecent(page = 1, userId = null) {
     const { data } = await ingestion.getRecent(page);
     return (data.results || data || []).map(mapManga);
   });
-  return applyContentFilters(results, userId);
+  return applyContentFilters(results, userId, false);
 }
 
 async function getPopularByScore(limit = 20, userId = null) {
@@ -273,7 +277,7 @@ async function getPopularByScore(limit = 20, userId = null) {
     }));
 
     const mapped = results.map(mapManga);
-    return applyContentFilters(mapped, userId);
+    return applyContentFilters(mapped, userId, false);
   } catch (err) {
     console.error('[MangaService] getPopularByScore failed:', err);
     throw err;
@@ -294,7 +298,7 @@ async function browse(filters = {}, userId = null) {
     };
   });
 
-  data.results = await applyContentFilters(data.results, userId);
+  data.results = await applyContentFilters(data.results, userId, false);
   return data;
 }
 
@@ -337,7 +341,7 @@ async function getRelated(mangaId, userId = null) {
   });
 
   const mapped = related.map(mapManga);
-  return applyContentFilters(mapped, userId);
+  return applyContentFilters(mapped, userId, false); // Not an explicit search
 }
 
 async function trackSearch(keyword) {
