@@ -9,9 +9,20 @@ const MAIN_LINKS = [
   { href: '/library',         icon: 'bookmark',      label: 'Bookmarks' },
   { href: '/collections',     icon: 'book',          label: 'My Collections' },
   { href: '/history',         icon: 'history',       label: 'History' },
-  { href: '/collections',     icon: 'add_box',       label: 'Create Collection' },
+  { href: '#',                icon: 'add_to_photos', label: 'Post Manga', goal: true },
   { href: '/settings',        icon: 'settings',      label: 'Settings' },
 ];
+
+const SOCIAL_LINKS = [
+  { href: 'https://discord.gg/XScjzUBtF', icon: 'forum', label: 'Discord', color: '#5865F2' },
+  { href: 'https://reddit.com/r/manireader', icon: 'reddit', label: 'Reddit', color: '#FF4500' },
+];
+
+const GOAL_DATA = {
+  current: 45, // Manual entry for now
+  target: 1500,
+  label: 'Manga Posting System'
+};
 
 const INFO_LINKS = [
   { href: '/support',    icon: 'volunteer_activism',    label: 'Support Us' },
@@ -20,11 +31,11 @@ const INFO_LINKS = [
 ];
 
 // ── Sidebar Item ──────────────────────────────────────────────────────────────
-function SidebarItem({ href, icon, label, active, external, onClick }) {
+function SidebarItem({ href, icon, label, active, external, onClick, goal }) {
   const content = (
-    <span
+    <div
       style={{
-        display: 'flex', alignItems: 'center', gap: 14,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '10px 20px', borderRadius: 10,
         color: active ? 'var(--text)' : 'var(--text-2)',
         background: active ? 'rgba(108,99,255,0.15)' : 'transparent',
@@ -36,9 +47,14 @@ function SidebarItem({ href, icon, label, active, external, onClick }) {
       onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'var(--surface-2)'; e.currentTarget.style.color = 'var(--text)'; }}}
       onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-2)'; }}}
     >
-      <span className="material-icons" style={{ fontSize: '1.2rem', opacity: active ? 1 : 0.7 }}>{icon}</span>
-      {label}
-    </span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <span className="material-icons" style={{ fontSize: '1.2rem', opacity: active ? 1 : 0.7 }}>{icon}</span>
+        {label}
+      </div>
+      {goal && (
+        <span style={{ fontSize: '0.65rem', background: 'var(--accent)', color: '#fff', padding: '2px 6px', borderRadius: 6, fontWeight: 800 }}>GOAL</span>
+      )}
+    </div>
   );
 
   if (external) {
@@ -183,6 +199,47 @@ export default function Sidebar({ isOpen, onClose }) {
                 onClick={onClose}
               />
             ))}
+          </div>
+
+          {/* Socials */}
+          <div style={{ padding: '12px 20px 8px', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-3)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+            Join our Community
+          </div>
+          <div style={{ padding: '0 0 8px' }}>
+            {SOCIAL_LINKS.map(item => (
+              <SidebarItem
+                key={item.href}
+                {...item}
+                external
+                onClick={onClose}
+              />
+            ))}
+          </div>
+
+          {/* Support / Goal Bar */}
+          <div style={{ margin: '16px 20px', padding: '16px', background: 'var(--surface)', borderRadius: 16, border: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text)' }}>Support Progress</div>
+              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--accent)' }}>{Math.round((GOAL_DATA.current / GOAL_DATA.target) * 100)}%</div>
+            </div>
+            
+            <div style={{ height: 8, background: 'var(--surface-2)', borderRadius: 4, overflow: 'hidden', marginBottom: 8 }}>
+              <div style={{ 
+                height: '100%', 
+                width: `${(GOAL_DATA.current / GOAL_DATA.target) * 100}%`, 
+                background: 'linear-gradient(90deg, var(--accent), var(--accent-2))',
+                borderRadius: 4,
+                transition: 'width 0.5s ease'
+              }} />
+            </div>
+
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-3)', lineHeight: 1.4, marginBottom: 12 }}>
+              Goal: <b>{GOAL_DATA.label}</b>. Help us reach ${GOAL_DATA.target} for ad-free forever.
+            </div>
+
+            <Link href="/support" onClick={onClose} className="btn jewel-btn btn-sm" style={{ width: '100%', padding: '8px', fontSize: '0.75rem' }}>
+              Support Mani Reader
+            </Link>
           </div>
 
           {/* Separator */}

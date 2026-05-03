@@ -28,6 +28,8 @@ router.get('/', searchLimiter, optionalAuth, async (req, res) => {
       mangaService.trackSearch(q.trim());
     }
 
+    // ⚡ Edge Cache: 1 hour for searches
+    res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=59');
     res.json({ results, query: q, page: parseInt(page) });
   } catch (err) {
     res.status(err.status || 500).json({ error: err.message });
@@ -39,6 +41,8 @@ router.get('/browse/popular', optionalAuth, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const results = await mangaService.getPopular(page, req.user?.userId);
+    // ⚡ Edge Cache: 6 hours for popular
+    res.setHeader('Cache-Control', 'public, s-maxage=21600, stale-while-revalidate=59');
     res.json(results);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -60,6 +64,8 @@ router.get(['/browse/recent', '/browse/latest'], optionalAuth, async (req, res) 
   try {
     const page = parseInt(req.query.page || '1');
     const results = await mangaService.getRecent(page, req.user?.userId);
+    // ⚡ Edge Cache: 15 mins for latest
+    res.setHeader('Cache-Control', 'public, s-maxage=900, stale-while-revalidate=59');
     res.json({ results, page });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -90,6 +96,8 @@ router.get('/browse/filter', optionalAuth, async (req, res) => {
 router.get('/:id', optionalAuth, async (req, res) => {
   try {
     const manga = await mangaService.getMangaInfo(req.params.id, req.user?.userId);
+    // ⚡ Edge Cache: 24 hours for manga info (static mostly)
+    res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=3600');
     res.json(manga);
   } catch (err) {
     res.status(err.status || 500).json({ error: err.message });

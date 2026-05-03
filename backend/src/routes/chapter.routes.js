@@ -7,6 +7,8 @@ const config = require('../config/env');
 router.get('/:mangaId', async (req, res) => {
   try {
     const chapters = await mangaService.getChapters(req.params.mangaId);
+    // ⚡ Edge Cache: 1 week for chapter lists
+    res.setHeader('Cache-Control', 'public, s-maxage=604800, stale-while-revalidate=86400');
     res.json({ chapters, total: chapters.length });
   } catch (err) {
     res.status(err.status || 500).json({ error: err.message });
@@ -22,6 +24,8 @@ router.get('/:id(*)/pages', async (req, res) => {
 
     // Tracking moved to progress update (when isRead: true)
 
+    // ⚡ Edge Cache: 1 month for pages (pages never change)
+    res.setHeader('Cache-Control', 'public, s-maxage=2592000, stale-while-revalidate=86400');
     res.json({ 
       pages, 
       total: pages.length, 

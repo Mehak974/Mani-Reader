@@ -10,23 +10,24 @@ export const metadata = {
     default: 'Mani Reader — Discover Your Next Hidden Gem',
     template: '%s | Mani Reader'
   },
-  description: 'Mani Reader — Your premium manga sanctuary with libraries, bookmarks, and offline gems.',
-  keywords: ['manga', 'reader', 'manhwa', 'manhua', 'reading', 'offline manga', 'mani reader'],
+  description: 'Mani Reader — Your premium ad-free manga sanctuary with libraries and bookmarks.',
   authors: [{ name: 'Mani Reader Team' }],
   creator: 'Mani Reader',
   publisher: 'Mani Reader',
-  formatDetection: {
-    email: false,
-    address: false,
-    telephone: false,
+  alternates: {
+    canonical: '/',
   },
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 5,
+  },
+  themeColor: '#6c63ff',
   icons: {
     icon: [
-      { url: '/icon.jpeg' },
-      { url: '/icon.jpeg', sizes: '32x32', type: 'image/jpeg' },
       { url: '/icon.jpeg', sizes: '48x48', type: 'image/jpeg' },
+      { url: '/icon.jpeg', sizes: 'any' },
     ],
-    shortcut: '/icon.jpeg',
     apple: '/icon.jpeg',
   },
   openGraph: {
@@ -35,7 +36,7 @@ export const metadata = {
     url: 'https://manireader.online',
     siteName: 'Mani Reader',
     title: 'Mani Reader — Discover Your Next Hidden Gem',
-    description: 'Your premium manga sanctuary with libraries, bookmarks, and offline gems.',
+    description: 'Your premium ad-free manga reader with libraries and bookmarks.',
     images: [
       {
         url: '/og-image.png',
@@ -48,7 +49,7 @@ export const metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Mani Reader — Discover Your Next Hidden Gem',
-    description: 'Your premium manga sanctuary with libraries, bookmarks, and offline gems.',
+    description: 'Your premium ad-free manga reader with libraries and bookmarks.',
     images: ['/og-image.png'],
   },
   robots: {
@@ -72,8 +73,25 @@ export default function RootLayout({ children }) {
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
         <link href="https://fonts.googleapis.com/icon?family=Material+Icons&display=swap" rel="stylesheet" />
-        <Script 
-          async 
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'WebSite',
+              'name': 'Mani Reader',
+              'url': 'https://manireader.online',
+              'description': 'Premium ad-free manga reader sanctuary.',
+              'potentialAction': {
+                '@type': 'SearchAction',
+                'target': 'https://manireader.online/browse?keyword={search_term_string}',
+                'query-input': 'required name=search_term_string'
+              }
+            })
+          }}
+        />
+        <Script
+          async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4938022536946038"
           crossOrigin="anonymous"
           strategy="afterInteractive"
