@@ -6,12 +6,61 @@ import Script from 'next/script';
 
 export const metadata = {
   metadataBase: new URL('https://manireader.online'),
-  title: 'Mani Reader — Discover Your Next Hidden Gem',
+  title: {
+    default: 'Mani Reader — Discover Your Next Hidden Gem',
+    template: '%s | Mani Reader'
+  },
   description: 'Mani Reader — Your premium manga sanctuary with libraries, bookmarks, and offline gems.',
+  keywords: ['manga', 'reader', 'manhwa', 'manhua', 'reading', 'offline manga', 'mani reader'],
+  authors: [{ name: 'Mani Reader Team' }],
+  creator: 'Mani Reader',
+  publisher: 'Mani Reader',
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
   icons: {
-    icon: '/icon.png',
-    shortcut: '/icon.png',
-    apple: '/icon.png',
+    icon: [
+      { url: '/icon.jpeg' },
+      { url: '/icon.jpeg', sizes: '32x32', type: 'image/jpeg' },
+      { url: '/icon.jpeg', sizes: '48x48', type: 'image/jpeg' },
+    ],
+    shortcut: '/icon.jpeg',
+    apple: '/icon.jpeg',
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://manireader.online',
+    siteName: 'Mani Reader',
+    title: 'Mani Reader — Discover Your Next Hidden Gem',
+    description: 'Your premium manga sanctuary with libraries, bookmarks, and offline gems.',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Mani Reader - Premium Manga Experience',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Mani Reader — Discover Your Next Hidden Gem',
+    description: 'Your premium manga sanctuary with libraries, bookmarks, and offline gems.',
+    images: ['/og-image.png'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
   },
 };
 

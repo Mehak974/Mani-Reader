@@ -14,7 +14,7 @@ const MAIN_LINKS = [
 ];
 
 const INFO_LINKS = [
-  { href: 'https://ko-fi.com/manireader', icon: 'volunteer_activism', label: 'Support Us', external: true },
+  { href: '/support',    icon: 'volunteer_activism',    label: 'Support Us' },
   { href: '/contact',    icon: 'mail',                  label: 'Contact Us' },
   { href: '/faq',        icon: 'contact_support',       label: 'Common Questions' },
 ];
