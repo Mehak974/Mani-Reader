@@ -285,18 +285,27 @@ async function browse(filters = {}, userId = null) {
   const useCache = !filters.keyword;
   const cacheKey = `browse:${JSON.stringify(filters)}`;
 
+  // ⚡ GUEST OPTIMIZATION: Fetch more to ensure a full page of 27 after filtering
+  const isExplicitSearch = !!filters.keyword;
+  const targetCount = 27;
+
   let data;
   if (useCache) {
     data = await cache.getOrSet(cacheKey, cache.ttl.searchTtl, async () => {
-      const res = await ingestion.browseManga(filters);
+      const res = await ingestion.browseManga({ ...filters, limit: 60 }); // Fetch more
       return res.data;
     });
   } else {
-    const res = await ingestion.browseManga(filters);
+    const res = await ingestion.browseManga({ ...filters, limit: 60 });
     data = res.data;
   }
 
-  data.results = await applyContentFilters(data.results, userId, !!filters.keyword);
+  data.results = await applyContentFilters(data.results, userId, isExplicitSearch);
+  
+  // Trim to target count if not an explicit search
+  if (!isExplicitSearch && data.results.length > targetCount) {
+    data.results = data.results.slice(0, targetCount);
+  }
   return data;
 }
 
