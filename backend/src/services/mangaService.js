@@ -250,8 +250,8 @@ async function getRecent(page = 1, userId = null) {
   const targetCount = 27;
 
   const results = await cache.getOrSet(cacheKey, cache.ttl.searchTtl, async () => {
-    // ⚡ Over-fetch to 60 to ensure we have 27 safe items after filtering
-    const { data } = await ingestion.getRecent(page, 60); 
+    // ⚡ Over-fetch loop: Fetch up to 100 to ensure we have 27 safe items
+    const { data } = await ingestion.getRecent(page, 100); 
     return (data.results || data || []).map(mapManga);
   });
 
@@ -292,24 +292,24 @@ async function browse(filters = {}, userId = null) {
   const cacheKey = `browse:${JSON.stringify(filters)}`;
 
   // ⚡ GUEST OPTIMIZATION: Fetch more to ensure a full page of 27 after filtering
-  const isExplicitSearch = !!filters.keyword;
+  const isExplicitSearch = !!(filters.keyword && filters.keyword.trim());
   const targetCount = 27;
 
   let data;
   if (useCache) {
     data = await cache.getOrSet(cacheKey, cache.ttl.searchTtl, async () => {
-      const res = await ingestion.browseManga({ ...filters, limit: 60 }); // Fetch more
+      const res = await ingestion.browseManga({ ...filters, limit: 100 }); // Fetch even more to be safe
       return res.data;
     });
   } else {
-    const res = await ingestion.browseManga({ ...filters, limit: 60 });
+    const res = await ingestion.browseManga({ ...filters, limit: 100 });
     data = res.data;
   }
 
   data.results = await applyContentFilters(data.results, userId, isExplicitSearch);
   
-  // Trim to target count if not an explicit search
-  if (!isExplicitSearch && data.results.length > targetCount) {
+  // ⚡ ENSURE 27: Always return exactly 27 items unless we ran out of content
+  if (data.results.length > targetCount) {
     data.results = data.results.slice(0, targetCount);
   }
   return data;
