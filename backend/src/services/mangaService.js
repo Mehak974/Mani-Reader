@@ -247,14 +247,19 @@ async function getPopular(page = 1, userId = null) {
 
 async function getRecent(page = 1, userId = null) {
   const cacheKey = `recent:${page}`;
+  const targetCount = 27;
+
   const results = await cache.getOrSet(cacheKey, cache.ttl.searchTtl, async () => {
-    const { data } = await ingestion.getRecent(page);
+    // ⚡ Over-fetch to 60 to ensure we have 27 safe items after filtering
+    const { data } = await ingestion.getRecent(page, 60); 
     return (data.results || data || []).map(mapManga);
   });
-  return applyContentFilters(results, userId, false);
+
+  let filtered = await applyContentFilters(results, userId, false);
+  return filtered.slice(0, targetCount);
 }
 
-async function getPopularByScore(limit = 20, userId = null) {
+async function getPopularByScore(limit = 27, userId = null) {
   try {
     // 1. Fetch from popularity table directly
     const popularRecords = await prisma.popularity.findMany({
@@ -264,7 +269,7 @@ async function getPopularByScore(limit = 20, userId = null) {
       },
       include: { manga: true },
       orderBy: { score: 'desc' },
-      take: limit,
+      take: 60, // Over-fetch
     });
 
     const results = popularRecords.map(p => ({
@@ -273,7 +278,8 @@ async function getPopularByScore(limit = 20, userId = null) {
     }));
 
     const mapped = results.map(mapManga);
-    return applyContentFilters(mapped, userId, false);
+    let filtered = await applyContentFilters(mapped, userId, false);
+    return filtered.slice(0, limit);
   } catch (err) {
     console.error('[MangaService] getPopularByScore failed:', err);
     throw err;
