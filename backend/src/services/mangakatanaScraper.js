@@ -50,7 +50,7 @@ async function searchManga(query, page = 1) {
       const status = $(el).find('.status').text().trim();
       
       results.push({
-        id,
+        id, // No prefix here, let ingestion layer handle it if it wants, OR prefix here
         title,
         image,
         description,
@@ -121,7 +121,7 @@ async function getMangaInfo(mangaId) {
       const chNumber = chNumberMatch ? chNumberMatch[1] : (i + 1).toString();
 
       chapters.push({
-        id: `${mangaId}/${chId}`, 
+        id: `mangakatana:${mangaId}/${chId}`, 
         chapterNumber: chNumber,
         title: chTitle,
         releasedAt: chDate,

@@ -38,56 +38,76 @@ function mapMangaFormat(m) {
 // ── Public API ────────────────────────────────────────────────────────────────
 
 async function searchManga(query, page = 1) {
-  if (provider === 'mangakatana') {
-    const data = await mangakatana.searchManga(query, page);
-    return { data };
+  let primaryData = { results: [] };
+  
+  // 1. Try Primary Provider
+  try {
+    if (provider === 'mangakatana') {
+      const katanaData = await mangakatana.searchManga(query, page);
+      primaryData = {
+        ...katanaData,
+        results: (katanaData.results || []).map(m => ({ ...m, id: `${provider}:${m.id}` }))
+      };
+    } else {
+      const res = await client.get(`/manga/${provider}/${encodeURIComponent(query)}`, { params: { page } });
+      primaryData = { 
+        results: (res.data.results || []).map(m => {
+          const mapped = mapMangaFormat(m);
+          mapped.id = `${provider}:${mapped.id}`;
+          return mapped;
+        }),
+        currentPage: page
+      };
+    }
+  } catch (err) {
+    console.error(`[Ingestion] Primary search failed (${provider}):`, err.message);
   }
 
-  try {
-    const res = await client.get(`/manga/${provider}/${encodeURIComponent(query)}`, {
-      params: { page }
-    });
-    
-    const results = res.data.results || [];
-    return {
-      data: {
-        currentPage: page,
-        results: results.map(mapMangaFormat)
+  // 2. If no results, try Fallback Provider
+  if (!primaryData.results || primaryData.results.length === 0) {
+    const fallback = config.consumet.fallback || 'mangakakalot';
+    if (fallback !== provider) {
+      try {
+        console.log(`[Ingestion] Primary returned 0 results. Trying fallback: ${fallback}`);
+        const fallbackRes = await client.get(`/manga/${fallback}/${encodeURIComponent(query)}`, { params: { page } });
+        const fallbackResults = (fallbackRes.data.results || fallbackRes.data || []).map(m => {
+          const mapped = mapMangaFormat(m);
+          mapped.id = `${fallback}:${mapped.id}`; // Prefix ID for source-awareness
+          return mapped;
+        });
+        if (fallbackResults.length > 0) {
+          return { data: { currentPage: page, results: fallbackResults } };
+        }
+      } catch (err) {
+        console.error(`[Ingestion] Fallback search failed (${fallback}):`, err.message);
       }
-    };
-  } catch (err) {
-    console.error(`[Ingestion] searchManga failed (${provider}):`, err.message);
-    // If local fails, try public as fallback
-    if (client.defaults.baseURL !== 'https://api.consumet.org') {
-       // Fallback
-       try {
-         const publicRes = await axios.get(`https://api.consumet.org/manga/${provider}/${encodeURIComponent(query)}`, { params: { page } });
-         return { data: { currentPage: page, results: (publicRes.data.results || []).map(mapMangaFormat) } };
-       } catch (fallbackErr) {
-         console.error('[Ingestion] Fallback search failed:', fallbackErr.message);
-       }
     }
-    throw err;
   }
+
+  return { data: primaryData };
 }
 
 async function getPopular(page = 1) {
   if (provider === 'mangakatana') {
     const data = await mangakatana.getPopular(page);
-    return { data };
+    return {
+      data: {
+        ...data,
+        results: (data.results || []).map(m => ({ ...m, id: `${provider}:${m.id}` }))
+      }
+    };
   }
   
   try {
     const res = await client.get(`/manga/${provider}/popular`, { params: { page } });
     const results = res.data.results || res.data || [];
+    const mappedResults = (Array.isArray(results) ? results : []).map(m => {
+      const mapped = mapMangaFormat(m);
+      mapped.id = `${provider}:${mapped.id}`;
+      return mapped;
+    });
     
-    if ((!results || results.length === 0) && provider === 'mangadex') {
-       // MangaDex fallback
-       const altRes = await client.get(`/manga/${provider}/filter`, { params: { order: 'popular', page } });
-       return { data: { results: (altRes.data.results || []).map(mapMangaFormat) } };
-    }
-    
-    return { data: { results: Array.isArray(results) ? results.map(mapMangaFormat) : [] } };
+    return { data: { results: mappedResults } };
   } catch (err) {
     console.error(`[Ingestion] getPopular failed (${provider}):`, err.message);
     return { data: { results: [] } };
@@ -97,12 +117,22 @@ async function getPopular(page = 1) {
 async function getRecent(page = 1) {
   if (provider === 'mangakatana') {
     const data = await mangakatana.getRecent(page);
-    return { data };
+    return {
+      data: {
+        ...data,
+        results: (data.results || []).map(m => ({ ...m, id: `${provider}:${m.id}` }))
+      }
+    };
   }
 
   try {
     const res = await client.get(`/manga/${provider}/recent-updates`, { params: { page } });
-    return { data: { results: (res.data.results || []).map(mapMangaFormat) } };
+    const mappedResults = (res.data.results || []).map(m => {
+      const mapped = mapMangaFormat(m);
+      mapped.id = `${provider}:${mapped.id}`;
+      return mapped;
+    });
+    return { data: { results: mappedResults } };
   } catch (err) {
     console.error(`[Ingestion] getRecent failed (${provider}):`, err.message);
     return { data: { results: [] } };
@@ -110,67 +140,88 @@ async function getRecent(page = 1) {
 }
 
 async function getMangaInfo(mangaId) {
-  if (provider === 'mangakatana') {
-    const data = await mangakatana.getMangaInfo(mangaId);
-    return { data };
+  let mainProvider = provider;
+  
+  // 🛡️ Source-Aware IDs: If ID contains a colon (e.g. "mangakakalot:id"), use that provider
+  if (mangaId.includes(':')) {
+    const [p, id] = mangaId.split(':');
+    mainProvider = p;
+    mangaId = id;
   }
 
   try {
-    const res = await client.get(`/manga/${provider}/info/${mangaId}`);
+    if (mainProvider === 'mangakatana') {
+      const data = await mangakatana.getMangaInfo(mangaId);
+      return { data };
+    }
+    const res = await client.get(`/manga/${mainProvider}/info/${mangaId}`);
     const m = res.data;
     const mappedManga = mapMangaFormat(m);
-
     mappedManga.chapters = (m.chapters || []).map(c => ({
-      id: c.id,
+      id: `${mainProvider}:${c.id}`,
       chapterNumber: c.number || '0',
       title: c.title || `Chapter ${c.number || '0'}`,
-      externalUrl: null,
-      source: provider
+      source: mainProvider
     }));
-    
     return { data: mappedManga };
   } catch (err) {
-    console.error(`[Ingestion] getMangaInfo failed (${provider}):`, err.message);
-    if (client.defaults.baseURL !== 'https://api.consumet.org') {
-        try {
-          const publicRes = await axios.get(`https://api.consumet.org/manga/${provider}/info/${mangaId}`);
-          const m = publicRes.data;
-          const mappedManga = mapMangaFormat(m);
-          mappedManga.chapters = (m.chapters || []).map(c => ({
-              id: c.id,
-              chapterNumber: c.number || '0',
-              title: c.title || `Chapter ${c.number || '0'}`,
-              source: provider
-          }));
-          return { data: mappedManga };
-        } catch (fallbackErr) {
-           console.error('[Ingestion] Fallback info failed:', fallbackErr.message);
-        }
+    console.error(`[Ingestion] getMangaInfo failed (${mainProvider}):`, err.message);
+    
+    // Try fallback if main failed
+    const fallback = config.consumet.fallback || 'mangakakalot';
+    if (fallback !== mainProvider) {
+      try {
+        console.log(`[Ingestion] Trying fallback info: ${fallback}`);
+        const res = await client.get(`/manga/${fallback}/info/${mangaId}`);
+        const m = res.data;
+        const mappedManga = mapMangaFormat(m);
+        mappedManga.chapters = (m.chapters || []).map(c => ({
+          id: `${fallback}:${c.id}`,
+          chapterNumber: c.number || '0',
+          title: c.title || `Chapter ${c.number || '0'}`,
+          source: fallback
+        }));
+        return { data: mappedManga };
+      } catch (fErr) {
+        console.error(`[Ingestion] Fallback info failed (${fallback}):`, fErr.message);
+      }
     }
     throw err;
   }
 }
 
 async function getChapterPages(chapterId) {
-  if (provider === 'mangakatana') {
+  let mainProvider = provider;
+  
+  // 🛡️ Source-Aware IDs: "provider:chapter-id"
+  if (chapterId.includes(':')) {
+    const [p, id] = chapterId.split(':');
+    mainProvider = p;
+    chapterId = id;
+  }
+
+  if (mainProvider === 'mangakatana') {
     const data = await mangakatana.getChapterPages(chapterId);
     return { data };
   }
 
   try {
-    const res = await client.get(`/manga/${provider}/read/${chapterId}`);
+    const res = await client.get(`/manga/${mainProvider}/read/${chapterId}`);
     const pages = (res.data || []).map(p => p.img || p.page || p);
     return { data: pages };
   } catch (err) {
-    console.error(`[Ingestion] getChapterPages failed (${provider}):`, err.message);
-    if (client.defaults.baseURL !== 'https://api.consumet.org') {
-        try {
-          const publicRes = await axios.get(`https://api.consumet.org/manga/${provider}/read/${chapterId}`);
-          const pages = (publicRes.data || []).map(p => p.img || p.page || p);
-          return { data: pages };
-        } catch (fallbackErr) {
-          console.error('[Ingestion] Fallback pages failed:', fallbackErr.message);
-        }
+    console.error(`[Ingestion] getChapterPages failed (${mainProvider}):`, err.message);
+    
+    // Try fallback
+    const fallback = config.consumet.fallback || 'mangakakalot';
+    if (fallback !== mainProvider) {
+      try {
+        const publicRes = await client.get(`/manga/${fallback}/read/${chapterId}`);
+        const pages = (publicRes.data || []).map(p => p.img || p.page || p);
+        return { data: pages };
+      } catch (fallbackErr) {
+        console.error(`[Ingestion] Fallback pages failed (${fallback}):`, fallbackErr.message);
+      }
     }
     throw err;
   }
