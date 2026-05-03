@@ -117,37 +117,29 @@ async function getPopular(page = 1) {
   }
 }
 
-async function getRecent(page = 1, limit = 27) {
-  const allResults = [];
-  let currentPage = page;
-  
-  // ⚡ Over-fetch loop: Fetch multiple pages if needed to reach the target count
-  while (allResults.length < limit && currentPage < page + 3) {
-    try {
-      let results = [];
-      if (provider === 'mangakatana') {
-        const data = await mangakatana.getRecent(currentPage);
-        results = (data.results || []).map(m => ({ ...m, id: `${provider}:${m.id}` }));
-      } else {
-        const res = await client.get(`/manga/${provider}/recent-updates`, { params: { page: currentPage } });
-        const rawResults = res.data.results || res.data || [];
-        results = (Array.isArray(rawResults) ? rawResults : []).map(m => {
-          const mapped = mapMangaFormat(m);
-          mapped.id = `${provider}:${mapped.id}`;
-          return mapped;
-        });
+async function getRecent(page = 1) {
+  if (provider === 'mangakatana') {
+    const data = await mangakatana.getRecent(page);
+    return {
+      data: {
+        ...data,
+        results: (data.results || []).map(m => ({ ...m, id: `${provider}:${m.id}` }))
       }
-      
-      allResults.push(...results);
-      if (results.length === 0) break;
-      currentPage++;
-    } catch (err) {
-      console.warn(`[Ingestion] getRecent failed for page ${currentPage}:`, err.message);
-      break;
-    }
+    };
   }
 
-  return { data: { results: allResults } };
+  try {
+    const res = await client.get(`/manga/${provider}/recent-updates`, { params: { page } });
+    const mappedResults = (res.data.results || []).map(m => {
+      const mapped = mapMangaFormat(m);
+      mapped.id = `${provider}:${mapped.id}`;
+      return mapped;
+    });
+    return { data: { results: mappedResults } };
+  } catch (err) {
+    console.error(`[Ingestion] getRecent failed (${provider}):`, err.message);
+    return { data: { results: [] } };
+  }
 }
 
 async function getMangaInfo(mangaId) {
@@ -252,32 +244,15 @@ async function browseManga(filters) {
     return await searchManga(filters.keyword, filters.page || 1);
   }
 
-  const targetLimit = filters.limit || 27;
-  const allResults = [];
-  let currentPage = filters.page || 1;
-
-  // ⚡ Browse Over-fetch: Loop to fill the page
-  while (allResults.length < targetLimit && currentPage < (filters.page || 1) + 3) {
-    try {
-      let results = [];
-      if (provider === 'mangakatana') {
-        const data = await mangakatana.browseManga({ ...filters, page: currentPage });
-        results = (data.results || []).map(m => ({ ...m, id: `${provider}:${m.id}` }));
-      } else {
-        // Fallback for other providers if added later
-        break;
-      }
-      
-      allResults.push(...results);
-      if (results.length === 0) break;
-      currentPage++;
-    } catch (err) {
-      console.warn(`[Ingestion] browseManga failed for page ${currentPage}:`, err.message);
-      break;
+  if (provider === 'mangakatana') {
+    const data = await mangakatana.browseManga(filters);
+    // Ensure IDs are prefixed even in browse
+    if (data.results) {
+      data.results = data.results.map(m => ({ ...m, id: `${provider}:${m.id}` }));
     }
+    return { data };
   }
-
-  return { data: { results: allResults, currentPage: filters.page || 1, hasNextPage: true } };
+  return { data: { results: [], currentPage: 1, hasNextPage: false } };
 }
 
 module.exports = {
