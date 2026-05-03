@@ -434,45 +434,50 @@ function BrowseContent() {
 
           {/* ── Pagination ── */}
           {totalPages > 1 && (
-            <div style={{ marginTop: 60, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-              
-              {page > 3 && (
-                <>
-                  <button onClick={() => handlePageChange(1)} style={{ minWidth: 44, height: 44, borderRadius: 12, fontWeight: 700, background: 'var(--surface)', color: 'var(--text-2)', border: '1px solid var(--border)', cursor: 'pointer' }}>1</button>
-                  {page > 4 && <span style={{ color: 'var(--text-3)', margin: '0 4px' }}>...</span>}
-                </>
-              )}
+            <div style={{ marginTop: 60, textAlign: 'center' }}>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-3)', marginBottom: 16, fontWeight: 500 }}>
+                Showing results for <span style={{ color: 'var(--accent)', fontWeight: 700 }}>{totalResults.toLocaleString()} gems</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                
+                {page > 3 && (
+                  <>
+                    <button onClick={() => handlePageChange(1)} style={{ minWidth: 44, height: 44, borderRadius: 12, fontWeight: 700, background: 'var(--surface)', color: 'var(--text-2)', border: '1px solid var(--border)', cursor: 'pointer' }}>1</button>
+                    {page > 4 && <span style={{ color: 'var(--text-3)', margin: '0 4px' }}>...</span>}
+                  </>
+                )}
 
-              <button onClick={() => handlePageChange(page - 1)} disabled={page === 1} className="btn btn-ghost" style={{ minWidth: 44, height: 44, padding: 0, opacity: page === 1 ? 0.3 : 1 }}>
-                <span className="material-icons">chevron_left</span>
-              </button>
-
-              {getPageNumbers().map(p => (
-                <button
-                  key={p}
-                  onClick={() => handlePageChange(p)}
-                  style={{
-                    minWidth: 44, height: 44, borderRadius: 12, fontWeight: 700,
-                    background: p === page ? 'var(--accent)' : 'var(--surface)',
-                    color: p === page ? '#fff' : 'var(--text-2)',
-                    border: `1px solid ${p === page ? 'var(--accent)' : 'var(--border)'}`,
-                    cursor: 'pointer', transition: 'all 0.2s',
-                  }}
-                >
-                  {p}
+                <button onClick={() => handlePageChange(page - 1)} disabled={page === 1} className="btn btn-ghost" style={{ minWidth: 44, height: 44, padding: 0, opacity: page === 1 ? 0.3 : 1 }}>
+                  <span className="material-icons">chevron_left</span>
                 </button>
-              ))}
 
-              <button onClick={() => handlePageChange(page + 1)} disabled={page === totalPages} className="btn btn-ghost" style={{ minWidth: 44, height: 44, padding: 0, opacity: page === totalPages ? 0.3 : 1 }}>
-                <span className="material-icons">chevron_right</span>
-              </button>
+                {getPageNumbers().map(p => (
+                  <button
+                    key={p}
+                    onClick={() => handlePageChange(p)}
+                    style={{
+                      minWidth: 44, height: 44, borderRadius: 12, fontWeight: 700,
+                      background: p === page ? 'var(--accent)' : 'var(--surface)',
+                      color: p === page ? '#fff' : 'var(--text-2)',
+                      border: `1px solid ${p === page ? 'var(--accent)' : 'var(--border)'}`,
+                      cursor: 'pointer', transition: 'all 0.2s',
+                    }}
+                  >
+                    {p}
+                  </button>
+                ))}
 
-              {totalPages > 1 && !getPageNumbers().includes(totalPages) && (
-                <>
-                  {page < totalPages - 3 && <span style={{ color: 'var(--text-3)', margin: '0 4px' }}>...</span>}
-                  <button onClick={() => handlePageChange(totalPages)} style={{ minWidth: 44, height: 44, borderRadius: 12, fontWeight: 700, background: 'var(--surface)', color: 'var(--text-2)', border: '1px solid var(--border)', cursor: 'pointer' }}>{totalPages.toLocaleString()}</button>
-                </>
-              )}
+                <button onClick={() => handlePageChange(page + 1)} disabled={page === totalPages} className="btn btn-ghost" style={{ minWidth: 44, height: 44, padding: 0, opacity: page === totalPages ? 0.3 : 1 }}>
+                  <span className="material-icons">chevron_right</span>
+                </button>
+
+                {totalPages > 1 && !getPageNumbers().includes(totalPages) && (
+                  <>
+                    {page < totalPages - 3 && <span style={{ color: 'var(--text-3)', margin: '0 4px' }}>...</span>}
+                    <button onClick={() => handlePageChange(totalPages)} style={{ minWidth: 44, height: 44, borderRadius: 12, fontWeight: 700, background: 'var(--surface)', color: 'var(--text-2)', border: '1px solid var(--border)', cursor: 'pointer' }}>{totalPages.toLocaleString()}</button>
+                  </>
+                )}
+              </div>
             </div>
           )}
         </main>
