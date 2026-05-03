@@ -7,6 +7,7 @@ const axios = require('axios');
 const axiosRetry = require('axios-retry').default;
 const config = require('../config/env');
 const mangakatana = require('./mangakatanaScraper');
+const mangadex = require('./mangadexScraper');
 
 const client = axios.create({
   baseURL: config.consumet.url || 'https://api.consumet.org',
@@ -38,9 +39,8 @@ function mapMangaFormat(m) {
 // ── Public API ────────────────────────────────────────────────────────────────
 
 async function searchManga(query, page = 1) {
-  const providers = [provider, 'manganato', 'mangakakalot'];
+  const providers = [provider, 'mangadex', 'manganato', 'mangakakalot'];
   const allResults = [];
-  const seenIds = new Set();
   const seenTitles = new Set();
 
   for (const p of providers) {
@@ -49,6 +49,9 @@ async function searchManga(query, page = 1) {
       if (p === 'mangakatana') {
         const katanaData = await mangakatana.searchManga(query, page);
         results = (katanaData.results || []).map(m => ({ ...m, id: `mangakatana:${m.id}` }));
+      } else if (p === 'mangadex') {
+        const dexData = await mangadex.searchManga(query, page);
+        results = (dexData.results || []).map(m => ({ ...m, id: `mangadex:${m.id}` }));
       } else {
         const res = await client.get(`/manga/${p}/${encodeURIComponent(query)}`, { 
           params: { page },
@@ -154,6 +157,10 @@ async function getMangaInfo(mangaId) {
       const data = await mangakatana.getMangaInfo(mangaId);
       return { data };
     }
+    if (mainProvider === 'mangadex') {
+      const data = await mangadex.getMangaInfo(mangaId);
+      return { data };
+    }
     const res = await client.get(`/manga/${mainProvider}/info/${mangaId}`);
     const m = res.data;
     const mappedManga = mapMangaFormat(m);
@@ -202,6 +209,10 @@ async function getChapterPages(chapterId) {
 
   if (mainProvider === 'mangakatana') {
     const data = await mangakatana.getChapterPages(chapterId);
+    return { data };
+  }
+  if (mainProvider === 'mangadex') {
+    const data = await mangadex.getChapterPages(chapterId);
     return { data };
   }
 
