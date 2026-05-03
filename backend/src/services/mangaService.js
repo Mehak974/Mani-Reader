@@ -284,20 +284,41 @@ async function browse(filters = {}, userId = null) {
   // ⚡ Bypass cache for keyword searches to ensure we hit all providers fresh
   const useCache = !filters.keyword;
   const cacheKey = `browse:${JSON.stringify(filters)}`;
+  const targetCount = 20;
 
-  let data;
-  if (useCache) {
-    data = await cache.getOrSet(cacheKey, cache.ttl.searchTtl, async () => {
-      const res = await ingestion.browseManga(filters);
-      return res.data;
-    });
-  } else {
+  let results = [];
+  let totalData = {};
+  let currentPage = filters.page || 1;
+  let attempts = 0;
+
+  // If we have a keyword, we don't loop (to avoid infinite search depth)
+  if (filters.keyword) {
     const res = await ingestion.browseManga(filters);
-    data = res.data;
+    totalData = res.data;
+    results = await applyContentFilters(res.data.results || [], userId, true);
+  } else {
+    // Fill strategy for guests: keep fetching until we have targetCount safe results
+    while (results.length < targetCount && attempts < 3) {
+      const res = await ingestion.browseManga({ ...filters, page: currentPage });
+      if (!res.data.results || res.data.results.length === 0) break;
+      
+      totalData = res.data;
+      const filtered = await applyContentFilters(res.data.results, userId, false);
+      results = [...results, ...filtered];
+      
+      if (results.length >= targetCount) break;
+      currentPage++;
+      attempts++;
+    }
   }
 
-  data.results = await applyContentFilters(data.results, userId, !!filters.keyword);
-  return data;
+  const finalData = {
+    ...totalData,
+    results: results.slice(0, targetCount),
+    currentPage: filters.page || 1
+  };
+
+  return finalData;
 }
 
 async function rateManga(userId, mangaId, score) {
