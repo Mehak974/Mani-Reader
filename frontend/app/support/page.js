@@ -39,42 +39,7 @@ export default function SupportPage() {
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 32 }}>
-          {/* Ko-fi Card */}
-          <div style={{ 
-            background: 'var(--surface)', 
-            border: '1px solid var(--border)', 
-            borderRadius: 32, 
-            padding: 48, 
-            transition: 'all 0.3s ease',
-            cursor: 'pointer',
-            position: 'relative',
-            overflow: 'hidden'
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.transform = 'translateY(-10px)';
-            e.currentTarget.style.borderColor = 'var(--accent)';
-            e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.4)';
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.borderColor = 'var(--border)';
-            e.currentTarget.style.boxShadow = 'none';
-          }}
-          onClick={() => window.open('https://ko-fi.com/manireader', '_blank')}
-          >
-            <div style={{ width: 64, height: 64, borderRadius: 20, background: '#29abe0', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 32 }}>
-              <span className="material-icons" style={{ fontSize: '2.5rem', color: '#fff' }}>coffee</span>
-            </div>
-            <h3 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: 16 }}>Buy us a Coffee</h3>
-            <p style={{ color: 'var(--text-3)', marginBottom: 32, lineHeight: 1.6 }}>
-              A simple and quick way to support our daily operations. Every "coffee" goes directly towards keeping the servers running.
-            </p>
-            <div style={{ display: 'flex', alignItems: 'center', color: 'var(--accent)', fontWeight: 700, gap: 8 }}>
-              Go to Ko-fi <span className="material-icons">arrow_forward</span>
-            </div>
-          </div>
-
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', maxWidth: 600, margin: '0 auto' }}>
           {/* Patreon Card */}
           <div style={{ 
             background: 'var(--surface)', 
@@ -82,7 +47,8 @@ export default function SupportPage() {
             borderRadius: 32, 
             padding: 48, 
             transition: 'all 0.3s ease',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            textAlign: 'center'
           }}
           onMouseEnter={e => {
             e.currentTarget.style.transform = 'translateY(-10px)';
@@ -95,15 +61,15 @@ export default function SupportPage() {
             e.currentTarget.style.boxShadow = 'none';
           }}
           >
-            <div style={{ width: 64, height: 64, borderRadius: 20, background: '#f96854', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 32 }}>
-              <span className="material-icons" style={{ fontSize: '2.5rem', color: '#fff' }}>loyalty</span>
+            <div style={{ width: 80, height: 80, borderRadius: 24, background: '#f96854', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 32px' }}>
+              <span className="material-icons" style={{ fontSize: '3rem', color: '#fff' }}>loyalty</span>
             </div>
-            <h3 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: 16 }}>Become a Patron</h3>
-            <p style={{ color: 'var(--text-3)', marginBottom: 32, lineHeight: 1.6 }}>
-              Join our inner circle for exclusive perks, early access to features, and a special badge on your profile.
+            <h3 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: 16 }}>Become a Patron</h3>
+            <p style={{ color: 'var(--text-3)', marginBottom: 32, lineHeight: 1.6, fontSize: '1.1rem' }}>
+              Join our inner circle for exclusive perks, early access to features, and a special gemstone badge on your profile.
             </p>
-            <div style={{ display: 'flex', alignItems: 'center', color: 'var(--accent)', fontWeight: 700, gap: 8 }}>
-              Coming Soon <span className="material-icons" style={{ fontSize: '1.2rem' }}>schedule</span>
+            <div style={{ display: 'inline-flex', alignItems: 'center', color: 'var(--accent)', fontWeight: 700, gap: 8, fontSize: '1.1rem' }}>
+              Coming Soon <span className="material-icons" style={{ fontSize: '1.4rem' }}>schedule</span>
             </div>
           </div>
         </div>
