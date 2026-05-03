@@ -38,64 +38,53 @@ function mapMangaFormat(m) {
 // ── Public API ────────────────────────────────────────────────────────────────
 
 async function searchManga(query, page = 1) {
-  let primaryData = { results: [] };
-  
-  // 1. Try Primary Provider
-  try {
-    if (provider === 'mangakatana') {
-      const katanaData = await mangakatana.searchManga(query, page);
-      primaryData = {
-        ...katanaData,
-        results: (katanaData.results || []).map(m => ({ ...m, id: `${provider}:${m.id}` }))
-      };
-    } else {
-      const res = await client.get(`/manga/${provider}/${encodeURIComponent(query)}`, { params: { page } });
-      primaryData = { 
-        results: (res.data.results || []).map(m => {
-          const mapped = mapMangaFormat(m);
-          mapped.id = `${provider}:${mapped.id}`;
-          return mapped;
-        }),
-        currentPage: page
-      };
-    }
-  } catch (err) {
-    console.error(`[Ingestion] Primary search failed (${provider}):`, err.message);
-  }
+  const providers = [provider, 'manganato', 'mangakakalot'];
+  const allResults = [];
+  const seenIds = new Set();
+  const seenTitles = new Set();
 
-  // 2. If no results, try Fallback Providers (Deep Search)
-  if (!primaryData.results || primaryData.results.length === 0) {
-    const fallbacks = ['manganato', 'mangakakalot', 'mangadex'];
-    
-    for (const fallback of fallbacks) {
-      if (fallback === provider) continue;
-      
-      try {
-        console.log(`[Ingestion] Deep Search: Trying ${fallback}...`);
-        // Use a shorter timeout for fallbacks to keep the UI responsive
-        const fallbackRes = await client.get(`/manga/${fallback}/${encodeURIComponent(query)}`, { 
+  for (const p of providers) {
+    try {
+      let results = [];
+      if (p === 'mangakatana') {
+        const katanaData = await mangakatana.searchManga(query, page);
+        results = (katanaData.results || []).map(m => ({ ...m, id: `mangakatana:${m.id}` }));
+      } else {
+        const res = await client.get(`/manga/${p}/${encodeURIComponent(query)}`, { 
           params: { page },
-          timeout: 10000 
+          timeout: 8000 // Short timeout for speed
         });
-        
-        const rawResults = fallbackRes.data.results || fallbackRes.data || [];
-        const fallbackResults = (Array.isArray(rawResults) ? rawResults : []).map(m => {
+        const rawResults = res.data.results || res.data || [];
+        results = (Array.isArray(rawResults) ? rawResults : []).map(m => {
           const mapped = mapMangaFormat(m);
-          mapped.id = `${fallback}:${mapped.id}`; 
+          mapped.id = `${p}:${mapped.id}`;
           return mapped;
         });
-
-        if (fallbackResults.length > 0) {
-          console.log(`[Ingestion] Success! Found ${fallbackResults.length} on ${fallback}`);
-          return { data: { currentPage: page, results: fallbackResults } };
-        }
-      } catch (err) {
-        console.warn(`[Ingestion] Deep Search skipped ${fallback}: ${err.message}`);
       }
+
+      for (const m of results) {
+        const titleKey = m.title.toLowerCase().trim();
+        if (!seenTitles.has(titleKey)) {
+          allResults.push(m);
+          seenTitles.add(titleKey);
+        }
+      }
+      
+      // If we already have a good number of results, we can stop early for speed
+      if (allResults.length >= 20) break;
+    } catch (err) {
+      console.warn(`[Ingestion] Search provider ${p} failed:`, err.message);
     }
   }
 
-  return { data: primaryData };
+  return { 
+    data: { 
+      currentPage: page, 
+      results: allResults,
+      totalResults: allResults.length,
+      hasNextPage: false // Merged results usually don't support simple pagination
+    } 
+  };
 }
 
 async function getPopular(page = 1) {
