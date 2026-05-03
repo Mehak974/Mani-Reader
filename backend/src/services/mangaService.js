@@ -66,7 +66,13 @@ function mapManga(raw) {
     description: raw.description || null,
     status: raw.status || null,
     genres: Array.isArray(raw.genres) ? raw.genres : [],
-    nsfw: raw.isAdult || raw.nsfw || false,
+    nsfw: !!(
+      raw.isAdult || 
+      raw.nsfw || 
+      (Array.isArray(raw.genres) && raw.genres.some(g => 
+        ['Hentai', 'Ecchi', 'Smut', 'Adult', '18+'].includes(g)
+      ))
+    ),
     rating: raw.rating || null,
     lastChapter: raw.lastChapter || null,
     lastChapterId: raw.lastChapterId || null,
@@ -323,6 +329,7 @@ async function getRelated(mangaId, userId = null) {
     where: {
       id: { not: mangaId },
       isHidden: false,
+      nsfw: userId ? undefined : false, // Strictly hide NSFW from guests at DB level
       genres: { hasSome: manga.genres }
     },
     take: 12,
