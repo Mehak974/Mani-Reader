@@ -246,78 +246,58 @@ async function getPopular(page = 1, userId = null) {
 }
 
 async function getRecent(page = 1, userId = null) {
-  // ⚡ SMART BUFFER: Fetch until we have 27 safe items
-  const targetCount = 27;
-  let accumulatedResults = [];
-  let currentPageToFetch = page;
-  let attempts = 0;
-
-  while (accumulatedResults.length < targetCount && attempts < 2) {
-    const cacheKey = `recent:${currentPageToFetch}`;
-    const pageData = await cache.getOrSet(cacheKey, cache.ttl.searchTtl, async () => {
-      const { data } = await ingestion.browseManga({ page: currentPageToFetch, order: 'latest' });
-      return (data.results || data || []).map(mapManga);
-    });
-
-    const filtered = await applyContentFilters(pageData, userId, false);
-    accumulatedResults = [...accumulatedResults, ...filtered];
-    currentPageToFetch++;
-    attempts++;
-  }
-
-  return accumulatedResults.slice(0, targetCount);
+  const cacheKey = `recent:${page}`;
+  const results = await cache.getOrSet(cacheKey, cache.ttl.searchTtl, async () => {
+    const { data } = await ingestion.getRecent(page);
+    return (data.results || data || []).map(mapManga);
+  });
+  return applyContentFilters(results, userId, false);
 }
 
 async function getPopularByScore(limit = 20, userId = null) {
-  const cacheKey = `popular_score:${limit}`;
+  try {
+    // 1. Fetch from popularity table directly
+    const popularRecords = await prisma.popularity.findMany({
+      where: {
+        manga: { isHidden: false },
+        score: { gt: 0 }
+      },
+      include: { manga: true },
+      orderBy: { score: 'desc' },
+      take: limit,
+    });
 
-  const results = await cache.getOrSet(cacheKey, cache.ttl.searchTtl, async () => {
-    const { data } = await ingestion.getPopular(1);
-    return (data.results || data || []).map(mapManga);
-  });
+    const results = popularRecords.map(p => ({
+      ...p.manga,
+      popularity: p
+    }));
 
-  return applyContentFilters(results.slice(0, limit), userId);
+    const mapped = results.map(mapManga);
+    return applyContentFilters(mapped, userId, false);
+  } catch (err) {
+    console.error('[MangaService] getPopularByScore failed:', err);
+    throw err;
+  }
 }
 
 async function browse(filters = {}, userId = null) {
-  // ⚡ SMART BUFFER for Browse
-  const targetCount = filters.keyword ? null : 27;
+  // ⚡ Bypass cache for keyword searches to ensure we hit all providers fresh
   const useCache = !filters.keyword;
   const cacheKey = `browse:${JSON.stringify(filters)}`;
 
-  if (useCache && !filters.keyword) {
-    const cachedData = await cache.get(cacheKey);
-    if (cachedData) return { ...cachedData, results: await applyContentFilters(cachedData.results, userId, false) };
-  }
-
-  let results = [];
-  let currentPage = filters.page || 1;
-  let totalData = null;
-  let attempts = 0;
-
-  while (targetCount && results.length < targetCount && attempts < 2) {
-    const res = await ingestion.browseManga({ ...filters, page: currentPage });
-    totalData = res.data;
-    const filtered = await applyContentFilters(res.data.results || [], userId, false);
-    results = [...results, ...filtered];
-    currentPage++;
-    attempts++;
-  }
-
-  if (!targetCount) {
+  let data;
+  if (useCache) {
+    data = await cache.getOrSet(cacheKey, cache.ttl.searchTtl, async () => {
+      const res = await ingestion.browseManga(filters);
+      return res.data;
+    });
+  } else {
     const res = await ingestion.browseManga(filters);
-    totalData = res.data;
-    results = await applyContentFilters(res.data.results || [], userId, true);
+    data = res.data;
   }
 
-  const finalData = {
-    ...totalData,
-    results: targetCount ? results.slice(0, targetCount) : results,
-    currentPage: filters.page || 1
-  };
-
-  if (useCache) await cache.set(cacheKey, finalData, cache.ttl.searchTtl);
-  return finalData;
+  data.results = await applyContentFilters(data.results, userId, !!filters.keyword);
+  return data;
 }
 
 async function rateManga(userId, mangaId, score) {
