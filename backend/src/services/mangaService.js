@@ -298,7 +298,7 @@ async function browse(filters = {}, userId = null) {
     };
   });
 
-  data.results = await applyContentFilters(data.results, userId, false);
+  data.results = await applyContentFilters(data.results, userId, !!filters.keyword);
   return data;
 }
 

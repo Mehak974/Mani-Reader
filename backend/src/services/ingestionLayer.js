@@ -239,8 +239,17 @@ async function getChapterPages(chapterId) {
 }
 
 async function browseManga(filters) {
+  // 🛡️ If a keyword is present, use our fallback-aware searchManga instead of direct browse
+  if (filters.keyword && filters.keyword.trim()) {
+    return await searchManga(filters.keyword, filters.page || 1);
+  }
+
   if (provider === 'mangakatana') {
     const data = await mangakatana.browseManga(filters);
+    // Ensure IDs are prefixed even in browse
+    if (data.results) {
+      data.results = data.results.map(m => ({ ...m, id: `${provider}:${m.id}` }));
+    }
     return { data };
   }
   return { data: { results: [], currentPage: 1, hasNextPage: false } };
