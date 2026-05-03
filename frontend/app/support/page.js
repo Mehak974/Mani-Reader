@@ -55,7 +55,7 @@ export default function SupportPage() {
               <div style={{ width: '3%', height: '100%', background: 'linear-gradient(90deg, var(--accent), var(--accent-2))' }} />
             </div>
             <p style={{ color: 'var(--text-3)', fontSize: '1rem', lineHeight: 1.6 }}>
-              Goal: <b>$1,500</b> for the <b>Manga Posting System</b>. 
+              We are working towards adding the <b>Manga Posting System</b>. 
               Once reached, we will add support for users to upload and share their own manga.
             </p>
           </div>

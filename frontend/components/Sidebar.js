@@ -234,7 +234,7 @@ export default function Sidebar({ isOpen, onClose }) {
             </div>
 
             <div style={{ fontSize: '0.7rem', color: 'var(--text-3)', lineHeight: 1.4, marginBottom: 12 }}>
-              Goal: <b>{GOAL_DATA.label}</b>. Help us reach ${GOAL_DATA.target} for ad-free forever.
+              Target: <b>{GOAL_DATA.label}</b>. Support us to unlock this feature for everyone!
             </div>
 
             <Link href="/support" onClick={onClose} className="btn jewel-btn btn-sm" style={{ width: '100%', padding: '8px', fontSize: '0.75rem' }}>
