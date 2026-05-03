@@ -106,7 +106,14 @@ function BrowseContent() {
 
       setResults(filtered);
       setTotalPages(data.totalPages || 1);
-      setTotalResults(data.totalResults || 0);
+      
+      // ⚡ SYNC COUNT: Update the visible count to match what the user actually sees
+      if (!shouldBypassFilter) {
+        setTotalResults(filtered.length);
+      } else {
+        setTotalResults(data.totalResults || filtered.length);
+      }
+      
       setPage(p);
       
       const url = new URL(window.location);
