@@ -39,46 +39,70 @@ export default function SupportPage() {
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr', maxWidth: 600, margin: '0 auto' }}>
-          {/* Patreon Card */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: 32, margin: '0 auto' }}>
+          {/* Goal Progress Card */}
           <div style={{ 
             background: 'var(--surface)', 
             border: '1px solid var(--border)', 
             borderRadius: 32, 
-            padding: 48, 
-            transition: 'all 0.3s ease',
-            cursor: 'pointer',
-            textAlign: 'center'
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.transform = 'translateY(-10px)';
-            e.currentTarget.style.borderColor = 'var(--accent)';
-            e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.4)';
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.borderColor = 'var(--border)';
-            e.currentTarget.style.boxShadow = 'none';
-          }}
-          >
-            <div style={{ width: 80, height: 80, borderRadius: 24, background: '#f96854', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 32px' }}>
-              <span className="material-icons" style={{ fontSize: '3rem', color: '#fff' }}>loyalty</span>
+            padding: 40,
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h3 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Next Goal</h3>
+              <span style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--accent)' }}>3%</span>
             </div>
-            <h3 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: 16 }}>Become a Patron</h3>
-            <p style={{ color: 'var(--text-3)', marginBottom: 32, lineHeight: 1.6, fontSize: '1.1rem' }}>
-              Join our inner circle for exclusive perks, early access to features, and a special gemstone badge on your profile.
+            <div style={{ height: 14, background: 'var(--surface-2)', borderRadius: 7, overflow: 'hidden', marginBottom: 20 }}>
+              <div style={{ width: '3%', height: '100%', background: 'linear-gradient(90deg, var(--accent), var(--accent-2))' }} />
+            </div>
+            <p style={{ color: 'var(--text-3)', fontSize: '1rem', lineHeight: 1.6 }}>
+              Goal: <b>$1,500</b> for the <b>Manga Posting System</b>. 
+              Once reached, we will add support for users to upload and share their own manga.
             </p>
-            <div style={{ display: 'inline-flex', alignItems: 'center', color: 'var(--accent)', fontWeight: 700, gap: 8, fontSize: '1.1rem' }}>
-              Coming Soon <span className="material-icons" style={{ fontSize: '1.4rem' }}>schedule</span>
+          </div>
+
+          {/* PayPal Card */}
+          <div style={{ 
+            background: 'var(--surface)', 
+            border: '1px solid var(--border)', 
+            borderRadius: 32, 
+            padding: 40,
+            textAlign: 'center'
+          }}>
+            <div style={{ width: 60, height: 60, borderRadius: 18, background: '#0070ba', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+              <span className="material-icons" style={{ fontSize: '2.5rem', color: '#fff' }}>payments</span>
             </div>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: 12 }}>One-time Support</h3>
+            <p style={{ color: 'var(--text-2)', marginBottom: 24, fontSize: '0.95rem' }}>
+              Buy us a coffee for a smooth, ad-free experience.
+            </p>
+            <a 
+              href="https://paypal.me/yourlink" 
+              target="_blank" 
+              className="btn jewel-btn" 
+              style={{ width: '100%', padding: '12px', borderRadius: 14 }}
+            >
+              Support via PayPal
+            </a>
           </div>
         </div>
 
-        <div style={{ marginTop: 80, padding: 48, borderRadius: 32, background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(108, 99, 255, 0.1) 100%)', border: '1px solid var(--border)', textAlign: 'center' }}>
-          <h3 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: 12 }}>Other Ways to Help</h3>
-          <p style={{ color: 'var(--text-3)', marginBottom: 0 }}>
-            Not able to support financially? You can still help by sharing Mani Reader with your friends or providing feedback on our <a href="/contact" style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>Contact Page</a>.
-          </p>
+        {/* Community Section */}
+        <div style={{ marginTop: 60, textAlign: 'center' }}>
+          <h3 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: 32 }}>Join the Community</h3>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 20, flexWrap: 'wrap' }}>
+            <a href="https://discord.gg/XScjzUBtF" target="_blank" style={{ 
+              display: 'flex', alignItems: 'center', gap: 12, padding: '16px 32px', borderRadius: 16, 
+              background: '#5865F2', color: '#fff', textDecoration: 'none', fontWeight: 700 
+            }}>
+              <span className="material-icons">forum</span> Discord
+            </a>
+            <a href="https://reddit.com/r/manireader" target="_blank" style={{ 
+              display: 'flex', alignItems: 'center', gap: 12, padding: '16px 32px', borderRadius: 16, 
+              background: '#FF4500', color: '#fff', textDecoration: 'none', fontWeight: 700 
+            }}>
+              <span className="material-icons">reddit</span> Reddit
+            </a>
+          </div>
         </div>
       </div>
     </div>
