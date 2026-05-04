@@ -27,7 +27,7 @@ module.exports = {
 
   consumet: {
     url: process.env.CONSUMET_URL || 'https://api.consumet.org',
-    primary: process.env.PRIMARY_PROVIDER || 'comick',
+    primary: process.env.PRIMARY_PROVIDER || 'mangakatana',
     fallback: process.env.CONSUMET_FALLBACK_PROVIDER || 'mangakakalot',
     timeout: 30000,
   },
