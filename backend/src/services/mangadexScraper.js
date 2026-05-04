@@ -32,6 +32,7 @@ async function searchManga(query, page = 1) {
         status: attributes.status,
         nsfw: ['erotica', 'pornographic'].includes(attributes.contentRating),
         genres: attributes.tags.map(t => t.attributes.name.en),
+        lastChapter: attributes.lastChapter ? `Chapter ${attributes.lastChapter}` : null,
         source: 'mangadex'
       };
     });
@@ -61,7 +62,7 @@ async function getMangaInfo(mangaId) {
     Object.values(volumes).forEach(v => {
       Object.values(v.chapters).forEach(c => {
         chapters.push({
-          id: c.id, // This is the ID of the first aggregate chapter, might need refinement
+          id: c.id, 
           chapterNumber: c.chapter,
           title: `Chapter ${c.chapter}`,
           source: 'mangadex'
@@ -69,15 +70,20 @@ async function getMangaInfo(mangaId) {
       });
     });
 
+    const coverArt = (m.relationships || []).find(r => r.type === 'cover_art');
+    const coverFileName = coverArt?.attributes?.fileName;
+    const image = coverFileName ? `https://uploads.mangadex.org/covers/${m.id}/${coverFileName}` : null;
+
     return {
       id: m.id,
       title: attributes.title.en || attributes.title[Object.keys(attributes.title)[0]],
-      image: null, // Would need full info fetch for cover
+      image,
       description: attributes.description.en,
       status: attributes.status,
       genres: attributes.tags.map(t => t.attributes.name.en),
       nsfw: ['erotica', 'pornographic'].includes(attributes.contentRating),
       chapters: chapters.sort((a,b) => parseFloat(b.chapterNumber) - parseFloat(a.chapterNumber)),
+      lastChapter: attributes.lastChapter ? `Chapter ${attributes.lastChapter}` : null,
       source: 'mangadex'
     };
   } catch (err) {
@@ -103,8 +109,8 @@ async function getPopular(page = 1) {
   try {
     const res = await axios.get(`${API_BASE}/manga`, {
       params: {
-        limit: 20,
-        offset: (page - 1) * 20,
+        limit: 24,
+        offset: (page - 1) * 24,
         'order[followedCount]': 'desc',
         'contentRating[]': ['safe', 'suggestive'],
         'includes[]': ['cover_art']
@@ -122,12 +128,15 @@ async function getPopular(page = 1) {
         id: m.id,
         title,
         image,
+        description: attributes.description.en || '',
         status: attributes.status,
+        genres: attributes.tags.map(t => t.attributes.name.en),
+        lastChapter: attributes.lastChapter ? `Chapter ${attributes.lastChapter}` : null,
         source: 'mangadex'
       };
     });
 
-    return { results, totalPages: Math.ceil(res.data.total / 20) };
+    return { results, totalPages: Math.ceil(res.data.total / 24) };
   } catch (err) {
     console.error('[MangaDex] getPopular failed:', err.message);
     return { results: [] };
@@ -138,8 +147,8 @@ async function getRecent(page = 1) {
   try {
     const res = await axios.get(`${API_BASE}/manga`, {
       params: {
-        limit: 20,
-        offset: (page - 1) * 20,
+        limit: 30,
+        offset: (page - 1) * 30,
         'order[latestUploadedChapter]': 'desc',
         'contentRating[]': ['safe', 'suggestive'],
         'includes[]': ['cover_art']
@@ -157,12 +166,15 @@ async function getRecent(page = 1) {
         id: m.id,
         title,
         image,
+        description: attributes.description.en || '',
         status: attributes.status,
+        genres: attributes.tags.map(t => t.attributes.name.en),
+        lastChapter: attributes.lastChapter ? `Chapter ${attributes.lastChapter}` : null,
         source: 'mangadex'
       };
     });
 
-    return { results, totalPages: Math.ceil(res.data.total / 20) };
+    return { results, totalPages: Math.ceil(res.data.total / 30) };
   } catch (err) {
     console.error('[MangaDex] getRecent failed:', err.message);
     return { results: [] };
