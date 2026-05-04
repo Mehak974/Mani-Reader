@@ -99,4 +99,74 @@ async function getChapterPages(chapterId) {
   }
 }
 
-module.exports = { searchManga, getMangaInfo, getChapterPages };
+async function getPopular(page = 1) {
+  try {
+    const res = await axios.get(`${API_BASE}/manga`, {
+      params: {
+        limit: 20,
+        offset: (page - 1) * 20,
+        'order[followedCount]': 'desc',
+        'contentRating[]': ['safe', 'suggestive'],
+        'includes[]': ['cover_art']
+      }
+    });
+
+    const results = res.data.data.map(m => {
+      const attributes = m.attributes;
+      const title = attributes.title.en || attributes.title[Object.keys(attributes.title)[0]] || 'Unknown Title';
+      const coverArt = (m.relationships || []).find(r => r.type === 'cover_art');
+      const coverFileName = coverArt?.attributes?.fileName;
+      const image = coverFileName ? `https://uploads.mangadex.org/covers/${m.id}/${coverFileName}` : null;
+
+      return {
+        id: m.id,
+        title,
+        image,
+        status: attributes.status,
+        source: 'mangadex'
+      };
+    });
+
+    return { results, totalPages: Math.ceil(res.data.total / 20) };
+  } catch (err) {
+    console.error('[MangaDex] getPopular failed:', err.message);
+    return { results: [] };
+  }
+}
+
+async function getRecent(page = 1) {
+  try {
+    const res = await axios.get(`${API_BASE}/manga`, {
+      params: {
+        limit: 20,
+        offset: (page - 1) * 20,
+        'order[latestUploadedChapter]': 'desc',
+        'contentRating[]': ['safe', 'suggestive'],
+        'includes[]': ['cover_art']
+      }
+    });
+
+    const results = res.data.data.map(m => {
+      const attributes = m.attributes;
+      const title = attributes.title.en || attributes.title[Object.keys(attributes.title)[0]] || 'Unknown Title';
+      const coverArt = (m.relationships || []).find(r => r.type === 'cover_art');
+      const coverFileName = coverArt?.attributes?.fileName;
+      const image = coverFileName ? `https://uploads.mangadex.org/covers/${m.id}/${coverFileName}` : null;
+
+      return {
+        id: m.id,
+        title,
+        image,
+        status: attributes.status,
+        source: 'mangadex'
+      };
+    });
+
+    return { results, totalPages: Math.ceil(res.data.total / 20) };
+  } catch (err) {
+    console.error('[MangaDex] getRecent failed:', err.message);
+    return { results: [] };
+  }
+}
+
+module.exports = { searchManga, getMangaInfo, getChapterPages, getPopular, getRecent };
