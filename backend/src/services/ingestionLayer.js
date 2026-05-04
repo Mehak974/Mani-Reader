@@ -28,25 +28,36 @@ const BLACKLIST_TAGS = [
   'incest', 'gore', 'mature', 'ecchi', 'hentai', 'pornographic'
 ];
 
+const BLACKLIST_KEYWORDS = ['sexual', 'unfiltered', 'uncensored', 'erotic', 'smut', 'porn', 'hentai', 'sexy', 'thot', 'nude'];
+
 function filterNSFW(mangaList) {
   if (!Array.isArray(mangaList)) return [];
   return mangaList.filter(m => {
     if (m.nsfw) return false;
     const genres = (m.genres || []).map(g => (typeof g === 'string' ? g : g.name || '').toLowerCase());
+    const title = (m.title || '').toLowerCase();
+    const desc = (m.description || '').toLowerCase();
+
     const hasBadTag = genres.some(tag => BLACKLIST_TAGS.includes(tag));
-    return !hasBadTag;
+    const hasBadWord = BLACKLIST_KEYWORDS.some(word => title.includes(word) || desc.includes(word));
+
+    return !hasBadTag && !hasBadWord;
   });
 }
 
 function mapMangaFormat(m) {
+  const image = m.image || m.cover || null;
+  const proxiedImage = image && image.startsWith('http') ? `/api/image?url=${encodeURIComponent(image)}` : image;
+
   return {
     id: m.id,
     title: m.title,
-    image: m.image || m.cover || null,
+    image: proxiedImage,
     description: m.description || null,
     status: m.status || 'Unknown',
     nsfw: m.isAdult || m.nsfw || false,
     genres: m.genres || [],
+    lastChapter: m.lastChapter,
     source: m.source || provider,
   };
 }
@@ -54,7 +65,7 @@ function mapMangaFormat(m) {
 async function searchManga(query, page = 1) {
   if (provider === 'mangakatana') {
     const data = await mangakatana.searchManga(query, page);
-    data.results = filterNSFW(data.results);
+    data.results = filterNSFW(data.results).map(mapMangaFormat);
     return { data };
   }
 
@@ -73,7 +84,7 @@ async function searchManga(query, page = 1) {
 async function getPopular(page = 1) {
   if (provider === 'mangakatana') {
     const data = await mangakatana.getPopular(page);
-    data.results = filterNSFW(data.results);
+    data.results = filterNSFW(data.results).map(mapMangaFormat);
     return { data };
   }
   
@@ -90,7 +101,7 @@ async function getPopular(page = 1) {
 async function getRecent(page = 1) {
   if (provider === 'mangakatana') {
     const data = await mangakatana.getRecent(page);
-    data.results = filterNSFW(data.results);
+    data.results = filterNSFW(data.results).map(mapMangaFormat);
     return { data };
   }
 
