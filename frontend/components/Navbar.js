@@ -5,11 +5,13 @@ import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../lib/auth';
+import { useModals } from '../context/ModalContext';
 import Sidebar from './Sidebar';
 
 export default function Navbar() {
   const pathname = usePathname();
   const { user, logout } = useAuth() || {};
+  const { openLogin, openRegister } = useModals();
   const [scrolled, setScrolled] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -74,8 +76,8 @@ export default function Navbar() {
                 <button className="btn btn-ghost btn-sm" onClick={logout}>Logout</button>
               ) : (
                 <>
-                  <Link href="/auth/login" className="btn btn-ghost btn-sm">Login</Link>
-                  <Link href="/auth/register" className="btn jewel-btn btn-sm">Sign Up</Link>
+                  <button className="btn btn-ghost btn-sm" onClick={openLogin}>Login</button>
+                  <button className="btn jewel-btn btn-sm" onClick={openRegister}>Sign Up</button>
                 </>
               )}
               <button

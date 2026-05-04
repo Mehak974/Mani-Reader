@@ -1,6 +1,7 @@
 'use client';
 import { useEffect } from 'react';
 import { AuthProvider } from '../lib/auth';
+import { ModalProvider } from '../context/ModalContext';
 import UserActivity from './UserActivity';
 
 export default function ClientProviders({ children }) {
@@ -17,8 +18,10 @@ export default function ClientProviders({ children }) {
 
   return (
     <AuthProvider>
-      <UserActivity />
-      {children}
+      <ModalProvider>
+        <UserActivity />
+        {children}
+      </ModalProvider>
     </AuthProvider>
   );
 }

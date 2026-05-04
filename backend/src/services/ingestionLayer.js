@@ -8,6 +8,7 @@ const axiosRetry = require('axios-retry').default;
 const config = require('../config/env');
 const mangakatana = require('./mangakatanaScraper');
 const mangadex = require('./mangadexScraper');
+const comick = require('./comickScraper');
 
 const client = axios.create({
   baseURL: config.consumet.url || 'https://api.consumet.org',
@@ -39,14 +40,18 @@ function mapMangaFormat(m) {
 // ── Public API ────────────────────────────────────────────────────────────────
 
 async function searchManga(query, page = 1) {
-  const providers = [provider, 'mangadex', 'manganato', 'mangakakalot'];
+  // Comick is now the #1 Primary Engine for Growth & Traffic
+  const providers = ['comick', provider, 'mangadex', 'manganato'];
   const allResults = [];
   const seenTitles = new Set();
 
   for (const p of providers) {
     try {
       let results = [];
-      if (p === 'mangakatana') {
+      if (p === 'comick') {
+        const comickData = await comick.searchManga(query, page);
+        results = (comickData.results || []).map(m => ({ ...m, id: `comick:${m.id}` }));
+      } else if (p === 'mangakatana') {
         const katanaData = await mangakatana.searchManga(query, page);
         results = (katanaData.results || []).map(m => ({ ...m, id: `mangakatana:${m.id}` }));
       } else if (p === 'mangadex') {
@@ -91,15 +96,16 @@ async function searchManga(query, page = 1) {
 }
 
 async function getPopular(page = 1) {
-  if (provider === 'mangakatana') {
-    const data = await mangakatana.getPopular(page);
+  if (provider === 'comick') {
+    const data = await comick.getPopular(page);
     return {
       data: {
         ...data,
-        results: (data.results || []).map(m => ({ ...m, id: `${provider}:${m.id}` }))
+        results: (data.results || []).map(m => ({ ...m, id: `comick:${m.id}` }))
       }
     };
   }
+  if (provider === 'mangakatana') {
   
   try {
     const res = await client.get(`/manga/${provider}/popular`, { params: { page } });
@@ -118,15 +124,16 @@ async function getPopular(page = 1) {
 }
 
 async function getRecent(page = 1) {
-  if (provider === 'mangakatana') {
-    const data = await mangakatana.getRecent(page);
+  if (provider === 'comick') {
+    const data = await comick.getRecent(page); // We need to add this to scraper
     return {
       data: {
         ...data,
-        results: (data.results || []).map(m => ({ ...m, id: `${provider}:${m.id}` }))
+        results: (data.results || []).map(m => ({ ...m, id: `comick:${m.id}` }))
       }
     };
   }
+  if (provider === 'mangakatana') {
 
   try {
     const res = await client.get(`/manga/${provider}/recent-updates`, { params: { page } });
@@ -153,6 +160,19 @@ async function getMangaInfo(mangaId) {
   }
 
   try {
+    if (mainProvider === 'comick') {
+      const info = await comick.getMangaInfo(mangaId);
+      if (info && info.hid) {
+        const chapters = await comick.getChapters(info.hid);
+        info.chapters = chapters.map(c => ({
+          ...c,
+          id: `comick:${c.id}`,
+          chapterNumber: c.chapterNum,
+          source: 'comick'
+        }));
+        return { data: info };
+      }
+    }
     if (mainProvider === 'mangakatana') {
       const data = await mangakatana.getMangaInfo(mangaId);
       return { data };
@@ -207,6 +227,10 @@ async function getChapterPages(chapterId) {
     chapterId = id;
   }
 
+  if (mainProvider === 'comick') {
+    const pages = await comick.getChapterPages(chapterId);
+    return { data: pages };
+  }
   if (mainProvider === 'mangakatana') {
     const data = await mangakatana.getChapterPages(chapterId);
     return { data };

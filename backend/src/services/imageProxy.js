@@ -28,6 +28,8 @@ function getReferer(imageUrl) {
     if (domain.includes('mangakatana')) return 'https://mangakatana.com/';
     if (domain.includes('manganato')) return 'https://manganato.com';
     if (domain.includes('mangakakalot')) return 'https://mangakakalot.com';
+    if (domain.includes('comick')) return 'https://comick.io';
+    if (domain.includes('batocomic') || domain.includes('mangatoto') || domain.includes('xbato') || domain.includes('batosi')) return 'https://mangatoto.com';
     
     // Default to the domain of the image itself (often works for WP sites/Imgur)
     return `https://${domain}`;
@@ -57,10 +59,11 @@ async function proxyImage(imageUrl, res) {
     'imgur.com', 'blogspot.com', 'googleusercontent.com', 'wp-manga.com', 'manga-swat.com', 
     'manhwa68.com', 'manhuas.net', 'mangafreak.me', 'mangafreak.org', 'mangapanda.com', 
     'mangareader.net', 'readm.org', 'mangabob.com', 'manganelo.com', 'manganelo.tv',
-    'comick.app', 'comick.fun', 'bilibilicomics.com', 'webtoons.com', 'tapas.io',
+    'comick.app', 'comick.fun', 'comick.io', 'bilibilicomics.com', 'webtoons.com', 'tapas.io',
     'mangago.me', 'mangapark.net', 'mangapark.me', 'mangapill.com', 'mangafirst.jp',
     'manhuascan.com', 'zinmanga.com', 'mangasee123.com', 'manga4life.com', 'mangaowl.net',
-    'comick.org', 'mangareader.to'
+    'comick.org', 'mangareader.to', 'mangatoto.com', 'batocomic.com', 'xbato.com', 
+    'batosi.lat', 'meo.comick.pictures', 'meo3.comick.pictures'
   ];
 
   let urlObj;

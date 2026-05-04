@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../lib/auth';
+import { useModals } from '../context/ModalContext';
 
 // ── Sidebar sections ──────────────────────────────────────────────────────────
 const MAIN_LINKS = [
@@ -9,7 +10,7 @@ const MAIN_LINKS = [
   { href: '/library',         icon: 'bookmark',      label: 'Bookmarks' },
   { href: '/collections',     icon: 'book',          label: 'My Collections' },
   { href: '/history',         icon: 'history',       label: 'History' },
-  { href: '#',                icon: 'add_to_photos', label: 'Post Manga', goal: true },
+  { href: '/post-manga',      icon: 'add_to_photos', label: 'Post Manga', goal: true },
   { href: '/settings',        icon: 'settings',      label: 'Settings' },
 ];
 
@@ -67,6 +68,7 @@ function SidebarItem({ href, icon, label, active, external, onClick, goal }) {
 export default function Sidebar({ isOpen, onClose }) {
   const pathname  = usePathname();
   const { user, logout } = useAuth() || {};
+  const { openLogin, openRegister, openSupport } = useModals();
 
   const handleLogout = () => { logout?.(); onClose?.(); };
 
@@ -147,9 +149,9 @@ export default function Sidebar({ isOpen, onClose }) {
               </>
             ) : (
               <div style={{ fontSize: '0.875rem', color: 'var(--text-3)' }}>
-                <Link href="/auth/login" onClick={onClose} style={{ color: 'var(--accent)', fontWeight: 600 }}>Login</Link>
+                <button onClick={() => { openLogin(); onClose(); }} style={{ color: 'var(--accent)', fontWeight: 600, background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>Login</button>
                 {' or '}
-                <Link href="/auth/register" onClick={onClose} style={{ color: 'var(--accent)', fontWeight: 600 }}>Sign Up</Link>
+                <button onClick={() => { openRegister(); onClose(); }} style={{ color: 'var(--accent)', fontWeight: 600, background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>Sign Up</button>
               </div>
             )}
           </div>
@@ -165,7 +167,12 @@ export default function Sidebar({ isOpen, onClose }) {
                 key={item.href + item.label}
                 {...item}
                 active={pathname === item.href}
-                onClick={onClose}
+                onClick={() => {
+                  if (item.label === 'Support Us') {
+                    openSupport();
+                  }
+                  onClose();
+                }}
               />
             ))}
           </div>
@@ -196,7 +203,12 @@ export default function Sidebar({ isOpen, onClose }) {
                 key={item.href + item.label}
                 {...item}
                 active={pathname === item.href}
-                onClick={onClose}
+                onClick={() => {
+                  if (item.label === 'Support Us') {
+                    openSupport();
+                  }
+                  onClose();
+                }}
               />
             ))}
           </div>
@@ -237,9 +249,9 @@ export default function Sidebar({ isOpen, onClose }) {
               Target: <b>{GOAL_DATA.label}</b>. Support us to unlock this feature for everyone!
             </div>
 
-            <Link href="/support" onClick={onClose} className="btn jewel-btn btn-sm" style={{ width: '100%', padding: '8px', fontSize: '0.75rem' }}>
+            <button onClick={() => { openSupport(); onClose(); }} className="btn jewel-btn btn-sm" style={{ width: '100%', padding: '8px', fontSize: '0.75rem' }}>
               Support Mani Reader
-            </Link>
+            </button>
           </div>
 
           {/* Separator */}

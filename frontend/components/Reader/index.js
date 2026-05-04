@@ -118,7 +118,11 @@ export function VerticalReader({ pages, chapterId, mangaId, prevChapter, nextCha
         <div style={{ display: 'flex', gap: '8px' }}>
           <Link href={`/manga/${mangaId}`} className="btn btn-ghost btn-sm">
             <span className="material-icons" style={{ fontSize: '1.2rem', marginRight: 4 }}>arrow_back</span>
-            Back
+            <span className="desktop-only">Back</span>
+          </Link>
+          <Link href="/" className="btn btn-ghost btn-sm">
+            <span className="material-icons" style={{ fontSize: '1.2rem' }}>home</span>
+            <span className="desktop-only" style={{ marginLeft: 4 }}>Home</span>
           </Link>
         </div>
 
@@ -153,14 +157,16 @@ export function VerticalReader({ pages, chapterId, mangaId, prevChapter, nextCha
             onClick={(e) => { e.stopPropagation(); prevChapter && router.push(`/read/${prevChapter}?mangaId=${mangaId}`); }}
             disabled={!prevChapter}
           >
-            ← Prev
+            <span className="desktop-only">← Prev</span>
+            <span className="mobile-only material-icons">chevron_left</span>
           </button>
           <button 
             className="btn btn-primary btn-sm" 
             onClick={(e) => { e.stopPropagation(); nextChapter && router.push(`/read/${nextChapter}?mangaId=${mangaId}`); }}
             disabled={!nextChapter}
           >
-            Next →
+            <span className="desktop-only">Next →</span>
+            <span className="mobile-only material-icons">chevron_right</span>
           </button>
         </div>
       </div>
