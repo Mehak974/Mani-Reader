@@ -61,6 +61,12 @@ function SidebarItem({ href, icon, label, active, external, onClick, goal }) {
   if (external) {
     return <a href={href} target="_blank" rel="noopener noreferrer" onClick={onClick}>{content}</a>;
   }
+
+  // Intercept support links to show popup
+  if (href === '/support') {
+    return <div onClick={onClick}>{content}</div>;
+  }
+
   return <Link href={href} onClick={onClick}>{content}</Link>;
 }
 

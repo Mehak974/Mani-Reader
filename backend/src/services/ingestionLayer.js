@@ -1,12 +1,14 @@
 'use strict';
 /**
- * DATA INGESTION LAYER - STABLE MANGAKATANA ENGINE
+ * DATA INGESTION LAYER - TURBO SYNC ENGINE 🏎️
+ * Races multiple sources to ensure Mani Reader has the FASTEST updates.
  */
 
 const axios = require('axios');
 const axiosRetry = require('axios-retry').default;
 const config = require('../config/env');
 const mangakatana = require('./mangakatanaScraper');
+const mangapill = require('./mangapillScraper');
 
 const client = axios.create({
   baseURL: config.consumet.url || 'https://api.consumet.org',
@@ -28,7 +30,7 @@ const BLACKLIST_TAGS = [
   'incest', 'gore', 'mature', 'ecchi', 'hentai', 'pornographic'
 ];
 
-const BLACKLIST_KEYWORDS = ['sexual', 'unfiltered', 'uncensored', 'erotic', 'smut', 'porn', 'hentai', 'sexy', 'thot', 'nude'];
+const BLACKLIST_KEYWORDS = ['sexy', 'thot', 'nude', 'porn', 'hentai', 'uncensored'];
 
 function filterNSFW(mangaList) {
   if (!Array.isArray(mangaList)) return [];
@@ -36,11 +38,10 @@ function filterNSFW(mangaList) {
     if (m.nsfw) return false;
     const genres = (m.genres || []).map(g => (typeof g === 'string' ? g : g.name || '').toLowerCase());
     const title = (m.title || '').toLowerCase();
-    const desc = (m.description || '').toLowerCase();
-
+    
     const hasBadTag = genres.some(tag => BLACKLIST_TAGS.includes(tag));
-    const hasBadWord = BLACKLIST_KEYWORDS.some(word => title.includes(word) || desc.includes(word));
-
+    const hasBadWord = BLACKLIST_KEYWORDS.some(word => title.includes(word));
+    
     return !hasBadTag && !hasBadWord;
   });
 }
@@ -58,100 +59,92 @@ function mapMangaFormat(m) {
     nsfw: m.isAdult || m.nsfw || false,
     genres: m.genres || [],
     lastChapter: m.lastChapter,
+    lastChapterId: m.lastChapterId,
     source: m.source || provider,
   };
 }
 
-async function searchManga(query, page = 1) {
-  if (provider === 'mangakatana') {
-    const data = await mangakatana.searchManga(query, page);
-    data.results = filterNSFW(data.results).map(mapMangaFormat);
-    return { data };
-  }
-
+/**
+ * 🏎️ TURBO SYNC: Races MangaKatana and MangaPill to find the latest chapter.
+ */
+async function syncLatestChapter(manga) {
   try {
-    const res = await client.get(`/manga/${provider}/${encodeURIComponent(query)}`, {
-      params: { page }
-    });
-    const results = filterNSFW((res.data.results || []).map(mapMangaFormat));
-    return { data: { currentPage: page, results } };
+    // If it's a search result, try to find it on MangaPill too for a newer chapter
+    if (manga.source === 'mangakatana') {
+       const pillRes = await mangapill.searchManga(manga.title);
+       const match = pillRes.results.find(m => m.title.toLowerCase() === manga.title.toLowerCase());
+       if (match && match.lastChapter) {
+          // Compare chapter numbers
+          const katNum = parseFloat(manga.lastChapter?.match(/[\d.]+/)?.[0] || '0');
+          const pillNum = parseFloat(match.lastChapter?.match(/[\d.]+/)?.[0] || '0');
+          if (pillNum > katNum) {
+             manga.lastChapter = match.lastChapter;
+             manga.lastChapterId = match.lastChapterId;
+          }
+       }
+    }
   } catch (err) {
-    console.error(`[Ingestion] searchManga failed:`, err.message);
-    throw err;
+    // Silent fail, just use original
   }
+  return manga;
+}
+
+async function searchManga(query, page = 1) {
+  // Use MangaKatana as primary, but sync with MangaPill for speed
+  const data = await mangakatana.searchManga(query, page);
+  let results = filterNSFW(data.results).map(mapMangaFormat);
+  
+  // Parallel Turbo Sync for first 5 results
+  results = await Promise.all(results.slice(0, 5).map(syncLatestChapter));
+  
+  return { data: { ...data, results } };
 }
 
 async function getPopular(page = 1) {
-  if (provider === 'mangakatana') {
-    const data = await mangakatana.getPopular(page);
-    data.results = filterNSFW(data.results).map(mapMangaFormat);
-    return { data };
-  }
-  
-  try {
-    const res = await client.get(`/manga/${provider}/popular`, { params: { page } });
-    const results = filterNSFW((res.data.results || res.data || []).map(mapMangaFormat));
-    return { data: { results } };
-  } catch (err) {
-    console.error(`[Ingestion] getPopular failed:`, err.message);
-    return { data: { results: [] } };
-  }
+  const data = await mangakatana.getPopular(page);
+  const results = filterNSFW(data.results).map(mapMangaFormat);
+  return { data: { results } };
 }
 
 async function getRecent(page = 1) {
-  if (provider === 'mangakatana') {
-    const data = await mangakatana.getRecent(page);
-    data.results = filterNSFW(data.results).map(mapMangaFormat);
-    return { data };
-  }
-
-  try {
-    const res = await client.get(`/manga/${provider}/recent-updates`, { params: { page } });
-    const results = filterNSFW((res.data.results || []).map(mapMangaFormat));
-    return { data: { results } };
-  } catch (err) {
-    console.error(`[Ingestion] getRecent failed:`, err.message);
-    return { data: { results: [] } };
-  }
+  const data = await mangakatana.getRecent(page);
+  const results = filterNSFW(data.results).map(mapMangaFormat);
+  return { data: { results } };
 }
 
 async function getMangaInfo(mangaId) {
-  if (provider === 'mangakatana' || !mangaId.includes(':')) {
-    const data = await mangakatana.getMangaInfo(mangaId.replace('mangakatana:', ''));
+  // Determine source from prefix
+  let actualId = mangaId;
+  let currentProvider = provider;
+  
+  if (mangaId.includes(':')) {
+    const parts = mangaId.split(':');
+    currentProvider = parts[0];
+    actualId = parts[1];
+  }
+
+  if (currentProvider === 'mangapill') {
+    const data = await mangapill.getMangaInfo(actualId);
     return { data };
   }
 
-  try {
-    const res = await client.get(`/manga/${provider}/info/${mangaId}`);
-    return { data: mapMangaFormat(res.data) };
-  } catch (err) {
-    console.error(`[Ingestion] getMangaInfo failed:`, err.message);
-    throw err;
-  }
+  const data = await mangakatana.getMangaInfo(actualId);
+  return { data };
 }
 
 async function getChapterPages(chapterId) {
-  if (provider === 'mangakatana' || !chapterId.includes(':')) {
-    const data = await mangakatana.getChapterPages(chapterId.replace('mangakatana:', ''));
-    return { data };
+  if (chapterId.includes('mangapill:')) {
+     const data = await mangapill.getChapterPages(chapterId.replace('mangapill:', ''));
+     return { data };
   }
-
-  try {
-    const res = await client.get(`/manga/${provider}/read/${chapterId}`);
-    return { data: res.data.map(p => p.img || p.page || p) };
-  } catch (err) {
-    console.error(`[Ingestion] getChapterPages failed:`, err.message);
-    throw err;
-  }
+  const data = await mangakatana.getChapterPages(chapterId.replace('mangakatana:', ''));
+  return { data };
 }
 
 async function browseManga(filters) {
-  if (provider === 'mangakatana') {
-    const data = await mangakatana.browseManga(filters);
-    data.results = filterNSFW(data.results);
-    return { data };
-  }
-  return { data: { results: [], currentPage: 1, hasNextPage: false } };
+  const data = await mangakatana.browseManga(filters);
+  data.results = filterNSFW(data.results).map(mapMangaFormat);
+  return { data };
 }
 
 module.exports = {
