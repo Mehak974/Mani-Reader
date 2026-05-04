@@ -7,15 +7,17 @@ const comick = require('./comickScraper');
 const mangapill = require('./mangapillScraper');
 
 /**
- * GLOBAL CONTENT SHIELD 🛡️
- * Strict filtering to keep the site clean and premium.
+ * GLOBAL CONTENT SHIELD 🛡️ (STRENGTHENED)
  */
 const BLACKLIST_TAGS = [
   '18+', 'adult', 'smut', 'erotica', 'sexual-violence', 'sexual violence', 'harem', 'yaoi', 'yuri', 
   'incest', 'gore', 'mature', 'ecchi', 'hentai', 'pornographic'
 ];
 
-const BLACKLIST_KEYWORDS = ['sexual', 'unfiltered', 'uncensored', 'erotic', 'smut', 'porn', 'hentai'];
+const BLACKLIST_KEYWORDS = [
+  'sexual', 'unfiltered', 'uncensored', 'erotic', 'smut', 'porn', 'hentai', 'ecchi', 'mature', 
+  'sex', 'bastard', 'mistress', 'slave', 'harem', 'pervert'
+];
 
 function filterNSFW(mangaList) {
   if (!Array.isArray(mangaList)) return [];
@@ -25,10 +27,26 @@ function filterNSFW(mangaList) {
     const desc = (m.description || '').toLowerCase();
     const title = (m.title || '').toLowerCase();
 
+    // 🕵️ Check Tags
     const hasBadTag = genres.some(tag => BLACKLIST_TAGS.includes(tag));
-    const hasBadWord = BLACKLIST_KEYWORDS.some(word => desc.includes(word) || title.includes(word));
+    if (hasBadTag) return false;
 
-    return !hasBadTag && !hasBadWord;
+    // 👃 Check Title & Description (Even if genres are empty!)
+    const hasBadWord = BLACKLIST_KEYWORDS.some(word => 
+      title.includes(` ${word} `) || 
+      title.startsWith(`${word} `) || 
+      title.endsWith(` ${word}`) ||
+      title === word ||
+      desc.includes(word)
+    );
+    if (hasBadWord) return false;
+
+    // 🧪 Aggressive Check: If it has NO tags and title is suspicious, block it
+    if (genres.length === 0 && (title.includes('step') || title.includes('wife') || title.includes('mother'))) {
+      return false;
+    }
+
+    return true;
   });
 }
 
@@ -39,22 +57,7 @@ const client = axios.create({
 
 const provider = config.consumet.primary || 'comick';
 
-function mapMangaFormat(m) {
-  return {
-    id: m.id,
-    title: m.title,
-    image: m.image || m.cover,
-    description: m.description,
-    status: m.status,
-    genres: m.genres || [],
-    lastChapter: m.lastChapter,
-    rating: m.rating,
-    source: m.source
-  };
-}
-
 async function searchManga(query, page = 1) {
-  // Use MangaPill + MangaKatana for Speed & Stability
   const providers = ['mangapill', 'mangakatana'];
   const allResults = [];
   const seenTitles = new Set();
@@ -86,39 +89,42 @@ async function searchManga(query, page = 1) {
 }
 
 async function getPopular(page = 1) {
-  // Use MangaKatana for the Home Page Popular section (High Reliability)
   try {
     const data = await mangakatana.getPopular(page);
-    return {
-      data: {
-        results: filterNSFW((data.results || []).map(m => ({ 
-          ...m, 
-          id: `mangakatana:${m.id}`,
-          image: m.image?.startsWith('http') ? `/api/image?url=${encodeURIComponent(m.image)}` : m.image 
-        })))
-      }
-    };
+    let results = filterNSFW((data.results || []).map(m => ({ 
+      ...m, 
+      id: `mangakatana:${m.id}`,
+      image: m.image?.startsWith('http') ? `/api/image?url=${encodeURIComponent(m.image)}` : m.image 
+    })));
+
+    // 🏎️ Fallback to MangaPill if MangaKatana is empty or filtered
+    if (results.length === 0) {
+      const pillData = await mangapill.searchManga('popular'); // Mock search
+      results = filterNSFW((pillData.results || []).map(m => ({
+        ...m,
+        id: `mangapill:${m.id}`,
+        image: m.image?.startsWith('http') ? `/api/image?url=${encodeURIComponent(m.image)}` : m.image 
+      })));
+    }
+
+    return { data: { results } };
   } catch (err) {
-    console.error('[Ingestion] getPopular (MangaKatana) failed:', err.message);
+    console.error('[Ingestion] getPopular failed:', err.message);
     return { data: { results: [] } };
   }
 }
 
 async function getRecent(page = 1) {
-  // Use MangaKatana for Recently Added (Reliable tags and chapter counts)
   try {
     const data = await mangakatana.getRecent(page);
-    return {
-      data: {
-        results: filterNSFW((data.results || []).map(m => ({ 
-          ...m, 
-          id: `mangakatana:${m.id}`,
-          image: m.image?.startsWith('http') ? `/api/image?url=${encodeURIComponent(m.image)}` : m.image 
-        })))
-      }
-    };
+    const results = filterNSFW((data.results || []).map(m => ({ 
+      ...m, 
+      id: `mangakatana:${m.id}`,
+      image: m.image?.startsWith('http') ? `/api/image?url=${encodeURIComponent(m.image)}` : m.image 
+    })));
+    return { data: { results } };
   } catch (err) {
-    console.error('[Ingestion] getRecent (MangaKatana) failed:', err.message);
+    console.error('[Ingestion] getRecent failed:', err.message);
     return { data: { results: [] } };
   }
 }
@@ -145,27 +151,19 @@ async function getMangaInfo(mangaId) {
     }
     if (mainProvider === 'mangakatana') {
       const data = await mangakatana.getMangaInfo(mangaId);
+      if (data) {
+        data.image = data.image?.startsWith('http') ? `/api/image?url=${encodeURIComponent(data.image)}` : data.image;
+        data.chapters = (data.chapters || []).map(c => ({
+          ...c,
+          id: `mangakatana:${c.id}`,
+          source: 'mangakatana'
+        }));
+      }
       return { data };
     }
-    if (mainProvider === 'comick') {
-      const info = await comick.getMangaInfo(mangaId);
-      if (info && info.hid) {
-        const chapters = await comick.getChapters(info.hid);
-        info.chapters = chapters.map(c => ({
-          ...c,
-          id: `comick:${c.id}`,
-          chapterNumber: c.chapterNum,
-          source: 'comick'
-        }));
-        return { data: info };
-      }
-    }
-    
-    // Fallback to Consumet
-    const res = await client.get(`/manga/${mainProvider}/info/${mangaId}`);
-    return { data: mapMangaFormat(res.data) };
+    return { data: null };
   } catch (err) {
-    console.error(`[Ingestion] getMangaInfo failed (${mainProvider}:${mangaId}):`, err.message);
+    console.error(`[Ingestion] getMangaInfo failed:`, err.message);
     throw err;
   }
 }
@@ -183,18 +181,10 @@ async function getChapterPages(mangaId, chapterId) {
     return { data: pages };
   }
   if (mainProvider === 'mangakatana') {
-    const data = await mangakatana.getChapterPages(chapterId);
-    return { data };
-  }
-  if (mainProvider === 'comick') {
-    const pages = await comick.getChapterPages(chapterId);
+    const pages = await mangakatana.getChapterPages(chapterId);
     return { data: pages };
   }
-
-  const res = await client.get(`/manga/${mainProvider}/read`, {
-    params: { chapterId }
-  });
-  return { data: res.data.map(p => p.img || p.image || p) };
+  return { data: [] };
 }
 
 module.exports = {
