@@ -48,7 +48,9 @@ function filterNSFW(mangaList) {
 
 function mapMangaFormat(m) {
   const image = m.image || m.cover || null;
-  const proxiedImage = image && image.startsWith('http') ? `/api/image?url=${encodeURIComponent(image)}` : image;
+  const proxiedImage = image && image.startsWith('http') 
+    ? `${config.apiUrl}/api/image?url=${encodeURIComponent(image)}` 
+    : image;
 
   return {
     id: m.id,
