@@ -115,7 +115,7 @@ async function getRecent(page = 1) {
 }
 
 async function getMangaInfo(mangaId) {
-  // Determine source from prefix
+  // 🛡️ Smart Fallback: If no prefix, assume legacy MangaKatana ID to fix 404s
   let actualId = mangaId;
   let currentProvider = provider;
   
@@ -123,23 +123,65 @@ async function getMangaInfo(mangaId) {
     const parts = mangaId.split(':');
     currentProvider = parts[0];
     actualId = parts[1];
+  } else if (mangaId.includes('.')) {
+    // Legacy IDs like "slug.12345" are almost always MangaKatana
+    currentProvider = 'mangakatana';
   }
 
-  if (currentProvider === 'mangapill') {
-    const data = await mangapill.getMangaInfo(actualId);
+  try {
+    if (currentProvider === 'mangapill') {
+      const info = await mangapill.getMangaInfo(actualId);
+      if (info) {
+        info.chapters = (info.chapters || []).map(c => ({
+          ...c,
+          id: `mangapill:${c.id}`,
+          source: 'mangapill'
+        }));
+        return { data: info };
+      }
+    }
+    
+    // Default to MangaKatana for legacy support
+    const data = await mangakatana.getMangaInfo(actualId);
+    if (data) {
+      data.image = data.image?.startsWith('http') ? `${config.apiUrl}/api/image?url=${encodeURIComponent(data.image)}` : data.image;
+      data.chapters = (data.chapters || []).map(c => ({
+        ...c,
+        id: `mangakatana:${c.id}`,
+        source: 'mangakatana'
+      }));
+    }
     return { data };
+  } catch (err) {
+    console.error(`[Ingestion] getMangaInfo failed for ${currentProvider}:${actualId}:`, err.message);
+    // Final emergency fallback to MangaKatana
+    try {
+      const data = await mangakatana.getMangaInfo(actualId);
+      return { data };
+    } catch (e) {
+      throw err;
+    }
   }
-
-  const data = await mangakatana.getMangaInfo(actualId);
-  return { data };
 }
 
 async function getChapterPages(chapterId) {
-  if (chapterId.includes('mangapill:')) {
-     const data = await mangapill.getChapterPages(chapterId.replace('mangapill:', ''));
-     return { data };
+  // 🛡️ Smart Fallback: Assume MangaKatana for legacy chapter IDs (no prefix)
+  let actualId = chapterId;
+  let currentProvider = provider;
+
+  if (chapterId.includes(':')) {
+    const parts = chapterId.split(':');
+    currentProvider = parts[0];
+    actualId = parts[1];
   }
-  const data = await mangakatana.getChapterPages(chapterId.replace('mangakatana:', ''));
+
+  if (currentProvider === 'mangapill') {
+    const data = await mangapill.getChapterPages(actualId);
+    return { data };
+  }
+  
+  // Default/Fallback to MangaKatana
+  const data = await mangakatana.getChapterPages(actualId);
   return { data };
 }
 

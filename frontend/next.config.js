@@ -30,6 +30,15 @@ const nextConfig = {
       { source: '/api/:path*', destination: `${backendUrl}/api/:path*` },
     ];
   },
+  async redirects() {
+    return [
+      {
+        source: '/manga/:id/:chapterId',
+        destination: '/read/:id/:chapterId',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;
