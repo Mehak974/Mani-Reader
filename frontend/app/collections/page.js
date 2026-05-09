@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import React from 'react';
 import { AuthProvider, useAuth } from '../../lib/auth';
 import Navbar from '../../components/Navbar';
 import MangaCard from '../../components/MangaCard';
@@ -12,17 +12,17 @@ function CollectionsContent() {
   const { user, loading: authLoading } = useAuth() || {};
   const router = useRouter();
 
-  const [collections,  setCollections]  = useState([]);
-  const [selected,     setSelected]     = useState(null);
-  const [newName,      setNewName]      = useState('');
-  const [loading,      setLoading]      = useState(true);
-  const [toast,        setToast]        = useState(null);
+  const [collections,  setCollections]  = React.useState([]);
+  const [selected,     setSelected]     = React.useState(null);
+  const [newName,      setNewName]      = React.useState('');
+  const [loading,      setLoading]      = React.useState(true);
+  const [toast,        setToast]        = React.useState(null);
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type }); setTimeout(() => setToast(null), 3000);
   };
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (authLoading) return;
     if (!user) {
       setLoading(false);

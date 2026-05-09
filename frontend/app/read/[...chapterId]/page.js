@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import React from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { AuthProvider } from '../../../lib/auth';
 import { VerticalReader, PagedReader } from '../../../components/Reader';
@@ -16,14 +16,14 @@ function ReaderContent() {
 
   const mangaId = searchParams.get('mangaId') || '';
 
-  const [pages,       setPages]       = useState([]);
-  const [externalUrl, setExternalUrl] = useState(null);
-  const [chapters,    setChapters]    = useState([]);
-  const [loading,     setLoading]     = useState(true);
-  const [error,       setError]       = useState(null);
-  const [mode,        setMode]        = useState('vertical'); // 'vertical' | 'paged'
+  const [pages,       setPages]       = React.useState([]);
+  const [externalUrl, setExternalUrl] = React.useState(null);
+  const [chapters,    setChapters]    = React.useState([]);
+  const [loading,     setLoading]     = React.useState(true);
+  const [error,       setError]       = React.useState(null);
+  const [mode,        setMode]        = React.useState('vertical'); // 'vertical' | 'paged'
 
-  useEffect(() => {
+  React.useEffect(() => {
     Promise.all([
       mangaApi.pages(chapterId, mangaId).then((r) => {
         setPages(r.data.pages || []);

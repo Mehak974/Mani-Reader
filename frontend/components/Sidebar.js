@@ -1,4 +1,5 @@
 'use client';
+import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../lib/auth';
@@ -7,9 +8,6 @@ import { useModals } from '../context/ModalContext';
 // ── Sidebar sections ──────────────────────────────────────────────────────────
 const MAIN_LINKS = [
   { href: '/',                icon: 'home',          label: 'Home' },
-  { href: '/library',         icon: 'bookmark',      label: 'Bookmarks' },
-  { href: '/collections',     icon: 'book',          label: 'My Collections' },
-  { href: '/history',         icon: 'history',       label: 'History' },
   { href: '/post-manga',      icon: 'add_to_photos', label: 'Post Manga', goal: true },
   { href: '/settings',        icon: 'settings',      label: 'Settings' },
 ];
@@ -19,17 +17,24 @@ const SOCIAL_LINKS = [
   { href: 'https://reddit.com/r/manireader', icon: 'reddit', label: 'Reddit', color: '#FF4500' },
 ];
 
-const GOAL_DATA = {
-  current: 45, // Manual entry for now
-  target: 1500,
-  label: 'Manga Posting System'
-};
-
 const INFO_LINKS = [
+  { href: '/about',      icon: 'info',                  label: 'About Us' },
   { href: '/support',    icon: 'volunteer_activism',    label: 'Support Us' },
   { href: '/contact',    icon: 'mail',                  label: 'Contact Us' },
   { href: '/faq',        icon: 'contact_support',       label: 'Common Questions' },
 ];
+
+const POLICY_LINKS = [
+  { href: '/privacy',    icon: 'security',              label: 'Privacy Policy' },
+  { href: '/terms',      icon: 'description',           label: 'Terms of Service' },
+  { href: '/disclaimer', icon: 'gavel',                 label: 'Legal Disclaimer' },
+];
+
+const GOAL_DATA = {
+  current: 45,
+  target: 1500,
+  label: 'Manga Posting System'
+};
 
 // ── Sidebar Item ──────────────────────────────────────────────────────────────
 function SidebarItem({ href, icon, label, active, external, onClick, goal }) {
@@ -62,7 +67,6 @@ function SidebarItem({ href, icon, label, active, external, onClick, goal }) {
     return <a href={href} target="_blank" rel="noopener noreferrer" onClick={onClick}>{content}</a>;
   }
 
-  // Intercept support links to show popup
   if (href === '/support') {
     return <div onClick={onClick}>{content}</div>;
   }
@@ -72,11 +76,22 @@ function SidebarItem({ href, icon, label, active, external, onClick, goal }) {
 
 // ── Sidebar Component ─────────────────────────────────────────────────────────
 export default function Sidebar({ isOpen, onClose }) {
+
   const pathname  = usePathname();
   const { user, logout } = useAuth() || {};
   const { openLogin, openRegister, openSupport } = useModals();
+  const [mounted, setMounted] = React.useState(false);
 
-  const handleLogout = () => { logout?.(); onClose?.(); };
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const handleLogout = () => { 
+    logout?.(); 
+    onClose?.(); 
+  };
+
+  if (!mounted) return null;
 
   return (
     <>
@@ -115,7 +130,7 @@ export default function Sidebar({ isOpen, onClose }) {
           <Link href="/" onClick={onClose} style={{
             fontWeight: 800, fontSize: '1.3rem', letterSpacing: '-0.5px',
             background: 'linear-gradient(135deg, var(--accent), var(--accent-2))',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+ WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
           }}>
             Mani Reader
           </Link>
@@ -155,9 +170,9 @@ export default function Sidebar({ isOpen, onClose }) {
               </>
             ) : (
               <div style={{ fontSize: '0.875rem', color: 'var(--text-3)' }}>
-                <button onClick={() => { openLogin(); onClose(); }} style={{ color: 'var(--accent)', fontWeight: 600, background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>Login</button>
+                <button onClick={() => { openLogin?.(); onClose?.(); }} style={{ color: 'var(--accent)', fontWeight: 600, background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>Login</button>
                 {' or '}
-                <button onClick={() => { openRegister(); onClose(); }} style={{ color: 'var(--accent)', fontWeight: 600, background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>Sign Up</button>
+                <button onClick={() => { openRegister?.(); onClose?.(); }} style={{ color: 'var(--accent)', fontWeight: 600, background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>Sign Up</button>
               </div>
             )}
           </div>
@@ -174,10 +189,10 @@ export default function Sidebar({ isOpen, onClose }) {
                 {...item}
                 active={pathname === item.href}
                 onClick={() => {
-                  if (item.label === 'Support Us') {
-                    openSupport();
+                  if (item.label === 'Support Us' || item.href === '/support') {
+                    openSupport?.();
                   }
-                  onClose();
+                  onClose?.();
                 }}
               />
             ))}
@@ -210,11 +225,26 @@ export default function Sidebar({ isOpen, onClose }) {
                 {...item}
                 active={pathname === item.href}
                 onClick={() => {
-                  if (item.label === 'Support Us') {
-                    openSupport();
+                  if (item.label === 'Support Us' || item.href === '/support') {
+                    openSupport?.();
                   }
-                  onClose();
+                  onClose?.();
                 }}
+              />
+            ))}
+          </div>
+
+          {/* Policy */}
+          <div style={{ padding: '12px 20px 8px', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-3)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+            Legal & Policy
+          </div>
+          <div style={{ padding: '0 0 8px' }}>
+            {POLICY_LINKS.map(item => (
+              <SidebarItem
+                key={item.href + item.label}
+                {...item}
+                active={pathname === item.href}
+                onClick={onClose}
               />
             ))}
           </div>
@@ -255,7 +285,7 @@ export default function Sidebar({ isOpen, onClose }) {
               Target: <b>{GOAL_DATA.label}</b>. Support us to unlock this feature for everyone!
             </div>
 
-            <button onClick={() => { openSupport(); onClose(); }} className="btn jewel-btn btn-sm" style={{ width: '100%', padding: '8px', fontSize: '0.75rem' }}>
+            <button onClick={() => { openSupport?.(); onClose?.(); }} className="btn jewel-btn btn-sm" style={{ width: '100%', padding: '8px', fontSize: '0.75rem' }}>
               Support Mani Reader
             </button>
           </div>

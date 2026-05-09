@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import React from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../lib/auth';
 import { useModals } from '../context/ModalContext';
@@ -12,9 +12,9 @@ export default function Navbar() {
   const pathname = usePathname();
   const { user, logout } = useAuth() || {};
   const { openLogin, openRegister } = useModals();
-  const [scrolled, setScrolled] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [scrolled, setScrolled] = React.useState(false);
+  const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const [searchQuery, setSearchQuery] = React.useState('');
   const router = useRouter();
 
   const handleSearch = (e) => {
@@ -24,13 +24,14 @@ export default function Navbar() {
     }
   };
 
-  useEffect(() => {
+  React.useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
 
   const links = [
     { href: '/', label: 'Home' },
@@ -40,7 +41,7 @@ export default function Navbar() {
     { href: '/history', label: 'History' },
   ];
 
-  if (user && user.role === 'ADMIN') {
+  if (mounted && user && user.role === 'ADMIN') {
     links.push({ href: '/admin', label: 'Admin Panel' });
   }
 
@@ -52,6 +53,13 @@ export default function Navbar() {
         <div className="navbar-inner" style={{ position: 'relative' }}>
           {/* Desktop Layout */}
           <div className="desktop-nav-content" style={{ display: 'flex', width: '100%', alignItems: 'center' }}>
+            <button
+              onClick={() => setSidebarOpen(true)}
+              style={{ background: 'transparent', border: 'none', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-2)', padding: '0 8px', marginRight: '16px' }}
+            >
+              <span className="material-icons" style={{ fontSize: '2.2rem' }}>menu</span>
+            </button>
+
             <Link href="/" className="navbar-logo">
               <Image 
                 src="/logo.png" 
@@ -63,7 +71,7 @@ export default function Navbar() {
               />
             </Link>
 
-            <div className="navbar-links" style={{
+            <div className="navbar-links notranslate" style={{
               display: 'flex', alignItems: 'center', gap: '8px', flex: 1, justifyContent: 'center'
             }}>
               {links.map(({ href, label }) => (
@@ -72,27 +80,31 @@ export default function Navbar() {
             </div>
 
             <div className="navbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              {user ? (
-                <button className="btn btn-ghost btn-sm" onClick={logout}>Logout</button>
-              ) : (
-                <>
-                  <button className="btn btn-ghost btn-sm" onClick={openLogin}>Login</button>
-                  <button className="btn jewel-btn btn-sm" onClick={openRegister}>Sign Up</button>
-                </>
-              )}
-              <button
-                onClick={() => setSidebarOpen(true)}
-                style={{ background: 'transparent', border: 'none', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-2)', padding: '0 8px' }}
-              >
-                <span className="material-icons" style={{ fontSize: '2.2rem' }}>menu</span>
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center' }} suppressHydrationWarning>
+                {!mounted ? (
+                  <button className="btn btn-ghost btn-sm" style={{ visibility: 'hidden', width: '120px' }}>Loading...</button>
+                ) : (
+                  user ? (
+                    <button className="btn btn-ghost btn-sm" onClick={logout}>Logout</button>
+                  ) : (
+                    <>
+                      <button className="btn btn-ghost btn-sm" onClick={openLogin}>Login</button>
+                      <button className="btn jewel-btn btn-sm" onClick={openRegister}>Sign Up</button>
+                    </>
+                  )
+                )}
+              </div>
             </div>
           </div>
 
           {/* Mobile Layout */}
           <div className="mobile-nav-content" style={{ display: 'none', flexDirection: 'column', width: '100%' }}>
             {/* Line 1 */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', width: '100%', marginBottom: '8px', gap: 12 }}>
+              <button onClick={() => setSidebarOpen(true)} style={{ background: 'none', border: 'none', color: 'var(--text-2)', display: 'flex', alignItems: 'center' }}>
+                <span className="material-icons" style={{ fontSize: '1.8rem' }}>menu</span>
+              </button>
+
               <Link href="/" style={{ flexShrink: 0 }}>
                 <Image 
                   src="/icon.png" 
@@ -103,7 +115,7 @@ export default function Navbar() {
                 />
               </Link>
               
-              <div style={{ flex: 1, margin: '0 12px', position: 'relative', maxWidth: '70%', marginLeft: 'auto', marginRight: 'auto' }}>
+              <div style={{ flex: 1, position: 'relative' }}>
                 <input 
                   type="text" 
                   placeholder="Search..." 
@@ -120,14 +132,15 @@ export default function Navbar() {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                {user && (
-                  <button onClick={logout} style={{ background: 'none', border: 'none', color: 'var(--red)', display: 'flex', alignItems: 'center' }}>
-                    <span className="material-icons" style={{ fontSize: '1.5rem' }}>logout</span>
-                  </button>
-                )}
-                <button onClick={() => setSidebarOpen(true)} style={{ background: 'none', border: 'none', color: 'var(--text-2)', display: 'flex', alignItems: 'center' }}>
-                  <span className="material-icons" style={{ fontSize: '1.8rem' }}>menu</span>
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center' }} suppressHydrationWarning>
+                  {mounted && user ? (
+                    <button onClick={logout} style={{ background: 'none', border: 'none', color: 'var(--red)', display: 'flex', alignItems: 'center' }}>
+                      <span className="material-icons" style={{ fontSize: '1.5rem' }}>logout</span>
+                    </button>
+                  ) : (
+                    !mounted && <button style={{ visibility: 'hidden', width: '24px' }}>...</button>
+                  )}
+                </div>
               </div>
             </div>
             

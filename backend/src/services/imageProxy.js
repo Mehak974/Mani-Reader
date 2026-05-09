@@ -8,6 +8,7 @@
  */
 
 const axios = require('axios');
+const cache = require('./cacheLayer');
 
 // Common referer headers used by manga sites
 const REFERERS = {
@@ -85,41 +86,44 @@ async function proxyImage(imageUrl, res) {
     });
   }
 
+  const cacheKey = `img:${imageUrl}`;
   try {
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+      res.setHeader('Content-Type', cached.contentType);
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      res.setHeader('X-Cache', 'HIT');
+      return res.send(Buffer.from(cached.data, 'base64'));
+    }
+
     const response = await axios.get(imageUrl, {
-      responseType: 'stream',
-      timeout: 20000,
+      responseType: 'arraybuffer',
+      timeout: 15000,
       headers: {
         Referer: getReferer(imageUrl),
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
-          '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       },
     });
 
-    const contentType = response.headers['content-type'] || '';
-    
-    // 🛡️ Security Fix: Content-Type Validation
-    // ONLY allow images. Block .exe, .js, .html, etc.
+    const contentType = response.headers['content-type'] || 'image/jpeg';
     if (!contentType.startsWith('image/')) {
-      console.error(`[ImageProxy] Blocked non-image content type: ${contentType} from ${imageUrl}`);
-      return res.status(403).json({ 
-        error: 'Forbidden', 
-        message: 'Only image content types are allowed through this proxy.' 
-      });
+      return res.status(403).json({ error: 'Only images allowed' });
+    }
+
+    const buffer = Buffer.from(response.data);
+    
+    // ⚡ Optimization: Only cache reasonably sized images to save memory
+    if (buffer.length < 1024 * 1024) { 
+      await cache.set(cacheKey, {
+        contentType,
+        data: buffer.toString('base64')
+      }, 14400); // 4 hour cache
     }
 
     res.setHeader('Content-Type', contentType);
-    res.setHeader('Cache-Control', 'public, max-age=86400'); // 24h browser cache
-    res.setHeader('X-Proxied-By', 'manga-reader-proxy');
-    res.setHeader('X-Content-Type-Options', 'nosniff'); // Security header
-
-    response.data.pipe(res);
-
-    response.data.on('error', (err) => {
-      console.error('[ImageProxy] Stream error:', err.message);
-      if (!res.headersSent) res.status(502).end();
-    });
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.setHeader('X-Cache', 'MISS');
+    res.send(buffer);
   } catch (err) {
     console.error('[ImageProxy] Fetch error:', err.message);
     if (!res.headersSent) {

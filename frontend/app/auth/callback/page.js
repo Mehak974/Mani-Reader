@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, Suspense } from 'react';
+import React from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { setAccessToken } from '../../../lib/api';
 
@@ -7,7 +7,7 @@ function CallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  useEffect(() => {
+  React.useEffect(() => {
     const token = searchParams.get('token');
     if (token) {
       setAccessToken(token);

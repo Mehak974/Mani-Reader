@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import React from 'react';
 import { AuthProvider, useAuth } from '../../../lib/auth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -7,11 +7,11 @@ import Link from 'next/link';
 function RegisterContent() {
   const { register } = useAuth() || {};
   const router = useRouter();
-  const [email,    setEmail]    = useState('');
-  const [password, setPassword] = useState('');
-  const [confirm,  setConfirm]  = useState('');
-  const [error,    setError]    = useState('');
-  const [loading,  setLoading]  = useState(false);
+  const [email,    setEmail]    = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [confirm,  setConfirm]  = React.useState('');
+  const [error,    setError]    = React.useState('');
+  const [loading,  setLoading]  = React.useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();

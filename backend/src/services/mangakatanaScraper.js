@@ -9,10 +9,14 @@ const client = axios.create({
   baseURL: BASE_URL,
   timeout: 30000,
   headers: {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
     'Referer': BASE_URL,
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+    'Accept-Language': 'en-US,en;q=0.9',
     'Accept-Encoding': 'gzip, deflate, br',
     'Connection': 'keep-alive',
+    'Upgrade-Insecure-Requests': '1',
+    'Cache-Control': 'max-age=0'
   },
 });
 
@@ -21,12 +25,12 @@ const client = axios.create({
  */
 async function searchManga(query, page = 1) {
   try {
+    // 🛡️ Use Homepage Search with correct parameters
     const url = `/`;
-    
     const response = await client.get(url, {
       params: {
         search: query,
-        search_by: 'm_name',
+        search_by: 'book_name', // ⚡ Corrected parameter
         page: page
       }
     });
@@ -45,11 +49,14 @@ async function searchManga(query, page = 1) {
       const href = titleEl.attr('href') || '';
       const id = href.split('/').pop();
       const title = titleEl.text().trim();
-      const image = $(el).find('.wrap_img img').attr('src') || $(el).find('.wrap_img img').attr('data-src');
+      const imgEl = $(el).find('.wrap_img img');
+      const image = imgEl.attr('data-src') || imgEl.attr('src');
       const description = $(el).find('.summary').text().trim();
       const status = $(el).find('.status').text().trim();
       const genres = $(el).find('.genres a').map((i, g) => $(g).text().trim()).get();
       
+      if (!id || !title) return;
+
       results.push({
         id,
         title,
@@ -63,7 +70,7 @@ async function searchManga(query, page = 1) {
 
     return {
       results,
-      totalResults,
+      totalResults: totalResults || results.length,
       totalPages,
       currentPage: page,
       hasNextPage: page < totalPages
@@ -160,13 +167,18 @@ async function getChapterPages(chapterId) {
 /**
  * Get popular/trending manga (Hot Updates)
  */
-async function getPopular(page = 1) {
+async function getPopular(page = 1, genre = null) {
+  if (genre) {
+    return browseManga({ page, order: 5, include: [genre] });
+  }
   try {
     const response = await client.get('/');
     const $ = cheerio.load(response.data);
     const results = [];
 
-    $('.slick_book .item').each((i, el) => {
+    // 🛡️ Precision Selector: Target the 'Hot Update' container
+    const container = $('#hot_update').length ? $('#hot_update') : $('.slick_book');
+    container.find('.item').each((i, el) => {
       const titleEl = $(el).find('.title a');
       const href = titleEl.attr('href') || '';
       const id = href.split('/').pop();
@@ -174,14 +186,24 @@ async function getPopular(page = 1) {
       const imgEl = $(el).find('.wrap_img img');
       const image = imgEl.attr('data-src') || imgEl.attr('src');
       const status = $(el).find('.status').text().trim();
+      const updateDate = $(el).find('.date').text().replace(/First Chapter/i, '').trim();
       const genres = $(el).find('.genres a').map((i, g) => $(g).text().trim()).get();
       
+      let lastChapterEl = $(el).find('.chapters .chapter a').first();
+      if (lastChapterEl.length === 0) lastChapterEl = $(el).find('.last_chap a').first();
+      
+      const lastChapter = lastChapterEl.text().trim();
+      const lastChapterId = lastChapterEl.attr('href')?.replace(/\/$/, '').split('/').pop();
+
       results.push({
         id,
         title,
         image,
         status,
         genres,
+        updateDate,
+        lastChapter: lastChapter || null,
+        lastChapterId: lastChapterId || null,
         source: 'mangakatana'
       });
     });
@@ -202,7 +224,9 @@ async function getRecent(page = 1) {
     const $ = cheerio.load(response.data);
     const results = [];
 
-    $('#book_list .item').each((i, el) => {
+    // 🛡️ Precision Selector: Target the 'Latest Update' container
+    const container = $('#latest_update').length ? $('#latest_update') : $('#book_list');
+    container.find('.item').each((i, el) => {
       const titleEl = $(el).find('.title a');
       const href = titleEl.attr('href') || '';
       const id = href.split('/').pop();
@@ -211,7 +235,7 @@ async function getRecent(page = 1) {
       const image = imgEl.attr('data-src') || imgEl.attr('src');
       const description = $(el).find('.summary').text().trim();
       const status = $(el).find('.status').text().trim();
-      const updateDate = $(el).find('.date').text().trim();
+      const updateDate = $(el).find('.date').text().replace(/First Chapter/i, '').trim();
       const genres = $(el).find('.genres a').map((i, g) => $(g).text().trim()).get();
       
       let lastChapterEl = $(el).find('.chapters .chapter a').first();
@@ -256,8 +280,8 @@ async function browseManga(filters = {}) {
     const includeStr = include.map(toSlug).join('_');
     const excludeStr = exclude.map(toSlug).join('_');
 
-    const orderMap = { 0: 'latest', 1: 'new', 2: 'top_read', 3: 'az', 4: 'rating' };
-    const orderStr = orderMap[order] || 'latest';
+    const orderMap = { 0: 'latest', 1: 'new', 2: 'top_read', 3: 'az', 4: 'rating', 5: 'hot' };
+    const orderStr = orderMap[order] || (order === 'hot' ? 'hot' : 'latest');
 
     const params = { filter: 1 };
     if (includeStr) params.include = includeStr;
@@ -265,10 +289,49 @@ async function browseManga(filters = {}) {
     if (status > 0) params.status = status;
     if (orderStr) params.order = orderStr;
 
+    // 🏎️ MangaKatana uses path-based pagination for browse: /manga/page/X
     const url = page > 1 ? `/manga/page/${page}` : '/manga';
     const response = await client.get(url, { params });
     const $ = cheerio.load(response.data);
     const results = [];
+
+    // Extract total results: MangaKatana usually has "Manga list (XXXX)" or "Search results (XXXX)"
+    let totalResults = 0;
+    $('.entry-title, .heading, h1, h2').each((i, el) => {
+      const txt = $(el).text();
+      const m = txt.match(/\(([\d,.]+)\)/);
+      if (m) {
+        const num = parseInt(m[1].replace(/[,.]/g, ''));
+        if (!isNaN(num) && num > totalResults) totalResults = num;
+      }
+    });
+    
+    // Heuristic for total pages
+    let totalPages = Math.ceil(totalResults / 20) || 1;
+    
+    // Fallback: Check pagination numbers for the highest visible page
+    $('.page-numbers, .pagination a, .page-link').each((i, el) => {
+      const p = parseInt($(el).text().trim());
+      if (!isNaN(p) && p > totalPages) totalPages = p;
+    });
+
+    // Try to find the "Last" button or the link before "Next"
+    const nextBtn = $('a.next, .next-page, .page-numbers.next');
+    const lastBtn = $('a.last, .last-page, .page-numbers.last, a:contains("Last"), a:contains(">>")');
+    
+    if (lastBtn.length > 0) {
+      const href = lastBtn.attr('href') || '';
+      const m = href.match(/\/page\/(\d+)/) || href.match(/page=(\d+)/);
+      if (m) {
+        totalPages = Math.max(totalPages, parseInt(m[1]));
+      } else {
+        const txt = parseInt(lastBtn.text().trim());
+        if (!isNaN(txt)) totalPages = Math.max(totalPages, txt);
+      }
+    } else if (nextBtn.length > 0) {
+      // If there is a next but no last, at least there is one more page
+      totalPages = Math.max(totalPages, page + 1);
+    }
 
     $('#book_list .item').each((i, el) => {
       const titleEl = $(el).find('.title a');
@@ -279,16 +342,25 @@ async function browseManga(filters = {}) {
       
       if (!id || !title) return;
 
+      // 🏎️ Extract Latest Chapter Info
+      let lastChapterEl = $(el).find('.chapters .chapter a').first();
+      if (lastChapterEl.length === 0) lastChapterEl = $(el).find('.last_chap a').first();
+      
+      const lastChapter = lastChapterEl.text().trim();
+      const lastChapterId = lastChapterEl.attr('href')?.replace(/\/$/, '').split('/').pop();
+
       results.push({
         id,
         title,
         image,
         genres,
+        lastChapter: lastChapter || null,
+        lastChapterId: lastChapterId || null,
         source: 'mangakatana'
       });
     });
 
-    return { results, currentPage: page, hasNextPage: $('.page-numbers.next').length > 0 };
+    return { results, totalResults, totalPages, currentPage: page, hasNextPage: $('.page-numbers.next').length > 0 };
   } catch (err) {
     console.error('[MangaKatana] browseManga failed:', err.message);
     return { results: [], currentPage: 1, hasNextPage: false };

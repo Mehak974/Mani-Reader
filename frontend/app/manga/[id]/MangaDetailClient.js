@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import React from 'react';
 import { AuthProvider, useAuth } from '../../../lib/auth';
 import Navbar from '../../../components/Navbar';
 import MangaCard from '../../../components/MangaCard';
@@ -8,25 +8,30 @@ import AdBanner from '../../../components/AdBanner';
 import { mangaApi, libraryApi, progressApi, bookmarkApi } from '../../../lib/api';
 
 export default function MangaDetailClient({ id, initialManga }) {
-  const { user } = useAuth() || {};
+  const { user, revealNsfw, setRevealNsfw } = useAuth() || {};
 
-  const [manga, setManga] = useState(initialManga);
-  const [chapters, setChapters] = useState([]);
-  const [progress, setProgress] = useState([]);
-  const [libraries, setLibraries] = useState([]);
-  const [related, setRelated] = useState([]);
+  const [manga, setManga] = React.useState(initialManga);
+  const [chapters, setChapters] = React.useState([]);
+  const [progress, setProgress] = React.useState([]);
+  const [libraries, setLibraries] = React.useState([]);
+  const [related, setRelated] = React.useState([]);
 
-  const [loading, setLoading] = useState(!initialManga);
-  const [error, setError] = useState(null);
-  const [toast, setToast] = useState(null);
-  const [libModal, setLibModal] = useState(false);
+  const [loading, setLoading] = React.useState(!initialManga);
+  const [error, setError] = React.useState(null);
+  const [toast, setToast] = React.useState(null);
+  const [libModal, setLibModal] = React.useState(false);
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3000);
   };
 
-  useEffect(() => {
+  React.useEffect(() => {
     const fetchData = async () => {
       try {
         const [infoRes, chaptersRes] = await Promise.all([
@@ -94,7 +99,7 @@ export default function MangaDetailClient({ id, initialManga }) {
   }
 
   function RatingStars({ rating, onRate }) {
-    const [hover, setHover] = useState(0);
+    const [hover, setHover] = React.useState(0);
 
     return (
       <div
@@ -157,8 +162,14 @@ export default function MangaDetailClient({ id, initialManga }) {
   );
 
   return (
-    <div className="page-wrapper">
-      <Navbar />
+    <div className="page-wrapper" suppressHydrationWarning>
+      {!mounted ? (
+        <div style={{ background: 'var(--bg)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="skeleton" style={{ height: 400, width: '80%', borderRadius: 18 }} />
+        </div>
+      ) : (
+        <>
+          <Navbar />
       <div className="container">
         {/* 🏆 Two-Phase Premium Layout */}
         <div className="manga-detail-container">
@@ -260,8 +271,46 @@ export default function MangaDetailClient({ id, initialManga }) {
 
           {/* Line 1: Header (Web/Tablet: Side-by-side | Mobile: Side-by-side) */}
           <div className="manga-header-row">
-            <div className="manga-detail-cover">
-              <img src={coverUrl} alt={manga?.title} onError={(e) => { e.target.src = '/placeholder-cover.jpg'; }} />
+            <div className="manga-detail-cover" style={{ position: 'relative', overflow: 'hidden', borderRadius: '18px' }}>
+              <img 
+                src={coverUrl} 
+                alt={manga?.title} 
+                className={manga?.nsfw && !revealNsfw ? 'blur-nsfw' : ''}
+                onError={(e) => { e.target.src = '/placeholder-cover.jpg'; }} 
+                style={{ width: '100%', display: 'block' }}
+              />
+              {manga?.nsfw && !revealNsfw && (
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'rgba(0,0,0,0.6)',
+                  backdropFilter: 'blur(10px)',
+                  padding: '20px',
+                  textAlign: 'center',
+                  zIndex: 2
+                }}>
+                  <div style={{
+                    color: '#fff',
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
+                    marginBottom: '16px',
+                    lineHeight: '1.4'
+                  }}>
+                    Content is 18+ contain nudidity want to reveal?
+                  </div>
+                  <button 
+                    onClick={() => setRevealNsfw(true)}
+                    className="btn btn-primary"
+                    style={{ padding: '8px 20px', borderRadius: '10px', fontSize: '0.8rem' }}
+                  >
+                    YES, REVEAL ALL
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="manga-detail-meta">
@@ -333,7 +382,7 @@ export default function MangaDetailClient({ id, initialManga }) {
           </div>
         </div>
 
-        <AdBanner slot="YOUR_SLOT_ID_HERE" />
+        <AdBanner size="small" slot="YOUR_SLOT_ID_HERE" />
 
         <section className="section" style={{ paddingTop: 0 }}>
           <h2 className="section-title" style={{ marginBottom: 24 }}>
@@ -384,6 +433,8 @@ export default function MangaDetailClient({ id, initialManga }) {
       )}
 
       {toast && <div className={`toast toast-${toast.type}`}>{toast.msg}</div>}
+        </>
+      )}
     </div>
   );
 }

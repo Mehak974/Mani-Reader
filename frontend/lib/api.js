@@ -49,9 +49,13 @@ api.interceptors.response.use(
 export const mangaApi = {
   search:   (q, page = 1) => api.get(`/search?q=${encodeURIComponent(q)}&page=${page}`),
   info:     (id)          => api.get(`/manga/${id}`),
-  popular:  (page = 1)    => api.get(`/manga/browse/popular?page=${page}`),
+  popular:  (page = 1, genre = null, config = {}) => {
+    let url = `/manga/browse/popular?page=${page}`;
+    if (genre) url += `&genre=${encodeURIComponent(genre)}`;
+    return api.get(url, config);
+  },
   mostRead: () => api.get('/manga/most-read'),
-  recent:   (page = 1)    => api.get(`/manga/browse/recent?page=${page}`),
+  recent:   (page = 1, config = {})    => api.get(`/manga/browse/recent?page=${page}`, config),
   chapters: (mangaId)     => api.get(`/chapters/${mangaId}`),
   pages:    (chapterId, mangaId) => api.get(`/chapter/${chapterId}/pages?mangaId=${mangaId}`),
   browse:    (filters = {}) => {

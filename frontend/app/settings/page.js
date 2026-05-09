@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import React from 'react';
 import { AuthProvider, useAuth } from '../../lib/auth';
 import Navbar from '../../components/Navbar';
 import { authApi, historyApi, bookmarkApi, libraryApi, progressApi } from '../../lib/api';
@@ -97,27 +97,27 @@ function SettingsContent() {
   const { user, loading: authLoading } = useAuth() || {};
   const router = useRouter();
 
-  const [incognito,    setIncognito]    = useState(false);
-  const [hideAdult,    setHideAdult]    = useState(false);
-  const [toast,        setToast]        = useState(null);
-  const [stats,        setStats]        = useState(null);
-  const [statsLoading, setStatsLoading] = useState(true);
-  const [clearing,     setClearing]     = useState(false);
-  const [deleting,     setDeleting]     = useState(false);
+  const [incognito,    setIncognito]    = React.useState(false);
+  const [hideAdult,    setHideAdult]    = React.useState(false);
+  const [toast,        setToast]        = React.useState(null);
+  const [stats,        setStats]        = React.useState(null);
+  const [statsLoading, setStatsLoading] = React.useState(true);
+  const [clearing,     setClearing]     = React.useState(false);
+  const [deleting,     setDeleting]     = React.useState(false);
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type }); setTimeout(() => setToast(null), 3000);
   };
 
   // Load preferences from localStorage
-  useEffect(() => {
+  React.useEffect(() => {
     try {
       setIncognito(localStorage.getItem('mv_incognito') === 'true');
       setHideAdult(localStorage.getItem('mv_hide_adult') === 'true');
     } catch {}
   }, []);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (authLoading) return;
     if (!user) {
       setStatsLoading(false);

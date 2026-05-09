@@ -1,5 +1,5 @@
 'use client';
-import { useEffect } from 'react';
+import React from 'react';
 
 /**
  * Premium Google AdSense Banner Component
@@ -7,10 +7,10 @@ import { useEffect } from 'react';
  * @param {string} format - The ad format (default: 'auto')
  * @param {string} responsive - Whether the ad is responsive (default: 'true')
  */
-export default function AdBanner({ slot, format = 'auto', responsive = 'true' }) {
+export default function AdBanner({ slot, format = 'auto', responsive = 'true', size = 'normal' }) {
   const publisherId = 'ca-pub-4938022536946038';
 
-  useEffect(() => {
+  React.useEffect(() => {
     try {
       if (typeof window !== 'undefined') {
         (window.adsbygoogle = window.adsbygoogle || []).push({});
@@ -20,40 +20,43 @@ export default function AdBanner({ slot, format = 'auto', responsive = 'true' })
     }
   }, []);
 
+  const isSmall = size === 'small';
+
   return (
     <div className="ad-container" style={{ 
-      margin: '32px auto', 
+      margin: isSmall ? '8px auto' : '32px auto', 
       textAlign: 'center', 
-      minHeight: '100px',
-      background: 'rgba(255, 255, 255, 0.02)',
-      borderRadius: '16px',
-      border: '1px solid rgba(255, 255, 255, 0.05)',
+      minHeight: isSmall ? '30px' : '100px',
+      background: isSmall ? 'transparent' : 'rgba(255, 255, 255, 0.01)',
+      borderRadius: isSmall ? '0' : '16px',
+      border: isSmall ? 'none' : '1px solid rgba(255, 255, 255, 0.03)',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
       overflow: 'hidden',
-      maxWidth: '1200px',
-      position: 'relative'
+      maxWidth: isSmall ? '468px' : '1200px',
+      position: 'relative',
+      padding: '0'
     }}>
       <ins className="adsbygoogle"
-           style={{ display: 'block', width: '100%' }}
+           style={{ display: 'inline-block', width: isSmall ? '320px' : '100%', height: isSmall ? '32px' : 'auto' }}
            data-ad-client={publisherId}
            data-ad-slot={slot}
-           data-ad-format={format}
-           data-full-width-responsive={responsive}></ins>
+           data-ad-format={isSmall ? null : format}
+           data-full-width-responsive={isSmall ? 'false' : responsive}></ins>
       
       <div style={{ 
         position: 'absolute', 
-        top: 6, 
-        right: 12, 
-        fontSize: '0.6rem', 
+        top: isSmall ? 2 : 6, 
+        right: isSmall ? 6 : 12, 
+        fontSize: isSmall ? '0.5rem' : '0.6rem', 
         color: 'var(--text-3)', 
-        opacity: 0.4,
+        opacity: isSmall ? 0.2 : 0.4,
         textTransform: 'uppercase',
         pointerEvents: 'none',
         zIndex: 1
-      }}>Advertisement</div>
+      }}>{isSmall ? 'AD' : 'Advertisement'}</div>
     </div>
   );
 }

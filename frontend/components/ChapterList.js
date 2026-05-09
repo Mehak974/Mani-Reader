@@ -1,17 +1,17 @@
 'use client';
-import { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { bookmarkApi, progressApi } from '../lib/api';
 import { useAuth } from '../lib/auth';
 
 export default function ChapterList({ chapters = [], mangaId, progress = [] }) {
   const { user } = useAuth() || {};
-  const [filter, setFilter] = useState('');
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [selectionMode, setSelectionMode] = useState(false);
-  const [selectedIds, setSelectedIds] = useState(new Set());
-  const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState(null);
+  const [filter, setFilter] = React.useState('');
+  const [dropdownOpen, setDropdownOpen] = React.useState(false);
+  const [selectionMode, setSelectionMode] = React.useState(false);
+  const [selectedIds, setSelectedIds] = React.useState(new Set());
+  const [loading, setLoading] = React.useState(false);
+  const [toast, setToast] = React.useState(null);
 
   const readSet = new Set(progress.filter((p) => p.isRead).map((p) => p.chapterId));
 

@@ -1,16 +1,16 @@
 'use client';
-import { useState } from 'react';
+import React from 'react';
 import { useAuth } from '../lib/auth';
 import Link from 'next/link';
 
 export default function LoginRequiredModal({ pageName, onCancel }) {
   const { login, register } = useAuth() || {};
-  const [view, setView] = useState('login'); // 'login' | 'register'
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirm, setConfirm] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [view, setView] = React.useState('login'); // 'login' | 'register'
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [confirm, setConfirm] = React.useState('');
+  const [error, setError] = React.useState('');
+  const [loading, setLoading] = React.useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

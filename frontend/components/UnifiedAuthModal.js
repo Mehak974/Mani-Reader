@@ -1,16 +1,16 @@
 'use client';
-import { useState } from 'react';
+import React from 'react';
 import { useAuth } from '../lib/auth';
 import SupportModal from './SupportModal';
 
 export default function UnifiedAuthModal({ isOpen, onClose, initialView = 'login' }) {
-  const [view, setView] = useState(initialView); // 'login' | 'register'
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [showSupport, setShowSupport] = useState(false);
+  const [view, setView] = React.useState(initialView); // 'login' | 'register'
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [name, setName] = React.useState('');
+  const [error, setError] = React.useState('');
+  const [loading, setLoading] = React.useState(false);
+  const [showSupport, setShowSupport] = React.useState(false);
   
   const { login, register } = useAuth() || {};
 

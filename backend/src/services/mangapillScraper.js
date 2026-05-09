@@ -30,11 +30,18 @@ async function searchManga(query) {
         const title = link.text().trim() || $(el).find('div.font-bold').text().trim();
         const image = $(el).find('img').attr('data-src') || $(el).find('img').attr('src');
         
+        // ⚡ Turbo Hack: Extract latest chapter from the grid item
+        const lastChapEl = $(el).find('a[href^="/chapters/"]').first();
+        const lastChapter = lastChapEl.text().trim() || null;
+        const lastChapterId = lastChapEl.attr('href')?.replace('/chapters/', '') || null;
+
         if (title) {
           results.push({
             id,
             title,
             image,
+            lastChapter,
+            lastChapterId: lastChapterId ? `mangapill:${lastChapterId}` : null,
             source: 'mangapill'
           });
         }

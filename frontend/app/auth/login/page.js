@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import React from 'react';
 import { AuthProvider, useAuth } from '../../../lib/auth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -7,13 +7,13 @@ import Link from 'next/link';
 function LoginContent() {
   const { login, user, loading: authLoading } = useAuth() || {};
   const router = useRouter();
-  const [email,    setEmail]    = useState('');
-  const [password, setPassword] = useState('');
-  const [error,    setError]    = useState('');
-  const [loading,  setLoading]  = useState(false);
+  const [email,    setEmail]    = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [error,    setError]    = React.useState('');
+  const [loading,  setLoading]  = React.useState(false);
 
   // Auto-redirect if already logged in as ADMIN
-  useEffect(() => {
+  React.useEffect(() => {
     if (!authLoading && user?.role === 'ADMIN') {
       router.push('/admin');
     }

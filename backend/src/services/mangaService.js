@@ -59,6 +59,12 @@ async function applyContentFilters(results, userId = null, isExplicitSearch = fa
   return filtered;
 }
 
+async function applyContentFiltersToBrowseResult(data, userId, isExplicit = false) {
+  if (!data || !data.results) return data;
+  const filtered = await applyContentFilters(data.results, userId, isExplicit);
+  return { ...data, results: filtered };
+}
+
 /**
  * Map raw Consumet manga result → our internal Manga shape.
  */
@@ -73,9 +79,11 @@ function mapManga(raw) {
     nsfw: !!(
       raw.isAdult || 
       raw.nsfw || 
-      (Array.isArray(raw.genres) && raw.genres.some(g => 
-        ['Hentai', 'Ecchi', 'Smut', 'Adult', '18+'].includes(g)
-      ))
+      (Array.isArray(raw.genres) && raw.genres.some(g => {
+        const gl = (typeof g === 'string' ? g : '').toLowerCase();
+        return ['hentai', 'ecchi', 'smut', 'adult', '18+', 'harem', 'yaoi', 'yuri',
+          'loli', 'shota', 'erotica', 'pornographic', 'sexual-violence'].some(bad => gl === bad);
+      }))
     ),
     rating: raw.rating || null,
     lastChapter: raw.lastChapter || null,
@@ -238,18 +246,60 @@ async function getChapterPages(chapterId, mangaId) {
   });
 }
 
-async function getPopular(page = 1, userId = null) {
-  // 🛡️ Shield Upgrade: Use browse with 'Top Read' order to ensure we ALWAYS have genres
-  // This is critical for the home page content filter to work 100% of the time.
-  const data = await browse({ order: 2, page }, userId);
-  return data.results || [];
+async function getPopular(page = 1, userId = null, genre = null) {
+  const cacheKey = `popular_v2:${page}:${genre || 'all'}`;
+  const results = await cache.getOrSet(cacheKey, cache.ttl.searchTtl, async () => {
+    const { data } = await ingestion.getPopular(page, genre);
+    const mapped = (data.results || []).map(mapManga);
+
+    // ⚡ Enhancement: If genres are missing (common on homepage), try to recover from DB
+    const missingGenres = mapped.filter(m => !m.genres || m.genres.length === 0);
+    if (missingGenres.length > 0) {
+      const dbManga = await prisma.manga.findMany({
+        where: { id: { in: missingGenres.map(m => m.id) } },
+        select: { id: true, genres: true }
+      });
+      const genreMap = new Map(dbManga.map(m => [m.id, m.genres]));
+      mapped.forEach(m => {
+        if ((!m.genres || m.genres.length === 0) && genreMap.has(m.id)) {
+          m.genres = genreMap.get(m.id);
+        }
+      });
+    }
+    return mapped;
+  });
+
+  // ⚡ Trending Injection: If fetching page 1 of a genre, inject trending manga that match this genre
+  if (page === 1 && genre) {
+    try {
+      const trendingCacheKey = `popular_v2:1:all`;
+      const trending = await cache.get(trendingCacheKey);
+      if (trending && Array.isArray(trending)) {
+        const matchingTrending = trending.filter(m => 
+          m.genres.some(g => g.toLowerCase() === genre.toLowerCase())
+        );
+        
+        // Merge and remove duplicates
+        const existingIds = new Set(results.map(m => m.id));
+        const injected = matchingTrending.filter(m => !existingIds.has(m.id));
+        
+        if (injected.length > 0) {
+          return applyContentFilters([...injected, ...results], userId, false);
+        }
+      }
+    } catch (err) {
+      console.warn('[MangaService] Trending injection failed:', err.message);
+    }
+  }
+
+  return applyContentFilters(results, userId, false);
 }
 
 async function getRecent(page = 1, userId = null) {
   const cacheKey = `recent:${page}`;
   const results = await cache.getOrSet(cacheKey, cache.ttl.searchTtl, async () => {
     const { data } = await ingestion.getRecent(page);
-    return (data.results || data || []).map(mapManga);
+    return (data.results || []).map(mapManga);
   });
   return applyContentFilters(results, userId, false);
 }
@@ -284,8 +334,13 @@ async function browse(filters = {}, userId = null) {
   // ⚡ Bypass cache for keyword searches to ensure we hit all providers fresh
   const useCache = !filters.keyword;
   const cacheKey = `browse:${JSON.stringify(filters)}`;
-  const targetCount = 20;
+  
+  if (useCache) {
+    const cached = await cache.get(cacheKey);
+    if (cached) return applyContentFiltersToBrowseResult(cached, userId);
+  }
 
+  const targetCount = 20;
   let results = [];
   let totalData = {};
   let currentPage = filters.page || 1;
@@ -296,9 +351,12 @@ async function browse(filters = {}, userId = null) {
     const res = await ingestion.browseManga({ ...filters, page: currentPage });
     if (!res.data.results || res.data.results.length === 0) break;
     
-    totalData = res.data;
-    // For keywords, use strict explicit mode; for general browse, use safe guest filtering
-    const isExplicit = !!filters.keyword;
+    if (!totalData.totalResults) {
+      totalData = res.data;
+    }
+
+    // For keywords or specific genre inclusions, use explicit mode; for general browse, use safe guest filtering
+    const isExplicit = !!filters.keyword || (filters.include && filters.include.length > 0);
     const filtered = await applyContentFilters(res.data.results, userId, isExplicit);
     
     results = [...results, ...filtered];
@@ -308,12 +366,20 @@ async function browse(filters = {}, userId = null) {
     attempts++;
   }
 
+  const totalResults = totalData.totalResults || results.length;
+  const totalPages = totalData.totalPages || Math.ceil(totalResults / 20) || 1;
+
   const finalData = {
     ...totalData,
     results: results.slice(0, targetCount),
     currentPage: filters.page || 1,
-    totalResults: totalData.totalResults || results.length
+    totalResults,
+    totalPages
   };
+
+  if (useCache) {
+    await cache.set(cacheKey, finalData, cache.ttl.searchTtl);
+  }
 
   return finalData;
 }

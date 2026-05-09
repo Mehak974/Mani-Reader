@@ -1,15 +1,15 @@
 'use client';
-import { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 
 export default function RecentlyAddedCard({ manga }) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
+  const [isExpanded, setIsExpanded] = React.useState(false);
+  const [isHovered, setIsHovered] = React.useState(false);
   
   if (!manga) return null;
 
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || 'https://api.manireader.online/api';
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || '/api';
   const rawCover = manga.image || manga.cover;
   // 🏎️ Smart Proxy: Only wrap in local /api/image if it's an external HTTP link AND not already proxied
   const coverUrl = rawCover
@@ -85,7 +85,9 @@ export default function RecentlyAddedCard({ manga }) {
           </h3>
         </Link>
 
-        <div style={{ 
+        <div 
+          suppressHydrationWarning
+          style={{ 
           fontSize: '0.85rem', 
           color: 'var(--text-2)', 
           lineHeight: '1.5',

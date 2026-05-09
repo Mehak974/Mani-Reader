@@ -1,12 +1,12 @@
 'use client';
-import { useEffect } from 'react';
+import React from 'react';
 import { userActivityApi } from '../lib/api';
 import { useAuth } from '../lib/auth';
 
 export default function UserActivity() {
   const { user } = useAuth() || {};
 
-  useEffect(() => {
+  React.useEffect(() => {
     // Only send heartbeat every 5 minutes to save bandwidth/requests
     const interval = setInterval(() => {
       userActivityApi.heartbeat(300000).catch(() => {});

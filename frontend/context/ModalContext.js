@@ -1,13 +1,13 @@
 'use client';
-import { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext } from 'react';
 import UnifiedAuthModal from '../components/UnifiedAuthModal';
 import SupportModal from '../components/SupportModal';
 
 const ModalContext = createContext();
 
 export function ModalProvider({ children }) {
-  const [authModal, setAuthModal] = useState({ isOpen: false, view: 'login' });
-  const [supportModalOpen, setSupportModalOpen] = useState(false);
+  const [authModal, setAuthModal] = React.useState({ isOpen: false, view: 'login' });
+  const [supportModalOpen, setSupportModalOpen] = React.useState(false);
 
   const openLogin = () => setAuthModal({ isOpen: true, view: 'login' });
   const openRegister = () => setAuthModal({ isOpen: true, view: 'register' });
@@ -29,4 +29,4 @@ export function ModalProvider({ children }) {
   );
 }
 
-export const useModals = () => useContext(ModalContext);
+export const useModals = () => React.useContext(ModalContext);

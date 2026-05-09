@@ -1,8 +1,17 @@
 // import { Analytics } from '@vercel/analytics/react';
 import ClientProviders from '../components/ClientProviders';
+import Footer from '../components/Footer';
+import ScrollToTop from '../components/ScrollToTop';
 import '../styles/globals.css';
 
 import Script from 'next/script';
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: '#6c63ff',
+};
 
 export const metadata = {
   metadataBase: new URL('https://manireader.online'),
@@ -17,12 +26,6 @@ export const metadata = {
   alternates: {
     canonical: '/',
   },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 5,
-  },
-  themeColor: '#6c63ff',
   icons: {
     icon: [
       { url: '/icon.jpeg', sizes: '48x48', type: 'image/jpeg' },
@@ -67,8 +70,9 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning className="notranslate" translate="no">
       <head>
+        <meta name="google" content="notranslate" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
@@ -97,11 +101,13 @@ export default function RootLayout({ children }) {
           strategy="afterInteractive"
         />
       </head>
-      <body>
+      <body suppressHydrationWarning>
         <ClientProviders>
           <main id="main-content">
             {children}
           </main>
+          <Footer />
+          <ScrollToTop />
         </ClientProviders>
         {/* <Analytics /> */}
       </body>

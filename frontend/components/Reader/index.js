@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../lib/auth';
@@ -7,17 +7,17 @@ import { progressApi, bookmarkApi, historyApi } from '../../lib/api';
 
 // ── Vertical Reader ────────────────────────────────────────────────────────────
 export function VerticalReader({ pages, chapterId, mangaId, prevChapter, nextChapter, currentChapter }) {
-  const [loaded, setLoaded] = useState(new Set());
-  const [currentPage, setCurrentPage] = useState(0);
-  const [showControls, setShowControls] = useState(true); // 🤫 Immersive Mode
-  const containerRef = useRef(null);
+  const [loaded, setLoaded] = React.useState(new Set());
+  const [currentPage, setCurrentPage] = React.useState(0);
+  const [showControls, setShowControls] = React.useState(true); // 🤫 Immersive Mode
+  const containerRef = React.useRef(null);
   const router = useRouter();
 
   const progress = pages.length > 0 ? Math.round((currentPage / pages.length) * 100) : 0;
   const chNum = currentChapter?.chapterNumber || currentChapter?.number || '';
 
   // Track scroll position → update current page
-  useEffect(() => {
+  React.useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     const imgs = el.querySelectorAll('.reader-page');
@@ -37,7 +37,7 @@ export function VerticalReader({ pages, chapterId, mangaId, prevChapter, nextCha
   }, [pages]);
 
   // 👻 Ghost Mode: Buffer progress in local memory, sync once at the end
-  useEffect(() => {
+  React.useEffect(() => {
     if (!chapterId || !mangaId) return;
     try {
       localStorage.setItem(`mv_progress_${mangaId}`, JSON.stringify({ chapterId, page: currentPage }));
@@ -212,14 +212,14 @@ export function VerticalReader({ pages, chapterId, mangaId, prevChapter, nextCha
 
 // ── Paged Reader ───────────────────────────────────────────────────────────────
 export function PagedReader({ pages, chapterId, mangaId, prevChapter, nextChapter, currentChapter }) {
-  const [current, setCurrent] = useState(0);
-  const [showControls, setShowControls] = useState(true); // 🤫 Immersive Mode
+  const [current, setCurrent] = React.useState(0);
+  const [showControls, setShowControls] = React.useState(true); // 🤫 Immersive Mode
   const router = useRouter();
 
   const progress = pages.length > 0 ? Math.round(((current + 1) / pages.length) * 100) : 0;
   const chNum = currentChapter?.chapterNumber || currentChapter?.number || '';
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (!chapterId || !mangaId) return;
     try {
       localStorage.setItem(`mv_progress_${mangaId}`, JSON.stringify({ chapterId, page: current }));
@@ -240,7 +240,7 @@ export function PagedReader({ pages, chapterId, mangaId, prevChapter, nextChapte
   }, [current, chapterId, mangaId, pages.length]);
 
   // Keyboard navigation
-  useEffect(() => {
+  React.useEffect(() => {
     const handler = (e) => {
       if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
         setCurrent((p) => Math.min(p + 1, pages.length - 1));

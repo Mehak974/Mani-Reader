@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import React from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthProvider, useAuth } from '../../lib/auth';
 import { adminApi } from '../../lib/api';
@@ -109,31 +109,31 @@ function AdminDashboardContent() {
   const { user, loading: authLoading, logout } = useAuth() || {};
   const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState('overview'); // overview, users, guests, manga, vips, messages, system, settings
-  const [stats, setStats] = useState(null);
-  const [users, setUsers] = useState([]);
-  const [guestUsers, setGuestUsers] = useState([]);
-  const [mangas, setMangas] = useState([]);
-  const [messages, setMessages] = useState([]);
-  const [topReaders, setTopReaders] = useState([]);
-  const [selectedUser, setSelectedUser] = useState(null);
+  const [activeTab, setActiveTab] = React.useState('overview'); // overview, users, guests, manga, vips, messages, system, settings
+  const [stats, setStats] = React.useState(null);
+  const [users, setUsers] = React.useState([]);
+  const [guestUsers, setGuestUsers] = React.useState([]);
+  const [mangas, setMangas] = React.useState([]);
+  const [messages, setMessages] = React.useState([]);
+  const [topReaders, setTopReaders] = React.useState([]);
+  const [selectedUser, setSelectedUser] = React.useState(null);
   
-  const [loadingData, setLoadingData] = useState(true);
-  const [toast, setToast] = useState(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sortConfig, setSortConfig] = useState({ key: 'readCount', direction: 'desc' });
-  const [settings, setSettings] = useState({ maintenance: false, globalNsfw: true });
+  const [loadingData, setLoadingData] = React.useState(true);
+  const [toast, setToast] = React.useState(null);
+  const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const [sortConfig, setSortConfig] = React.useState({ key: 'readCount', direction: 'desc' });
+  const [settings, setSettings] = React.useState({ maintenance: false, globalNsfw: true });
   
-  const [auditLogs, setAuditLogs] = useState([]);
-  const [adStats, setAdStats] = useState([]);
-  const [searchAnalytics, setSearchAnalytics] = useState([]);
-  const [broadcastMsg, setBroadcastMsg] = useState('');
-  const [bannedIps, setBannedIps] = useState([]);
+  const [auditLogs, setAuditLogs] = React.useState([]);
+  const [adStats, setAdStats] = React.useState([]);
+  const [searchAnalytics, setSearchAnalytics] = React.useState([]);
+  const [broadcastMsg, setBroadcastMsg] = React.useState('');
+  const [bannedIps, setBannedIps] = React.useState([]);
   
-  const [analytics, setAnalytics] = useState(null);
-  const [graphType, setGraphType] = useState('monthly');
-  const [graphData, setGraphData] = useState([]);
-  const [health, setHealth] = useState({ cpu: '24%', disk: '42%', dbLatency: '12ms', memory: '1.2GB' });
+  const [analytics, setAnalytics] = React.useState(null);
+  const [graphType, setGraphType] = React.useState('monthly');
+  const [graphData, setGraphData] = React.useState([]);
+  const [health, setHealth] = React.useState({ cpu: '24%', disk: '42%', dbLatency: '12ms', memory: '1.2GB' });
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type }); setTimeout(() => setToast(null), 3000);
@@ -193,7 +193,7 @@ function AdminDashboardContent() {
     setSortConfig({ key, direction });
   };
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (authLoading) return;
     if (!user || user.role !== 'ADMIN') {
       router.push('/');

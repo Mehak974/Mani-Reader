@@ -40,7 +40,8 @@ router.get('/', searchLimiter, optionalAuth, async (req, res) => {
 router.get('/browse/popular', optionalAuth, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const results = await mangaService.getPopular(page, req.user?.userId);
+    const { genre } = req.query;
+    const results = await mangaService.getPopular(page, req.user?.userId, genre);
     // ⚡ Edge Cache: 6 hours for popular
     res.setHeader('Cache-Control', 'public, s-maxage=21600, stale-while-revalidate=59');
     res.json(results);

@@ -1,10 +1,10 @@
 'use client';
-import { useState, useEffect } from 'react';
+import React from 'react';
 
 export default function ScrollToTop() {
-  const [isVisible, setIsVisible] = useState(false);
+  const [isVisible, setIsVisible] = React.useState(false);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const toggleVisibility = () => {
       if (window.pageYOffset > 300) {
         setIsVisible(true);

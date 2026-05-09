@@ -1,12 +1,14 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import React from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { AuthProvider, useAuth } from '../lib/auth';
+
 import Navbar from '../components/Navbar';
 import MangaCard from '../components/MangaCard';
 import { mangaApi } from '../lib/api';
 import RecentlyAddedCard from '../components/RecentlyAddedCard';
+import AdBanner from '../components/AdBanner';
 
 function SkeletonCarousel({ count = 12 }) {
   return (
@@ -22,74 +24,136 @@ function SkeletonCarousel({ count = 12 }) {
   );
 }
 
+// 🛡️ Module-level Content Shield — filters NSFW before setting state
+const _BLACKLIST = [
+  '18+', 'adult', 'smut', 'erotica', 'sexual-violence', 'sexual violence',
+  'harem', 'yaoi', 'yuri', 'incest', 'gore', 'mature', 'ecchi',
+  'hentai', 'pornographic', 'loli', 'shota'
+];
+const _BAD_WORDS = ['sexy', 'sex', 'thot', 'nude', 'porn', 'hentai', 'uncensored', 'sexual', 'unfiltered', 'erotic', 'smut', 'harem'];
+
+function filterManga(mangaList) {
+  if (!Array.isArray(mangaList)) return [];
+  return mangaList.filter(m => {
+    if (m.nsfw) return false;
+    const genres = (m.genres || []).map(g => (typeof g === 'string' ? g : g.name || '').toLowerCase());
+    const desc = (m.description || '').toLowerCase();
+    const title = (m.title || '').toLowerCase();
+    
+    const hasBlacklistedTag = genres.some(tag =>
+      _BLACKLIST.some(bad => tag === bad || tag.includes(bad) || bad.includes(tag))
+    );
+    const hasBadWord = _BAD_WORDS.some(word => desc.includes(word) || title.includes(word));
+    
+    return !hasBlacklistedTag && !hasBadWord;
+  });
+}
+
 export default function HomeClient() {
   const { user, loading: authLoading } = useAuth() || {};
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (!authLoading && user && user.role === 'ADMIN') {
       router.push('/admin');
     }
   }, [user, authLoading, router]);
 
-  const [recent, setRecent] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [popularUpdates, setPopularUpdates] = useState([]);
-  const [updatesLoading, setUpdatesLoading] = useState(false);
-  const [recentPage, setRecentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [error, setError] = useState(null);
+  const [recent, setRecent] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [popularUpdates, setPopularUpdates] = React.useState([]);
+  const [popularAction, setPopularAction] = React.useState([]);
+  const [popularAdventure, setPopularAdventure] = React.useState([]);
+  const [popularRomance, setPopularRomance] = React.useState([]);
+  const [updatesLoading, setUpdatesLoading] = React.useState(true);
+  const [actionLoading, setActionLoading] = React.useState(true);
+  const [adventureLoading, setAdventureLoading] = React.useState(true);
+  const [romanceLoading, setRomanceLoading] = React.useState(true);
+  const [recentPage, setRecentPage] = React.useState(1);
+  const [totalPages, setTotalPages] = React.useState(1);
+  const [error, setError] = React.useState(null);
+  const [mounted, setMounted] = React.useState(false);
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const p = parseInt(params.get('page'));
-    if (p && p > 0) setRecentPage(p);
+  React.useEffect(() => {
+    setMounted(true);
   }, []);
 
-  // 🛡️ Content Shield: Filters out NSFW/Restricted tags from the Home Page
-  const filterManga = (mangaList) => {
-    const BLACKLIST = [
-      '18+', 'adult', 'smut', 'erotica', 'sexual-violence', 'sexual violence', 'harem', 'yaoi', 'yuri', 
-      'incest', 'gore', 'mature', 'ecchi'
-    ];
-    // 👃 Keyword Sniffer: Catch hidden bad stuff in descriptions
-    const BAD_WORDS = ['sexual', 'unfiltered', 'uncensored', 'erotic', 'smut', 'porn'];
-    
-    return mangaList.filter(m => {
-      const genres = m.genres || [];
-      const tagNames = genres.map(g => (typeof g === 'string' ? g : g.name || '').toLowerCase());
-      const desc = (m.description || '').toLowerCase();
-      
-      const hasBlacklistedTag = tagNames.some(tag => BLACKLIST.includes(tag));
-      const hasBadWord = BAD_WORDS.some(word => desc.includes(word));
-      
-      return !hasBlacklistedTag && !hasBadWord && !m.nsfw;
-    });
-  };
+  React.useEffect(() => {
+    const p = parseInt(searchParams?.get('page'));
+    if (p && p > 0) {
+      setRecentPage(p);
+      // Auto-scroll to recent updates if it's not the initial landing
+      if (mounted) {
+        const el = document.getElementById('recent-updates');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      setRecentPage(1);
+    }
+  }, [searchParams, mounted]);
 
-  useEffect(() => {
+  React.useEffect(() => {
+    // 🖱️ Auto-Scroll Logic: Scroll to content after 4s if still at top (Disabled on Mobile)
+    const timer = setTimeout(() => {
+      if (typeof window !== 'undefined' && window.scrollY < 50 && window.innerWidth > 768) {
+        window.scrollTo({ top: window.innerHeight, behavior: 'smooth' });
+      }
+    }, 4000);
+
+    // 1. Parallel Fetching
     setUpdatesLoading(true);
-    mangaApi.popular(1, { params: { _t: Date.now() } })
-      .then((r) => {
-        const data = r?.data || r || {};
-        const results = Array.isArray(data) ? data : (data.results || []);
-        // 🔥 Apply the shield to Popular Section
-        setPopularUpdates(filterManga(results).slice(0, 24));
-      })
-      .catch((err) => {
-        console.error('Popular Manga fetch error:', err);
-        setError('Failed to load Popular Manga section');
-      })
-      .finally(() => setUpdatesLoading(false));
+    setActionLoading(true);
+    setRomanceLoading(true);
+
+    Promise.all([
+      mangaApi.popular(1, 'fantasy', { params: { _t: Date.now() } }),
+      mangaApi.popular(1, 'action', { params: { _t: Date.now() } }),
+      mangaApi.popular(2, 'action', { params: { _t: Date.now() } }),
+      mangaApi.popular(1, 'romance', { params: { _t: Date.now() } }),
+      mangaApi.popular(2, 'romance', { params: { _t: Date.now() } })
+    ]).then(([fantasyRes, action1, action2, romance1, romance2]) => {
+      const seenIds = new Set();
+      
+      const process = (responses, limit = 18) => {
+        const resArray = Array.isArray(responses) ? responses : [responses];
+        const allResults = [];
+        
+        resArray.forEach(res => {
+          const raw = res?.data?.results || res?.data || res?.results || (Array.isArray(res) ? res : []);
+          allResults.push(...filterManga(raw));
+        });
+
+        const unique = allResults.filter(m => !seenIds.has(m.id)).slice(0, limit);
+        unique.forEach(m => seenIds.add(m.id));
+        return unique;
+      };
+
+      // 🛡️ Deduplicated Order: Fantasy gets first pick, then Action, then Romance
+      setPopularUpdates(process(fantasyRes, 20)); 
+      setPopularAction(process([action1, action2], 18));
+      setPopularRomance(process([romance1, romance2], 18));
+    })
+    .catch(err => {
+      console.error('Home sections fetch error:', err);
+      setError('Some sections failed to load');
+    })
+    .finally(() => {
+      setUpdatesLoading(false);
+      setActionLoading(false);
+      setRomanceLoading(false);
+    });
+
+    return () => clearTimeout(timer);
   }, []);
 
-  useEffect(() => {
+  React.useEffect(() => {
     setLoading(true);
-    // 🚀 Cache Buster: Adding timestamp to force fresh scrape
     mangaApi.recent(recentPage, { params: { _t: Date.now() } })
       .then((r) => {
-        const results = r?.data?.results || r?.results || r || [];
-        setRecent(filterManga(Array.isArray(results) ? results : []).slice(0, 30));
+        const raw = r?.data?.results || r?.results || (Array.isArray(r) ? r : []);
+        const results = filterManga(raw);
+        setRecent(results.slice(0, 30));
         setTotalPages(r?.data?.totalPages || 500);
       })
       .catch((err) => {
@@ -101,7 +165,7 @@ export default function HomeClient() {
 
   const handlePageChange = (p) => {
     if (p < 1 || p > totalPages) return;
-    window.location.href = `/?page=${p}`;
+    router.push(`/?page=${p}`);
   };
 
   const getPageNumbers = () => {
@@ -115,204 +179,260 @@ export default function HomeClient() {
   };
 
   return (
-    <AuthProvider>
-      <div className="page-wrapper home-page-wrapper" style={{ background: 'var(--bg)', minHeight: '100vh' }}>
-        <Navbar />
-
-        {process.env.NODE_ENV === 'development' && (
-          <div style={{ position: 'fixed', bottom: 10, left: 10, zIndex: 9999, background: 'rgba(0,0,0,0.8)', padding: '10px', fontSize: '10px', borderRadius: '5px', border: '1px solid var(--accent)' }}>
-            Popular: {popularUpdates.length} | Recent: {recent.length} | Page: {recentPage} | Loading: {loading ? 'Y' : 'N'}
-            {error && <div style={{ color: 'red' }}>Error: {error}</div>}
+    <div className="page-wrapper home-page-wrapper" style={{ background: 'var(--bg)', minHeight: '100vh' }} suppressHydrationWarning>
+      {!mounted ? (
+        <div style={{ background: 'var(--bg)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="container" style={{ paddingTop: '100px' }}>
+            <div style={{ marginBottom: 40 }}><SkeletonCarousel count={6} /></div>
+            <div style={{ marginBottom: 40 }}><SkeletonCarousel count={6} /></div>
           </div>
-        )}
+        </div>
+      ) : (
+        <>
+          <Navbar />
 
-        <section className="hero hide-on-mobile" style={{ position: 'relative' }}>
-          <div className="hero-grid-lines" />
-          <div style={{ position: 'relative', zIndex: 2, paddingTop: '160px', paddingBottom: '80px', maxWidth: '100%', paddingLeft: 'max(24px, 6vw)', paddingRight: '8vw' }}>
-            <div style={{ maxWidth: '800px' }}>
-              <h1 style={{ fontSize: 'clamp(2.5rem, 8vw, 5rem)', fontWeight: 900, color: '#fff', marginBottom: '24px', lineHeight: 1.1, fontFamily: '"Inter", sans-serif' }}>
-                The Future of <span style={{ color: 'var(--accent)' }}>Manga</span> Reading
-              </h1>
-              <p style={{ fontSize: '1.25rem', color: 'var(--text-2)', marginBottom: '40px', maxWidth: '600px', fontFamily: '"Inter", sans-serif' }}>
-                A premium, high-performance sanctuary built for speed, aesthetics, and the ultimate reading experience.
-              </p>
-              <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', alignItems: 'center' }}>
-                <a href="/browse" className="start-reading-btn" style={{ position: 'relative', top: '-20px', left: '-10px', display: 'inline-block', transition: 'transform 0.3s ease' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05) translateY(-20px) translateX(-10px)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1) translateY(-20px) translateX(-10px)'}>
-                  <Image 
-                    src="/start_reading.png" 
-                    alt="Start Reading" 
-                    width={320} 
-                    height={100} 
-                    style={{ width: '320px', height: 'auto' }}
-                    priority 
-                  />
-                </a>
-              </div>
+          <section className="hero hide-on-mobile" style={{ position: 'relative' }}>
+        <div className="hero-grid-lines" />
+        <div style={{ position: 'relative', zIndex: 2, paddingTop: '160px', paddingBottom: '80px', maxWidth: '100%', paddingLeft: 'max(24px, 6vw)', paddingRight: '8vw' }}>
+          <div style={{ maxWidth: '800px' }}>
+            <h1 style={{ fontSize: 'clamp(2.5rem, 8vw, 5rem)', fontWeight: 900, color: '#fff', marginBottom: '24px', lineHeight: 1.1, fontFamily: '"Inter", sans-serif' }}>
+              The Future of <span style={{ color: 'var(--accent)' }}>Manga</span> Reading
+            </h1>
+            <p style={{ fontSize: '1.25rem', color: 'var(--text-2)', marginBottom: '40px', maxWidth: '600px', fontFamily: '"Inter", sans-serif' }}>
+              A premium, high-performance sanctuary built for speed, aesthetics, and the ultimate reading experience.
+            </p>
+            <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', alignItems: 'center' }}>
+              <a href="/browse" className="start-reading-btn" style={{ position: 'relative', top: '-20px', left: '-10px', display: 'inline-block', transition: 'transform 0.3s ease' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05) translateY(-20px) translateX(-10px)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1) translateY(-20px) translateX(-10px)'}>
+                <Image
+                  src="/start_reading.png"
+                  alt="Start Reading"
+                  width={320}
+                  height={100}
+                  style={{ width: '320px', height: 'auto' }}
+                  priority
+                />
+              </a>
             </div>
           </div>
+        </div>
 
-          <div
+          <button
             onClick={() => window.scrollTo({ top: window.innerHeight, behavior: 'smooth' })}
             style={{
               position: 'absolute', bottom: 40, left: '50%', transform: 'translateX(-50%)',
               cursor: 'pointer', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center',
               color: 'var(--text-3)', animation: 'bounce 2s infinite', opacity: 0.8,
-              transition: 'opacity 0.2s'
+              transition: 'opacity 0.2s', background: 'none', border: 'none'
             }}
           >
             <span style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>Scroll</span>
             <span className="material-icons" style={{ fontSize: '2rem' }}>keyboard_arrow_down</span>
-          </div>
-        </section>
+          </button>
+      </section>
 
-        <section id="rated" className="section hide-on-mobile">
+      <div className="container">
+        <AdBanner size="small" slot="8394012345" /> {/* Use your real slot ID here */}
+      </div>
+
+      <section id="fantasy" className="section">
+        <div className="container">
+          <div className="section-header" suppressHydrationWarning>
+            <h2 className="section-title">✨ Popular <span>Fantasy</span></h2>
+            <a href="/browse?include=fantasy&order=5" className="btn btn-ghost btn-sm">View All →</a>
+          </div>
+
+          {updatesLoading ? <SkeletonCarousel count={12} /> : (
+            <div style={{ display: 'flex', gap: '20px', overflowX: 'auto', paddingBottom: '20px', scrollSnapType: 'x mandatory' }}>
+              {popularUpdates.length > 0 ? popularUpdates.map((m, index) => (
+                <div key={m.id} style={{ flex: '0 0 180px', scrollSnapAlign: 'start' }}>
+                  <MangaCard manga={m} priority={index < 4} />
+                </div>
+              )) : (
+                <div style={{ padding: '40px', textAlign: 'center', width: '100%', color: 'var(--text-3)' }}>
+                  No popular manga found at the moment.
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ⚔️ Action Section — only show if there are results */}
+      <section className="section" style={{ paddingTop: 0 }}>
           <div className="container">
             <div className="section-header">
-              <h2 className="section-title">🔥 <span>Popular</span> Manga</h2>
-              <a href="/browse?order=2" className="btn btn-ghost btn-sm">View All →</a>
+              <h2 className="section-title">⚔️ Popular <span>Action</span></h2>
+              <a href="/browse?include=action&order=5" className="btn btn-ghost btn-sm">More →</a>
             </div>
-
-            {updatesLoading ? <SkeletonCarousel count={12} /> : (
-              <div style={{ display: 'flex', gap: '20px', overflowX: 'auto', paddingBottom: '20px', scrollSnapType: 'x mandatory' }}>
-                {popularUpdates.length > 0 ? popularUpdates.map((m, index) => (
-                  <div key={m.id} style={{ minWidth: '200px', scrollSnapAlign: 'start' }}>
-                    <MangaCard manga={m} priority={index < 4} />
-                  </div>
-                )) : (
-                  <div style={{ padding: '40px', textAlign: 'center', width: '100%', color: 'var(--text-3)' }}>
-                    No popular manga found at the moment.
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </section>
-
-        <section className="section" style={{ background: 'var(--surface)', margin: '40px 0' }}>
-          <div className="container">
-            <div className="section-header" style={{ marginBottom: '32px' }}>
-              <h2 className="section-title">✨ <span>Recently</span> Added</h2>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <button
-                  disabled={recentPage <= 1 || loading}
-                  onClick={() => window.location.href = `/?page=${recentPage - 1}`}
-                  className="btn btn-ghost btn-sm"
-                >
-                  <span className="material-icons">chevron_left</span>
-                </button>
-                <span style={{ fontWeight: 700, color: 'var(--accent)' }}>Page {recentPage}</span>
-                <button
-                  disabled={loading}
-                  onClick={() => window.location.href = `/?page=${recentPage + 1}`}
-                  className="btn btn-ghost btn-sm"
-                >
-                  <span className="material-icons">chevron_right</span>
-                </button>
-              </div>
-            </div>
-
-            {loading ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px' }}>
-                {[...Array(9)].map((_, i) => (
-                  <div key={i} style={{ height: '160px', background: 'var(--bg-2)', borderRadius: '16px', animation: 'pulse 1.5s infinite' }} />
-                ))}
-              </div>
-            ) : (
-              <>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px' }}>
-                  {recent.length > 0 ? recent.map((m) => (
-                    <RecentlyAddedCard key={m.id} manga={m} />
-                  )) : (
-                    <div style={{ gridColumn: '1/-1', padding: '60px', textAlign: 'center', color: 'var(--text-3)' }}>
-                      No recently added manga found on this page.
+            {actionLoading ? <SkeletonCarousel count={6} /> : (
+              popularAction.length > 0 ? (
+                <div style={{ display: 'flex', gap: '20px', overflowX: 'auto', paddingBottom: '20px', scrollSnapType: 'x mandatory' }}>
+                  {popularAction.map((m) => (
+                    <div key={m.id} style={{ flex: '0 0 180px', scrollSnapAlign: 'start' }}>
+                      <MangaCard manga={m} />
                     </div>
-                  )}
+                  ))}
                 </div>
-
-                {totalPages > 1 && (
-                  <div style={{ marginTop: 60, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    {recentPage > 3 && (
-                      <>
-                        <button onClick={() => handlePageChange(1)} className="btn-page">1</button>
-                        {recentPage > 4 && <span style={{ color: 'var(--text-3)', margin: '0 4px' }}>...</span>}
-                      </>
-                    )}
-
-                    <button onClick={() => handlePageChange(recentPage - 1)} disabled={recentPage === 1} className="btn-page" style={{ opacity: recentPage === 1 ? 0.3 : 1 }}>
-                      <span className="material-icons" style={{ fontSize: '1.2rem' }}>chevron_left</span>
-                    </button>
-
-                    {getPageNumbers().map(p => (
-                      <button
-                        key={p}
-                        onClick={() => handlePageChange(p)}
-                        className={`btn-page ${p === recentPage ? 'active' : ''}`}
-                      >
-                        {p}
-                      </button>
-                    ))}
-
-                    <button onClick={() => handlePageChange(recentPage + 1)} disabled={recentPage === totalPages} className="btn-page" style={{ opacity: recentPage === totalPages ? 0.3 : 1 }}>
-                      <span className="material-icons" style={{ fontSize: '1.2rem' }}>chevron_right</span>
-                    </button>
-
-                    {totalPages > 1 && !getPageNumbers().includes(totalPages) && (
-                      <>
-                        {recentPage < totalPages - 3 && <span style={{ color: 'var(--text-3)', margin: '0 4px' }}>...</span>}
-                        <button onClick={() => handlePageChange(totalPages)} className="btn-page">{totalPages.toLocaleString()}</button>
-                      </>
-                    )}
-                  </div>
-                )}
-              </>
+              ) : (
+                <div style={{ padding: '40px', textAlign: 'center', width: '100%', color: 'var(--text-3)' }}>
+                  No popular action manga found at the moment.
+                </div>
+              )
             )}
           </div>
         </section>
 
-        <section className="section" style={{ borderTop: '1px solid var(--border)', background: 'var(--bg-2)' }}>
+
+        {/* 💖 Romance Section — only show if there are results */}
+        <section className="section" style={{ paddingTop: 0 }}>
           <div className="container">
-            <div className="section-header" style={{ marginBottom: '32px' }}>
-              <h2 className="section-title">🎭 <span>Explore</span> Genres</h2>
+            <div className="section-header">
+              <h2 className="section-title">💖 Popular <span>Romance</span></h2>
+              <a href="/browse?include=romance&order=5" className="btn btn-ghost btn-sm">More →</a>
             </div>
-            <div className="genres-list-container">
-              {[
-                { label: '4 koma', slug: '4-koma' }, { label: 'Action', slug: 'action' }, { label: 'Adult', slug: 'adult' },
-                { label: 'Adventure', slug: 'adventure' }, { label: 'Artbook', slug: 'artbook' }, { label: 'Award winning', slug: 'award-winning' },
-                { label: 'Comedy', slug: 'comedy' }, { label: 'Cooking', slug: 'cooking' }, { label: 'Doujinshi', slug: 'doujinshi' },
-                { label: 'Drama', slug: 'drama' }, { label: 'Ecchi', slug: 'ecchi' }, { label: 'Erotica', slug: 'erotica' },
-                { label: 'Fantasy', slug: 'fantasy' }, { label: 'Gender Bender', slug: 'gender-bender' }, { label: 'Gore', slug: 'gore' },
-                { label: 'Harem', slug: 'harem' }, { label: 'Historical', slug: 'historical' }, { label: 'Horror', slug: 'horror' },
-                { label: 'Isekai', slug: 'isekai' }, { label: 'Josei', slug: 'josei' }, { label: 'Loli', slug: 'loli' },
-                { label: 'Manhua', slug: 'manhua' }, { label: 'Manhwa', slug: 'manhwa' }, { label: 'Martial Arts', slug: 'martial-arts' },
-                { label: 'Mecha', slug: 'mecha' }, { label: 'Medical', slug: 'medical' }, { label: 'Music', slug: 'music' },
-                { label: 'Mystery', slug: 'mystery' }, { label: 'One shot', slug: 'one-shot' }, { label: 'Overpowered MC', slug: 'overpowered-mc' },
-                { label: 'Psychological', slug: 'psychological' }, { label: 'Reincarnation', slug: 'reincarnation' }, { label: 'Romance', slug: 'romance' },
-                { label: 'School Life', slug: 'school-life' }, { label: 'Sci-fi', slug: 'sci-fi' }, { label: 'Seinen', slug: 'seinen' },
-                { label: 'Sexual violence', slug: 'sexual-violence' }, { label: 'Shota', slug: 'shota' }, { label: 'Shoujo', slug: 'shoujo' },
-                { label: 'Shoujo Ai', slug: 'shoujo-ai' }, { label: 'Shounen', slug: 'shounen' }, { label: 'Shounen Ai', slug: 'shounen-ai' },
-                { label: 'Slice of Life', slug: 'slice-of-life' }, { label: 'Sports', slug: 'sports' }, { label: 'Super power', slug: 'super-power' },
-                { label: 'Supernatural', slug: 'supernatural' }, { label: 'Survival', slug: 'survival' }, { label: 'Time Travel', slug: 'time-travel' },
-                { label: 'Tragedy', slug: 'tragedy' }, { label: 'Webtoon', slug: 'webtoon' }, { label: 'Yaoi', slug: 'yaoi' }, { label: 'Yuri', slug: 'yuri' },
-              ].map((g) => (
-                <a key={g.slug} href={`/browse?include=${g.slug}`} className="genre-simple-link">
-                  {g.label}
-                </a>
+            {romanceLoading ? <SkeletonCarousel count={6} /> : (
+              popularRomance.length > 0 ? (
+                <div style={{ display: 'flex', gap: '20px', overflowX: 'auto', paddingBottom: '20px', scrollSnapType: 'x mandatory' }}>
+                  {popularRomance.map((m) => (
+                    <div key={m.id} style={{ flex: '0 0 180px', scrollSnapAlign: 'start' }}>
+                      <MangaCard manga={m} />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ padding: '40px', textAlign: 'center', width: '100%', color: 'var(--text-3)' }}>
+                  No popular romance manga found at the moment.
+                </div>
+              )
+            )}
+          </div>
+        </section>
+     
+
+      <section id="recent-updates" className="section" style={{ background: 'var(--surface)', margin: '40px 0' }}>
+        <div className="container">
+          <div className="section-header" style={{ marginBottom: '32px' }} suppressHydrationWarning>
+            <h2 className="section-title">✨ <span>Recently</span> Added</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {mounted && (
+                <>
+                  <button
+                    disabled={recentPage <= 1 || loading}
+                    onClick={() => handlePageChange(recentPage - 1)}
+                    className="btn btn-ghost btn-sm"
+                  >
+                    <span className="material-icons">chevron_left</span>
+                  </button>
+                  <span style={{ fontWeight: 700, color: 'var(--accent)' }}>Page {recentPage}</span>
+                  <button
+                    disabled={loading}
+                    onClick={() => handlePageChange(recentPage + 1)}
+                    className="btn btn-ghost btn-sm"
+                  >
+                    <span className="material-icons">chevron_right</span>
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {loading ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px' }}>
+              {[...Array(9)].map((_, i) => (
+                <div key={i} style={{ height: '160px', background: 'var(--bg-2)', borderRadius: '16px', animation: 'pulse 1.5s infinite' }} />
               ))}
             </div>
-          </div>
-        </section>
+          ) : (
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px' }}>
+                {recent.length > 0 ? recent.map((m) => (
+                  <RecentlyAddedCard key={m.id} manga={m} />
+                )) : (
+                  <div style={{ gridColumn: '1/-1', padding: '60px', textAlign: 'center', color: 'var(--text-3)' }}>
+                    No recently added manga found on this page.
+                  </div>
+                )}
+              </div>
 
-        <footer style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-3)', fontSize: '0.85rem', borderTop: '1px solid var(--border)' }}>
-          <div style={{ marginBottom: 12, fontWeight: 700, color: 'var(--text-2)' }}>💜 Mani Reader</div>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginBottom: '16px' }}>
-            <a href="/privacy" style={{ color: 'var(--text-3)', textDecoration: 'none' }}>Privacy Policy</a>
-            <a href="/terms" style={{ color: 'var(--text-3)', textDecoration: 'none' }}>Terms of Service</a>
-            <a href="/contact" style={{ color: 'var(--text-3)', textDecoration: 'none' }}>Contact Us</a>
-          </div>
-          <div>© 2026 Mani Reader. All Rights Reserved.</div>
-        </footer>
+              {mounted && totalPages > 1 && (
+                <div style={{ marginTop: 60, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  {recentPage > 3 && (
+                    <>
+                      <button onClick={() => handlePageChange(1)} className="btn-page">1</button>
+                      {recentPage > 4 && <span style={{ color: 'var(--text-3)', margin: '0 4px' }}>...</span>}
+                    </>
+                  )}
 
-        <style jsx>{`
+                  <button onClick={() => handlePageChange(recentPage - 1)} disabled={recentPage === 1} className="btn-page" style={{ opacity: recentPage === 1 ? 0.3 : 1 }}>
+                    <span className="material-icons" style={{ fontSize: '1.2rem' }}>chevron_left</span>
+                  </button>
+
+                  {getPageNumbers().map(p => (
+                    <button
+                      key={p}
+                      onClick={() => handlePageChange(p)}
+                      className={`btn-page ${p === recentPage ? 'active' : ''}`}
+                    >
+                      {p}
+                    </button>
+                  ))}
+
+                  <button onClick={() => handlePageChange(recentPage + 1)} disabled={recentPage === totalPages} className="btn-page" style={{ opacity: recentPage === totalPages ? 0.3 : 1 }}>
+                    <span className="material-icons" style={{ fontSize: '1.2rem' }}>chevron_right</span>
+                  </button>
+
+                  {totalPages > 1 && !getPageNumbers().includes(totalPages) && (
+                    <>
+                      {recentPage < totalPages - 3 && <span style={{ color: 'var(--text-3)', margin: '0 4px' }}>...</span>}
+                      <button onClick={() => handlePageChange(totalPages)} className="btn-page">{totalPages}</button>
+                    </>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </section>
+
+      <div className="container">
+        <AdBanner size="small" slot="8394012346" /> {/* Use your real slot ID here */}
+      </div>
+
+      <section className="section">
+        <div className="container">
+          <div className="section-header" style={{ marginBottom: '32px' }}>
+            <h2 className="section-title">🎭 <span>Explore</span> Genres</h2>
+          </div>
+          <div className="genres-list-container notranslate">
+            {[
+              { label: '4 koma', slug: '4-koma' }, { label: 'Action', slug: 'action' }, { label: 'Adult', slug: 'adult' }, 
+              { label: 'Adventure', slug: 'adventure' }, { label: 'Artbook', slug: 'artbook' }, { label: 'Award winning', slug: 'award-winning' }, 
+              { label: 'Comedy', slug: 'comedy' }, { label: 'Cooking', slug: 'cooking' }, { label: 'Doujinshi', slug: 'doujinshi' }, 
+              { label: 'Drama', slug: 'drama' }, { label: 'Ecchi', slug: 'ecchi' }, { label: 'Erotica', slug: 'erotica' }, 
+              { label: 'Fantasy', slug: 'fantasy' }, { label: 'Gender Bender', slug: 'gender-bender' }, { label: 'Gore', slug: 'gore' }, 
+              { label: 'Harem', slug: 'harem' }, { label: 'Historical', slug: 'historical' }, { label: 'Horror', slug: 'horror' }, 
+              { label: 'Isekai', slug: 'isekai' }, { label: 'Josei', slug: 'josei' }, { label: 'Loli', slug: 'loli' }, 
+              { label: 'Manhua', slug: 'manhua' }, { label: 'Manhwa', slug: 'manhwa' }, { label: 'Martial Arts', slug: 'martial-arts' }, 
+              { label: 'Mecha', slug: 'mecha' }, { label: 'Medical', slug: 'medical' }, { label: 'Music', slug: 'music' }, 
+              { label: 'Mystery', slug: 'mystery' }, { label: 'One shot', slug: 'one-shot' }, { label: 'Overpowered MC', slug: 'overpowered-mc' }, 
+              { label: 'Psychological', slug: 'psychological' }, { label: 'Reincarnation', slug: 'reincarnation' }, { label: 'Romance', slug: 'romance' }, 
+              { label: 'School Life', slug: 'school-life' }, { label: 'Sci-fi', slug: 'sci-fi' }, { label: 'Seinen', slug: 'seinen' }, 
+              { label: 'Sexual violence', slug: 'sexual-violence' }, { label: 'Shota', slug: 'shota' }, { label: 'Shoujo', slug: 'shoujo' }, 
+              { label: 'Shoujo Ai', slug: 'shoujo-ai' }, { label: 'Shounen', slug: 'shounen' }, { label: 'Shounen Ai', slug: 'shounen-ai' }, 
+              { label: 'Slice of Life', slug: 'slice-of-life' }, { label: 'Sports', slug: 'sports' }, { label: 'Super power', slug: 'super-power' }, 
+              { label: 'Supernatural', slug: 'supernatural' }, { label: 'Survival', slug: 'survival' }, { label: 'Time Travel', slug: 'time-travel' }, 
+              { label: 'Tragedy', slug: 'tragedy' }, { label: 'Webtoon', slug: 'webtoon' }, { label: 'Yaoi', slug: 'yaoi' }, { label: 'Yuri', slug: 'yuri' }
+            ].map((g) => (
+              <a key={g.slug} href={`/browse?include=${g.slug}`} className="genre-simple-link">
+                {g.label}
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+
+
+      <style jsx>{`
           @keyframes bounce {
             0%, 20%, 50%, 80%, 100% { transform: translateY(0) translateX(-50%); }
             40% { transform: translateY(-10px) translateX(-50%); }
@@ -324,25 +444,27 @@ export default function HomeClient() {
           .genres-list-container {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            gap: 4px 16px;
+            gap: 16px 12px;
           }
           @media (max-width: 1024px) {
             .genres-list-container { grid-template-columns: repeat(5, 1fr); }
           }
-          @media (max-width: 768px) {
+          @media (max-width: 600px) {
             .genres-list-container { grid-template-columns: repeat(3, 1fr); }
           }
           .genre-simple-link {
-            padding: 4px 8px;
-            font-size: 0.95rem;
-            font-weight: 500;
             color: var(--text-2);
             text-decoration: none;
-            transition: all 0.2s;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: color 0.2s;
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
           }
           .genre-simple-link:hover {
             color: var(--accent);
-            transform: translateX(4px);
           }
           .btn-page {
             min-width: 44px;
@@ -374,7 +496,8 @@ export default function HomeClient() {
             opacity: 0.3;
           }
         `}</style>
-      </div>
-    </AuthProvider>
+        </>
+      )}
+    </div>
   );
 }
