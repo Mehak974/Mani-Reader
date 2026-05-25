@@ -250,7 +250,7 @@ async function getPopular(page = 1, userId = null, genre = null) {
   const cacheKey = `popular_v2:${page}:${genre || 'all'}`;
   const results = await cache.getOrSet(cacheKey, cache.ttl.searchTtl, async () => {
     const { data } = await ingestion.getPopular(page, genre);
-    const mapped = (data.results || []).map(mapManga);
+    let mapped = (data.results || []).map(mapManga);
 
     // ⚡ Enhancement: If genres are missing (common on homepage), try to recover from DB
     const missingGenres = mapped.filter(m => !m.genres || m.genres.length === 0);
@@ -266,6 +266,16 @@ async function getPopular(page = 1, userId = null, genre = null) {
         }
       });
     }
+
+    // ⚡ Genre filter: when a genre is specified, keep only manga that include it
+    if (genre) {
+      const lower = genre.toLowerCase();
+      mapped = mapped.filter(m => m.genres && m.genres.some(g => {
+        const name = typeof g === 'string' ? g : (g.name || g.title || '');
+        return name.toLowerCase() === lower;
+      }));
+    }
+
     return mapped;
   });
 
@@ -289,6 +299,17 @@ async function getPopular(page = 1, userId = null, genre = null) {
       }
     } catch (err) {
       console.warn('[MangaService] Trending injection failed:', err.message);
+    }
+  }
+
+  // ⚡ Fallback: If a genre was requested but we got no results, try a broader browse include filter
+  if (genre && (!results || results.length === 0)) {
+    try {
+      const fallbackData = await ingestion.browseManga({ include: [genre], page });
+      const fallbackMapped = (fallbackData.data.results || []).map(mapManga);
+      return applyContentFilters(fallbackMapped, userId, false);
+    } catch (err) {
+      console.warn('[MangaService] Genre fallback failed:', err.message);
     }
   }
 
