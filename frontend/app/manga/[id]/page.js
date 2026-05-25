@@ -3,7 +3,7 @@ import MangaDetailClient from './MangaDetailClient';
 
 export async function generateMetadata({ params }) {
   const { id } = await params;
-  const apiUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const apiUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.manireader.online';
   try {
     const res = await fetch(`${apiUrl}/api/manga/${id}`, { next: { revalidate: 3600 } });
     const r = await res.json();
@@ -28,7 +28,7 @@ export async function generateMetadata({ params }) {
 
 export default async function MangaPage({ params }) {
   const { id } = await params;
-  const apiUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const apiUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.manireader.online';
   
   // Fetch initial data for JSON-LD structured data
   let manga = null;
