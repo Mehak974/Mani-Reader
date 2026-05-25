@@ -88,7 +88,12 @@ function LibraryContent() {
             {bookmarks.map((bm) => {
               const getApiServerUrl = () => {
                 const rawUrl = process.env.NEXT_PUBLIC_API_URL;
-                if (!rawUrl) return '';
+                if (!rawUrl) {
+                  if (typeof window !== 'undefined' && window.location.hostname.includes('manireader.online')) {
+                    return 'https://api.manireader.online';
+                  }
+                  return '';
+                }
                 const cleanedUrl = rawUrl.endsWith('/') ? rawUrl.slice(0, -1) : rawUrl;
                 return cleanedUrl.endsWith('/api') ? cleanedUrl.slice(0, -4) : cleanedUrl;
               };

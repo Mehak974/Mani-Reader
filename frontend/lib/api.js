@@ -23,7 +23,7 @@ export function getAccessToken() { return _accessToken; }
 
 api.interceptors.request.use((config) => {
   if (_accessToken) config.headers['Authorization'] = `Bearer ${_accessToken}`;
-  
+
   if (typeof window !== 'undefined') {
     let deviceId = localStorage.getItem('mani_device_id');
     if (!deviceId) {
@@ -32,7 +32,7 @@ api.interceptors.request.use((config) => {
     }
     config.headers['X-Device-ID'] = deviceId;
   }
-  
+
   return config;
 });
 
@@ -56,88 +56,88 @@ api.interceptors.response.use(
 
 // ── Manga ─────────────────────────────────────────────────────────────────────
 export const mangaApi = {
-  search:   (q, page = 1) => api.get(`/search?q=${encodeURIComponent(q)}&page=${page}`),
-  info:     (id)          => api.get(`/manga/${id}`),
-  popular:  (page = 1, genre = null, config = {}) => {
+  search: (q, page = 1) => api.get(`/search?q=${encodeURIComponent(q)}&page=${page}`),
+  info: (id) => api.get(`/manga/${id}`),
+  popular: (page = 1, genre = null, config = {}) => {
     let url = `/manga/browse/popular?page=${page}`;
     if (genre) url += `&genre=${encodeURIComponent(genre)}`;
     return api.get(url, config);
   },
   mostRead: () => api.get('/manga/most-read'),
-  recent:   (page = 1, config = {})    => api.get(`/manga/browse/recent?page=${page}`, config),
-  chapters: (mangaId)     => api.get(`/chapters/${mangaId}`),
-  pages:    (chapterId, mangaId) => api.get(`/chapter/${chapterId}/pages?mangaId=${mangaId}`),
-  browse:    (filters = {}) => {
+  recent: (page = 1, config = {}) => api.get(`/manga/browse/recent?page=${page}`, config),
+  chapters: (mangaId) => api.get(`/chapters/${mangaId}`),
+  pages: (chapterId, mangaId) => api.get(`/chapter/${chapterId}/pages?mangaId=${mangaId}`),
+  browse: (filters = {}) => {
     const { genres = [], status = 0, order = 0, page = 1 } = filters;
     const g = Array.isArray(genres) ? genres.join(',') : genres;
     return api.get(`/manga/browse/filter?include=${encodeURIComponent(g)}&status=${status}&order=${order}&page=${page}`);
   },
   browseRaw: (qs) => api.get(`/manga/browse/filter?${qs}`),
-  rate:      (id, score) => api.post(`/manga/${id}/rate`, { score }),
-  related:   (id)          => api.get(`/manga/${id}/related`),
+  rate: (id, score) => api.post(`/manga/${id}/rate`, { score }),
+  related: (id) => api.get(`/manga/${id}/related`),
 };
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 export const authApi = {
   register: (email, password) => api.post('/auth/register', { email, password }),
-  login:    (email, password) => api.post('/auth/login',    { email, password }),
-  refresh:  ()                => api.post('/auth/refresh'),
-  logout:        ()                => api.post('/auth/logout'),
-  me:            ()                => api.get('/auth/me'),
-  nsfw:          (val)             => api.patch('/auth/nsfw', { nsfw: val }),
-  deleteAccount: ()                => api.delete('/auth/me'),
+  login: (email, password) => api.post('/auth/login', { email, password }),
+  refresh: () => api.post('/auth/refresh'),
+  logout: () => api.post('/auth/logout'),
+  me: () => api.get('/auth/me'),
+  nsfw: (val) => api.patch('/auth/nsfw', { nsfw: val }),
+  deleteAccount: () => api.delete('/auth/me'),
 };
 
 // ── Libraries ─────────────────────────────────────────────────────────────────
 export const libraryApi = {
-  list:   ()              => api.get('/library'),
-  create: (name)          => api.post('/library', { name }),
-  delete: (id)            => api.delete(`/library/${id}`),
-  add:    (id, mangaId)   => api.post(`/library/${id}/add`, { mangaId }),
-  remove: (id, mangaId)   => api.delete(`/library/${id}/remove?mangaId=${mangaId}`),
+  list: () => api.get('/library'),
+  create: (name) => api.post('/library', { name }),
+  delete: (id) => api.delete(`/library/${id}`),
+  add: (id, mangaId) => api.post(`/library/${id}/add`, { mangaId }),
+  remove: (id, mangaId) => api.delete(`/library/${id}/remove?mangaId=${mangaId}`),
 };
 
 // ── Bookmarks ─────────────────────────────────────────────────────────────────
 export const bookmarkApi = {
-  list:   ()                       => api.get('/bookmark'),
-  set:    (mangaId, chapterId, page) => api.post('/bookmark', { mangaId, chapterId, page }),
-  delete: (mangaId)                => api.delete(`/bookmark/${mangaId}`),
+  list: () => api.get('/bookmark'),
+  set: (mangaId, chapterId, page) => api.post('/bookmark', { mangaId, chapterId, page }),
+  delete: (mangaId) => api.delete(`/bookmark/${mangaId}`),
 };
 
 // ── History ───────────────────────────────────────────────────────────────────
 export const historyApi = {
-  list:  (skip = 0, take = 50) => api.get(`/history?skip=${skip}&take=${take}`),
-  add:   (mangaId, chapterId, page) => api.post('/history', { mangaId, chapterId, page }),
-  clear: ()                    => api.delete('/history'),
+  list: (skip = 0, take = 50) => api.get(`/history?skip=${skip}&take=${take}`),
+  add: (mangaId, chapterId, page) => api.post('/history', { mangaId, chapterId, page }),
+  clear: () => api.delete('/history'),
 };
 
 // ── Progress ──────────────────────────────────────────────────────────────────
 export const progressApi = {
-  forManga: (mangaId)                       => api.get(`/progress/${mangaId}`),
-  last:     (mangaId)                       => api.get(`/progress/${mangaId}/last`),
-  set:      (mangaId, chapterId, page, isRead) =>
+  forManga: (mangaId) => api.get(`/progress/${mangaId}`),
+  last: (mangaId) => api.get(`/progress/${mangaId}/last`),
+  set: (mangaId, chapterId, page, isRead) =>
     api.post('/progress', { mangaId, chapterId, page, isRead }),
 };
 
 
 // ── Admin ─────────────────────────────────────────────────────────────────────
 export const adminApi = {
-  stats:      ()       => api.get('/admin/stats'),
-  users:      ()       => api.get('/admin/users'),
-  detail:     (id)     => api.get(`/admin/users/${id}`),
-  toggleVip:  (id, v)  => api.patch(`/admin/users/${id}/vip`, { isVip: v }),
-  mangaStats: ()       => api.get('/admin/manga'),
-  messages:   ()       => api.get('/admin/messages'),
-  guestUsers: ()       => api.get('/admin/guest-users'),
+  stats: () => api.get('/admin/stats'),
+  users: () => api.get('/admin/users'),
+  detail: (id) => api.get(`/admin/users/${id}`),
+  toggleVip: (id, v) => api.patch(`/admin/users/${id}/vip`, { isVip: v }),
+  mangaStats: () => api.get('/admin/manga'),
+  messages: () => api.get('/admin/messages'),
+  guestUsers: () => api.get('/admin/guest-users'),
   replyToMessage: (id, reply) => api.patch(`/admin/messages/${id}/reply`, { reply }),
-  deleteMessage: (id)  => api.delete(`/admin/messages/${id}`),
-  topReaders: ()       => api.get('/admin/top-readers'),
-  deleteUser: (id)     => api.delete(`/admin/users/${id}`),
-  toggleBan:  (id, b)  => api.patch(`/admin/users/${id}/ban`, { isBanned: b }),
-  auditLogs:  ()       => api.get('/admin/audit-logs'),
-  searchStats:()       => api.get('/admin/search-analytics'),
-  adStats:    ()       => api.get('/admin/ad-stats'),
-  broadcast:  (msg)    => api.post('/admin/announcements', { message: msg }),
+  deleteMessage: (id) => api.delete(`/admin/messages/${id}`),
+  topReaders: () => api.get('/admin/top-readers'),
+  deleteUser: (id) => api.delete(`/admin/users/${id}`),
+  toggleBan: (id, b) => api.patch(`/admin/users/${id}/ban`, { isBanned: b }),
+  auditLogs: () => api.get('/admin/audit-logs'),
+  searchStats: () => api.get('/admin/search-analytics'),
+  adStats: () => api.get('/admin/ad-stats'),
+  broadcast: (msg) => api.post('/admin/announcements', { message: msg }),
   dashboardAnalytics: () => api.get('/admin/dashboard-stats'),
   graphData: (type) => api.get(`/admin/graph-data?type=${type}`),
   // New Security & Control

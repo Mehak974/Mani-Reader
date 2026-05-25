@@ -10,9 +10,9 @@ export default function MangaCard({ manga, showNsfw = false, priority = false })
 
   // 🛡️ Premium UI: Blur if NSFW and NOT revealed
   const isBlurred = manga.nsfw && !revealNsfw;
-  
+
   const rawCover = manga.image || manga.cover;
-  
+
   const getApiServerUrl = () => {
     const rawUrl = process.env.NEXT_PUBLIC_API_URL;
     if (!rawUrl) return '';
@@ -23,16 +23,16 @@ export default function MangaCard({ manga, showNsfw = false, priority = false })
   // 🏎️ Smart Proxy
   const coverUrl = rawCover
     ? (rawCover.startsWith('http') && !rawCover.includes('/api/image') && !rawCover.includes('workers.dev')
-        ? `${getApiServerUrl()}/api/image?url=${encodeURIComponent(rawCover)}` 
-        : rawCover)
+      ? `${getApiServerUrl()}/api/image?url=${encodeURIComponent(rawCover)}`
+      : rawCover)
     : '/placeholder-cover.jpg';
 
   return (
     <div className="manga-card-wrapper" style={{ position: 'relative', height: '100%' }}>
       {/* Main Manga Link */}
-      <Link 
-        href={`/manga/${manga.id}`} 
-        className="manga-card" 
+      <Link
+        href={`/manga/${manga.id}`}
+        className="manga-card"
         style={{ display: 'flex', flexDirection: 'column', height: '100%', textDecoration: 'none' }}
         onClick={(e) => {
           if (isBlurred) {
@@ -44,8 +44,8 @@ export default function MangaCard({ manga, showNsfw = false, priority = false })
           if (!isBlurred) {
             window.mangaTimeout = setTimeout(() => {
               const apiBase = process.env.NEXT_PUBLIC_API_URL || '/api';
-              fetch(`${apiBase}/manga/${manga.id}`).catch(() => {});
-              fetch(`${apiBase}/chapters/${manga.id}`).catch(() => {});
+              fetch(`${apiBase}/manga/${manga.id}`).catch(() => { });
+              fetch(`${apiBase}/chapters/${manga.id}`).catch(() => { });
             }, 150);
           }
         }}
@@ -88,7 +88,7 @@ export default function MangaCard({ manga, showNsfw = false, priority = false })
               }}>
                 Content is 18+ contain nudity want to reveal?
               </div>
-              <button 
+              <button
                 onClick={(e) => {
                   e.stopPropagation();
                   e.preventDefault();
@@ -118,10 +118,10 @@ export default function MangaCard({ manga, showNsfw = false, priority = false })
           {manga.nsfw && (
             <span className="manga-card-badge badge-nsfw">18+</span>
           )}
-          
+
           {manga.rating && (
-            <span className="manga-card-badge badge-rating" style={{ 
-              background: 'rgba(255, 193, 7, 0.95)', 
+            <span className="manga-card-badge badge-rating" style={{
+              background: 'rgba(255, 193, 7, 0.95)',
               color: '#000',
               fontWeight: 800,
               fontSize: '0.75rem',
@@ -140,8 +140,8 @@ export default function MangaCard({ manga, showNsfw = false, priority = false })
               {manga.rating}
             </span>
           )}
-          
-          <span className="manga-card-meta" style={{ 
+
+          <span className="manga-card-meta" style={{
             position: 'absolute', bottom: '10px', left: '10px', right: '10px',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             zIndex: 2, fontSize: '0.7rem', fontWeight: 600, color: '#fff'
@@ -152,7 +152,7 @@ export default function MangaCard({ manga, showNsfw = false, priority = false })
         </div>
 
         <div className="manga-card-body" style={{ padding: '12px 10px', minHeight: '80px' }}>
-          <div className="manga-card-title" style={{ 
+          <div className="manga-card-title" style={{
             fontSize: '0.95rem',
             fontWeight: 700,
             color: 'var(--text)',
@@ -170,14 +170,14 @@ export default function MangaCard({ manga, showNsfw = false, priority = false })
 
       {/* Floating Chapter Link */}
       {manga.lastChapter && (
-        <Link 
+        <Link
           href={`/manga/${manga.id}/${manga.lastChapterId}`}
-          style={{ 
+          style={{
             position: 'absolute',
             bottom: '12px',
             left: '0',
-            fontSize: '0.75rem', 
-            color: 'var(--accent)', 
+            fontSize: '0.75rem',
+            color: 'var(--accent)',
             fontWeight: 600,
             textDecoration: 'none',
             maxWidth: '100%',
