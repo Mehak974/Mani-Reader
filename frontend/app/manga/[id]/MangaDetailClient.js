@@ -131,9 +131,16 @@ export default function MangaDetailClient({ id, initialManga }) {
     );
   }
 
+  const getApiServerUrl = () => {
+    const rawUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (!rawUrl) return '';
+    const cleanedUrl = rawUrl.endsWith('/') ? rawUrl.slice(0, -1) : rawUrl;
+    return cleanedUrl.endsWith('/api') ? cleanedUrl.slice(0, -4) : cleanedUrl;
+  };
+
   const coverUrl = manga?.cover
     ? (manga.cover.startsWith('http') && !manga.cover.includes('/api/image') && !manga.cover.includes('workers.dev')
-        ? `/api/image?url=${encodeURIComponent(manga.cover)}` 
+        ? `${getApiServerUrl()}/api/image?url=${encodeURIComponent(manga.cover)}` 
         : manga.cover)
     : '/placeholder-cover.jpg';
 

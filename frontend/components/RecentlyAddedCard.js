@@ -10,11 +10,18 @@ export default function RecentlyAddedCard({ manga }) {
   if (!manga) return null;
 
   const apiBase = process.env.NEXT_PUBLIC_API_URL || '/api';
+  const getApiServerUrl = () => {
+    const rawUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (!rawUrl) return '';
+    const cleanedUrl = rawUrl.endsWith('/') ? rawUrl.slice(0, -1) : rawUrl;
+    return cleanedUrl.endsWith('/api') ? cleanedUrl.slice(0, -4) : cleanedUrl;
+  };
+
   const rawCover = manga.image || manga.cover;
   // 🏎️ Smart Proxy: Only wrap in local /api/image if it's an external HTTP link AND not already proxied
   const coverUrl = rawCover
     ? (rawCover.startsWith('http') && !rawCover.includes('/api/image') && !rawCover.includes('workers.dev')
-        ? `/api/image?url=${encodeURIComponent(rawCover)}` 
+        ? `${getApiServerUrl()}/api/image?url=${encodeURIComponent(rawCover)}` 
         : rawCover)
     : '/placeholder-cover.jpg';
 

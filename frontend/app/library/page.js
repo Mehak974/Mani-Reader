@@ -86,8 +86,15 @@ function LibraryContent() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {bookmarks.map((bm) => {
+              const getApiServerUrl = () => {
+                const rawUrl = process.env.NEXT_PUBLIC_API_URL;
+                if (!rawUrl) return '';
+                const cleanedUrl = rawUrl.endsWith('/') ? rawUrl.slice(0, -1) : rawUrl;
+                return cleanedUrl.endsWith('/api') ? cleanedUrl.slice(0, -4) : cleanedUrl;
+              };
+
               const coverUrl = bm.manga?.cover
-                ? `/api/image?url=${encodeURIComponent(bm.manga.cover)}`
+                ? `${getApiServerUrl()}/api/image?url=${encodeURIComponent(bm.manga.cover)}`
                 : '/placeholder-cover.jpg';
               const readUrl = `/read/${bm.chapterId}?mangaId=${bm.mangaId}&page=${bm.page || 0}`;
 

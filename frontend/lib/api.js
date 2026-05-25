@@ -1,8 +1,17 @@
 'use client';
 import axios from 'axios';
 
+const getBaseUrl = () => {
+  const rawUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (!rawUrl) return '/api';
+  const cleanedUrl = rawUrl.endsWith('/') ? rawUrl.slice(0, -1) : rawUrl;
+  return cleanedUrl.endsWith('/api') ? cleanedUrl : `${cleanedUrl}/api`;
+};
+
+const apiBaseUrl = getBaseUrl();
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: apiBaseUrl,
   withCredentials: true,
   timeout: 15000,
 });
@@ -33,7 +42,7 @@ api.interceptors.response.use(
     if (err.response?.status === 401 && !err.config._retry) {
       err.config._retry = true;
       try {
-        const { data } = await axios.post('/api/auth/refresh', {}, { withCredentials: true });
+        const { data } = await axios.post(`${apiBaseUrl}/auth/refresh`, {}, { withCredentials: true });
         _accessToken = data.accessToken;
         err.config.headers['Authorization'] = `Bearer ${_accessToken}`;
         return api(err.config);

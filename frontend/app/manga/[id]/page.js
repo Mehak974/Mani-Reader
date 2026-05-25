@@ -3,8 +3,9 @@ import MangaDetailClient from './MangaDetailClient';
 
 export async function generateMetadata({ params }) {
   const { id } = await params;
+  const apiUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
   try {
-    const res = await fetch(`http://localhost:4000/api/manga/${id}`, { next: { revalidate: 3600 } });
+    const res = await fetch(`${apiUrl}/api/manga/${id}`, { next: { revalidate: 3600 } });
     const r = await res.json();
     const manga = r.data || r;
     
@@ -12,7 +13,7 @@ export async function generateMetadata({ params }) {
       title: `${manga.title} — Mani Reader`,
       description: manga.description?.substring(0, 160) || `Read ${manga.title} on Mani Reader.`,
       alternates: {
-        canonical: `http://localhost:3001/manga/${id}`,
+        canonical: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://manireader.online'}/manga/${id}`,
       },
       openGraph: {
         title: manga.title,
@@ -27,11 +28,12 @@ export async function generateMetadata({ params }) {
 
 export default async function MangaPage({ params }) {
   const { id } = await params;
+  const apiUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
   
   // Fetch initial data for JSON-LD structured data
   let manga = null;
   try {
-    const res = await fetch(`http://localhost:4000/api/manga/${id}`, { next: { revalidate: 3600 } });
+    const res = await fetch(`${apiUrl}/api/manga/${id}`, { next: { revalidate: 3600 } });
     const r = await res.json();
     manga = r.data || r;
   } catch (e) {}
