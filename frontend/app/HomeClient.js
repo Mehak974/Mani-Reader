@@ -113,26 +113,27 @@ export default function HomeClient() {
       mangaApi.popular(1, 'romance', { params: { _t: Date.now() } }),
       mangaApi.popular(2, 'romance', { params: { _t: Date.now() } })
     ]).then(([fantasyRes, action1, action2, romance1, romance2]) => {
-      const seenIds = new Set();
-      
-      const process = (responses, limit = 18) => {
+      const processGenre = (responses, limit) => {
         const resArray = Array.isArray(responses) ? responses : [responses];
-        const allResults = [];
-        
-        resArray.forEach(res => {
+        const seen = new Set();
+        const results = [];
+        for (const res of resArray) {
           const raw = res?.data?.results || res?.data || res?.results || (Array.isArray(res) ? res : []);
-          allResults.push(...filterManga(raw));
-        });
-
-        const unique = allResults.filter(m => !seenIds.has(m.id)).slice(0, limit);
-        unique.forEach(m => seenIds.add(m.id));
-        return unique;
+          for (const m of filterManga(raw)) {
+            if (!seen.has(m.id)) {
+              seen.add(m.id);
+              results.push(m);
+              if (results.length >= limit) break;
+            }
+          }
+          if (results.length >= limit) break;
+        }
+        return results;
       };
 
-      // 🛡️ Deduplicated Order: Fantasy gets first pick, then Action, then Romance
-      setPopularUpdates(process(fantasyRes, 20)); 
-      setPopularAction(process([action1, action2], 18));
-      setPopularRomance(process([romance1, romance2], 18));
+      setPopularUpdates(processGenre(fantasyRes, 20));
+      setPopularAction(processGenre([action1, action2], 18));
+      setPopularRomance(processGenre([romance1, romance2], 18));
     })
     .catch(err => {
       console.error('Home sections fetch error:', err);

@@ -2,10 +2,18 @@
 import axios from 'axios';
 
 const getBaseUrl = () => {
+  // Use environment variable if provided
   const rawUrl = process.env.NEXT_PUBLIC_API_URL;
-  if (!rawUrl) return '/api';
-  const cleanedUrl = rawUrl.endsWith('/') ? rawUrl.slice(0, -1) : rawUrl;
-  return cleanedUrl.endsWith('/api') ? cleanedUrl : `${cleanedUrl}/api`;
+  if (rawUrl) {
+    const cleaned = rawUrl.endsWith('/') ? rawUrl.slice(0, -1) : rawUrl;
+    return cleaned.endsWith('/api') ? cleaned : `${cleaned}/api`;
+  }
+  // Fallback: if running on the live domain, target the live API
+  if (typeof window !== 'undefined' && window.location.hostname.includes('manireader.online')) {
+    return 'https://api.manireader.online/api';
+  }
+  // Default to relative path for local development
+  return '/api';
 };
 
 const apiBaseUrl = getBaseUrl();
