@@ -1,4 +1,5 @@
-// import { Analytics } from '@vercel/analytics/react';
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import ClientProviders from '../components/ClientProviders';
 import Footer from '../components/Footer';
 import ScrollToTop from '../components/ScrollToTop';
@@ -109,7 +110,8 @@ export default function RootLayout({ children }) {
           <Footer />
           <ScrollToTop />
         </ClientProviders>
-        {/* <Analytics /> */}
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

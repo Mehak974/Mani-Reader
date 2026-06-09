@@ -21,7 +21,7 @@ const apiBaseUrl = getBaseUrl();
 const api = axios.create({
   baseURL: apiBaseUrl,
   withCredentials: true,
-  timeout: 15000,
+  timeout: 30000,
 });
 
 // Auto-attach access token from memory if available

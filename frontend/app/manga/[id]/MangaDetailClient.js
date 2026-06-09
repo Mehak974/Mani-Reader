@@ -9,6 +9,7 @@ import { mangaApi, libraryApi, progressApi, bookmarkApi } from '../../../lib/api
 
 export default function MangaDetailClient({ id, initialManga }) {
   const { user, revealNsfw, setRevealNsfw } = useAuth() || {};
+  const numericId = id.split('.').pop();
 
   const [manga, setManga] = React.useState(initialManga);
   const [chapters, setChapters] = React.useState([]);
@@ -61,7 +62,7 @@ export default function MangaDetailClient({ id, initialManga }) {
     }
 
     // Fetch related manga for internal linking architecture
-    mangaApi.related(id).then((r) => setRelated(r.data || [])).catch(() => { });
+    mangaApi.related(id).then((r) => setRelated(r.data || [])).catch(() => {});
   }, [id, user, initialManga]);
 
   async function addToCollection(libraryId) {
@@ -373,7 +374,7 @@ export default function MangaDetailClient({ id, initialManga }) {
           <div className="action-row">
             {chapters.length > 0 && (
               <div className="start-reading-line" style={{ flex: 1 }}>
-                <a href={`/read/${lastRead ? chapters.find(c => c.id === lastRead.chapterId)?.id || chapters[0]?.id : chapters[0]?.id}?mangaId=${id}`}>
+                <a href={`/read/${lastRead ? chapters.find(c => c.id === lastRead.chapterId)?.id || chapters[0]?.id : chapters[0]?.id}?mangaId=${numericId}`}>
                   <button className="btn btn-amethyst w-full" style={{ padding: '14px 0', fontSize: '1rem', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                     <span className="material-icons">play_circle_filled</span>
                     Start Reading

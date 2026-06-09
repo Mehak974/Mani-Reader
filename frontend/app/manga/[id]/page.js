@@ -28,6 +28,7 @@ export async function generateMetadata({ params }) {
 
 export default async function MangaPage({ params }) {
   const { id } = await params;
+  const numericId = id.split('.').pop();
   const apiUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.manireader.online';
   
   // Fetch initial data for JSON-LD structured data

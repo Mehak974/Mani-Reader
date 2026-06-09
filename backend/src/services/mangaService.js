@@ -129,6 +129,9 @@ async function getMangaInfo(mangaId, userId = null) {
 
   const manga = await cache.getOrSet(cacheKey, cache.ttl.mangaTtl, async () => {
     const { data } = await ingestion.getMangaInfo(mangaId);
+    if (!data) {
+      throw Object.assign(new Error(`Manga details not found: ${mangaId}`), { status: 404 });
+    }
     const mapped = mapManga(data);
 
     // Upsert into DB only when fetching fresh data

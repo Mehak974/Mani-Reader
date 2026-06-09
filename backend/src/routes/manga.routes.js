@@ -1,130 +1,154 @@
-'use strict';
-const router = require('express').Router();
+/**
+ * Manga Routes — Mani Reader Backend
+ *
+ * All data flows through mangaService → ingestionLayer → mangakatanaScraper
+ */
+
+const { Router } = require('express');
 const mangaService = require('../services/mangaService');
-const { searchLimiter } = require('../middleware/rateLimiter');
-const authMiddleware = require('../middleware/auth');
+const { proxyImage } = require('../services/imageProxy');
 
-// Optional auth — pass userId for NSFW filtering if logged in
-function optionalAuth(req, res, next) {
-  const token = req.cookies?.token || req.headers.authorization?.slice(7);
-  if (!token) return next();
+const router = Router();
+
+// ─────────────────────────────────────────────────────────
+// GET /api/manga/search?q=naruto&page=1
+// ─────────────────────────────────────────────────────────
+router.get('/search', async (req, res) => {
+  const { q, page = 1 } = req.query;
+
+  if (!q || !q.trim()) {
+    return res.status(400).json({ error: 'Query parameter "q" is required.' });
+  }
+
   try {
-    const jwt = require('jsonwebtoken');
-    const { jwt: jwtConfig } = require('../config/env');
-    req.user = jwt.verify(token, jwtConfig.secret);
-  } catch { /* ignore */ }
-  next();
-}
-
-// GET /api/search?q=&page=
-router.get('/', searchLimiter, optionalAuth, async (req, res) => {
-  try {
-    const { q, page = 1 } = req.query;
-    if (!q || q.trim().length < 1) return res.status(400).json({ error: 'Query is required' });
-    const results = await mangaService.search(q.trim(), parseInt(page), req.user?.userId);
-
-    // Track analytics
-    if (q.trim()) {
-      mangaService.trackSearch(q.trim());
-    }
-
-    // ⚡ Edge Cache: 1 hour for searches
-    res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=59');
-    res.json({ results, query: q, page: parseInt(page) });
+    const results = await mangaService.search(q.trim(), Number(page));
+    return res.json({ results });
   } catch (err) {
-    res.status(err.status || 500).json({ error: err.message });
+    console.error('[Manga] /search error:', err.message);
+    return res.status(500).json({ error: 'Failed to search manga.', detail: err.message });
   }
 });
 
-// GET /api/manga/browse/popular
-router.get('/browse/popular', optionalAuth, async (req, res) => {
+// ─────────────────────────────────────────────────────────
+// GET /api/manga/popular?page=1&genre=action
+// ─────────────────────────────────────────────────────────
+router.get('/popular', async (req, res) => {
+  const { page = 1, genre } = req.query;
   try {
-    const page = parseInt(req.query.page) || 1;
-    const { genre } = req.query;
-    const results = await mangaService.getPopular(page, req.user?.userId, genre);
-    // ⚡ Edge Cache: 6 hours for popular
-    res.setHeader('Cache-Control', 'public, s-maxage=21600, stale-while-revalidate=59');
-    res.json(results);
+    const results = await mangaService.getPopular(Number(page), null, genre || null);
+    return res.json({ results });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Manga] /popular error:', err.message);
+    return res.status(500).json({ error: 'Failed to fetch popular manga.', detail: err.message });
   }
 });
 
+// ─────────────────────────────────────────────────────────
+// GET /api/manga/latest?page=1
+// ─────────────────────────────────────────────────────────
+router.get('/latest', async (req, res) => {
+  const { page = 1 } = req.query;
+  try {
+    const results = await mangaService.getRecent(Number(page));
+    return res.json({ results });
+  } catch (err) {
+    console.error('[Manga] /latest error:', err.message);
+    return res.status(500).json({ error: 'Failed to fetch latest manga.', detail: err.message });
+  }
+});
+
+// ─────────────────────────────────────────────────────────
 // GET /api/manga/most-read
-router.get('/most-read', optionalAuth, async (req, res) => {
+// ─────────────────────────────────────────────────────────
+router.get('/most-read', async (req, res) => {
   try {
-    const results = await mangaService.getPopularByScore(20, req.user?.userId);
-    res.json(results);
+    const results = await mangaService.getPopularByScore(20);
+    return res.json(results);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Manga] /most-read error:', err.message);
+    return res.status(500).json({ error: 'Failed to fetch most-read manga.', detail: err.message });
   }
 });
 
-// GET /api/manga/browse/recent?page= (and alias /latest)
-router.get(['/browse/recent', '/browse/latest'], optionalAuth, async (req, res) => {
+// ─────────────────────────────────────────────────────────
+// GET /api/manga/browse
+// ─────────────────────────────────────────────────────────
+router.get('/browse', async (req, res) => {
   try {
-    const page = parseInt(req.query.page || '1');
-    const results = await mangaService.getRecent(page, req.user?.userId);
-    // ⚡ Edge Cache: 15 mins for latest
-    res.setHeader('Cache-Control', 'public, s-maxage=900, stale-while-revalidate=59');
-    res.json({ results, page });
+    const data = await mangaService.browse(req.query);
+    return res.json(data);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Manga] /browse error:', err.message);
+    return res.status(500).json({ error: 'Failed to browse manga.', detail: err.message });
   }
 });
 
-// GET /api/manga/browse/filter
-router.get('/browse/filter', optionalAuth, async (req, res) => {
+// ─────────────────────────────────────────────────────────
+// GET /api/manga/related/:mangaId
+// ─────────────────────────────────────────────────────────
+router.get('/related/:mangaId', async (req, res) => {
   try {
-    const { include, exclude, status, order, page = 1, keyword, q, include_mode } = req.query;
-    const filters = {
-      include: include ? include.split(',').filter(Boolean) : [],
-      exclude: exclude ? exclude.split(',').filter(Boolean) : [],
-      status: parseInt(status || '0'),
-      order: isNaN(order) ? order : parseInt(order || '0'),
-      page: parseInt(page),
-      keyword: keyword || q || '',
-      includeMode: include_mode || 'and'
-    };
-    const data = await mangaService.browse(filters, req.user?.userId);
-    res.json(data);
+    const related = await mangaService.getRelated(req.params.mangaId);
+    return res.json(related);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Manga] /related error:', err.message);
+    return res.json([]);
   }
 });
 
-// GET /api/manga/:id
-router.get('/:id', optionalAuth, async (req, res) => {
+// ─────────────────────────────────────────────────────────
+// GET /api/manga/:mangaId  (info)
+// ─────────────────────────────────────────────────────────
+router.get('/:mangaId', async (req, res) => {
   try {
-    const manga = await mangaService.getMangaInfo(req.params.id, req.user?.userId);
-    // ⚡ Edge Cache: 24 hours for manga info (static mostly)
-    res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=3600');
-    res.json(manga);
+    const info = await mangaService.getMangaInfo(req.params.mangaId);
+    return res.json({ data: info });
   } catch (err) {
-    res.status(err.status || 500).json({ error: err.message });
+    console.error('[Manga] /:mangaId error:', err.message);
+    return res.status(err.status || 500).json({ error: err.message });
   }
 });
 
-// GET /api/manga/:id/related
-router.get('/:id/related', optionalAuth, async (req, res) => {
+// ─────────────────────────────────────────────────────────
+// GET /api/manga/:mangaId/chapters
+// ─────────────────────────────────────────────────────────
+router.get('/:mangaId/chapters', async (req, res) => {
   try {
-    const results = await mangaService.getRelated(req.params.id, req.user?.userId);
-    res.json(results);
+    const chapters = await mangaService.getChapters(req.params.mangaId);
+    return res.json({ chapters });
   } catch (err) {
-    res.status(err.status || 500).json({ error: err.message });
+    console.error('[Manga] /chapters error:', err.message);
+    return res.status(500).json({ error: 'Failed to fetch chapters.', detail: err.message });
   }
 });
 
-// POST /api/manga/:id/rate
-router.post('/:id/rate', authMiddleware, async (req, res) => {
+// ─────────────────────────────────────────────────────────
+// POST /api/manga/:mangaId/rate  { score }
+// ─────────────────────────────────────────────────────────
+router.post('/:mangaId/rate', async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Login required' });
   try {
-    const { score } = req.body;
-    if (!score || score < 1 || score > 5) return res.status(400).json({ error: 'Score must be between 1 and 5' });
-    const result = await mangaService.rateManga(req.user.userId, req.params.id, score);
-    res.json(result);
+    const rating = await mangaService.rateManga(req.user.id, req.params.mangaId, req.body.score);
+    return res.json(rating);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Manga] /rate error:', err.message);
+    return res.status(500).json({ error: 'Failed to rate manga.' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────
+// GET /api/manga/image-proxy?url=<encoded_url>
+// ─────────────────────────────────────────────────────────
+router.get('/image-proxy', async (req, res) => {
+  const { url } = req.query;
+  if (!url) return res.status(400).json({ error: 'url query param required' });
+  try {
+    const decoded = decodeURIComponent(url);
+    await proxyImage(decoded, res);
+  } catch (err) {
+    return res.status(400).json({ error: 'Invalid URL or proxy failure', detail: err.message });
   }
 });
 
 module.exports = router;
+

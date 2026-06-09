@@ -25,6 +25,8 @@ function getReferer(imageUrl) {
     const url = new URL(imageUrl);
     const domain = url.hostname.replace('www.', '');
     
+    if (domain.includes('fast4speed')) return 'https://youtu-chan.com/';
+    if (domain.includes('youtube-anime') || domain.includes('allmanga') || domain.includes('allanime')) return 'https://allmanga.to/';
     if (domain.includes('mangadex')) return 'https://mangadex.org';
     if (domain.includes('mangakatana')) return 'https://mangakatana.com/';
     if (domain.includes('manganato')) return 'https://manganato.com';
@@ -64,7 +66,8 @@ async function proxyImage(imageUrl, res) {
     'mangago.me', 'mangapark.net', 'mangapark.me', 'mangapill.com', 'mangafirst.jp',
     'manhuascan.com', 'zinmanga.com', 'mangasee123.com', 'manga4life.com', 'mangaowl.net',
     'comick.org', 'mangareader.to', 'mangatoto.com', 'batocomic.com', 'xbato.com', 
-    'batosi.lat', 'meo.comick.pictures', 'meo3.comick.pictures'
+    'batosi.lat', 'meo.comick.pictures', 'meo3.comick.pictures',
+    'fast4speed.rsvp', 'youtube-anime.com', 'allanime.day', 'allmanga.to'
   ];
 
   let urlObj;
