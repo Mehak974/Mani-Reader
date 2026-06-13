@@ -1,0 +1,13 @@
+// prisma/migrations/xxxx_add_blog_posts/migration.sql
+// Added for reference - Prisma client handles this dynamically once db is migrated
+model BlogPost {
+  id        String   @id @default(uuid())
+  slug      String   @unique
+  title     String
+  content   String   @db.Text
+  category  String   // e.g. "romance", "action", "isekai", "historical"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("blog_posts")
+}

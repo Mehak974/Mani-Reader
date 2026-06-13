@@ -1,0 +1,9 @@
+# ManiReader
+
+Website for manga and manhwa reading.
+
+Homepage:
+https://manireader.online
+
+Sitemap:
+https://manireader.online/sitemap.xml
