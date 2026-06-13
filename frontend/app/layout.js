@@ -2,6 +2,10 @@ import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import ClientProviders from '../components/ClientProviders';
 import Footer from '../components/Footer';
+import { Inter, Outfit } from 'next/font/google';
+
+const inter = Inter({ subsets: ['latin'], display: 'swap' });
+const outfit = Outfit({ subsets: ['latin'], display: 'swap' });
 import ScrollToTop from '../components/ScrollToTop';
 import '../styles/globals.css';
 
@@ -71,13 +75,12 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" suppressHydrationWarning className="notranslate" translate="no">
+    <html lang="en" suppressHydrationWarning className={`notranslate ${inter.className} ${outfit.className}`} translate="no">
       <head>
         <meta name="google" content="notranslate" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
-        <link href="https://fonts.googleapis.com/icon?family=Material+Icons&display=swap" rel="stylesheet" />
+                {/* Using next/font for optimal loading */}
+                <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+        {/* Fonts are loaded via next/font/google in the component */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{

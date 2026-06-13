@@ -1,4 +1,5 @@
 import Navbar from '../../../components/Navbar';
+import Image from 'next/image';
 import { blogApi } from '../../../lib/api';
 import Link from 'next/link';
 
@@ -340,11 +341,14 @@ export default async function BlogPostPage({ params }) {
                           boxShadow: '0 8px 20px rgba(0, 0, 0, 0.4)',
                           position: 'relative'
                         }} className="manga-item-image-container">
-                          <img 
-                            src={block.image} 
-                            alt={block.title} 
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                          <Image
+                            src={block.image}
+                            alt={block.title}
+                            fill
+                            style={{ objectFit: 'cover' }}
                             referrerPolicy="no-referrer"
+                            placeholder="blur"
+                            blurDataURL="/placeholder-cover.jpg"
                           />
                         </div>
                       )}

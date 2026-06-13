@@ -32,7 +32,7 @@ export default function ScrollToTop() {
       onClick={scrollToTop}
       aria-label="Scroll to top"
     >
-      <span className="material-icons">arrow_upward</span>
+      ↑
       
       <style jsx>{`
         .scroll-to-top {
