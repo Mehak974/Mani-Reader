@@ -1,7 +1,8 @@
 'use client';
 import React from 'react';
 import { AuthProvider } from '../../lib/auth';
-import Navbar from '../../components/Navbar';
+import dynamic from 'next/dynamic';
+const Navbar = dynamic(() => import('../../components/Navbar'), { ssr: false });
 import MangaCard from '../../components/MangaCard';
 import { mangaApi } from '../../lib/api';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -131,7 +132,7 @@ function BrowseContent() {
       setTotalResults(data.totalResults || 0);
       setPage(p);
     } catch (err) {
-      console.error('Browse failed:', err);
+      // Suppress console error
     } finally {
       setLoading(false);
     }
@@ -480,7 +481,7 @@ function BrowseContent() {
             <main>
               <div className="manga-grid">
                 {results.map((m, i) => (
-                  <MangaCard key={`${m.id}-${i}`} manga={m} />
+                  <MangaCard key={`${m.id}-${i}`} manga={m} priority={i < 8} />
                 ))}
                 {loading && results.length === 0 && (
                   Array.from({ length: 15 }).map((_, i) => (

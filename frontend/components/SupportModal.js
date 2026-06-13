@@ -1,5 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { createPortal } from 'react-dom';
 
 export default function SupportModal({ isOpen, onClose }) {
@@ -28,10 +29,12 @@ export default function SupportModal({ isOpen, onClose }) {
 
         <div className="support-modal-body">
           <div className="qr-container">
-            <img 
-              src="/Paypal Scan.jpeg" 
-              alt="PayPal QR Code" 
-              style={{ maxWidth: '200px', height: 'auto', borderRadius: '8px' }} 
+            <Image
+              src="/Paypal Scan.jpeg"
+              alt="PayPal QR Code"
+              width={200}
+              height={200}
+              style={{ borderRadius: '8px' }}
             />
           </div>
           

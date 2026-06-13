@@ -7,16 +7,16 @@ import { useModals } from '../context/ModalContext';
 
 // ── Sidebar sections ──────────────────────────────────────────────────────────
 const MAIN_LINKS = [
-  { href: '/',                icon: 'home',          label: 'Home' },
-  { href: '/post-manga',      icon: 'add_to_photos', label: 'Post Manga', goal: true },
-  { href: '/settings',        icon: 'settings',      label: 'Settings' },
+  { href: '/', icon: 'home', label: 'Home' },
+  { href: '/post-manga', icon: 'add_to_photos', label: 'Post Manga', goal: true },
+  { href: '/settings', icon: 'settings', label: 'Settings' },
 ];
 
 const BLOG_LINKS = [
-  { href: '/blog/category/romance',            icon: 'favorite',      label: 'Romance Blogs' },
-  { href: '/blog/category/action',             icon: 'whatshot',      label: 'Action Blogs' },
-  { href: '/blog/category/isekai',             icon: 'auto_awesome',  label: 'Isekai & Fantasy' },
-  { href: '/blog/category/historical',         icon: 'history_edu',   label: 'Historical Blogs' },
+  { href: '/blog/category/romance', icon: 'favorite', label: 'Romance Blogs' },
+  { href: '/blog/category/action', icon: 'whatshot', label: 'Action Blogs' },
+  { href: '/blog/category/isekai', icon: 'auto_awesome', label: 'Isekai & Fantasy' },
+  { href: '/blog/category/historical', icon: 'history_edu', label: 'Historical Blogs' },
 ];
 
 const SOCIAL_LINKS = [
@@ -25,16 +25,16 @@ const SOCIAL_LINKS = [
 ];
 
 const INFO_LINKS = [
-  { href: '/about',      icon: 'info',                  label: 'About Us' },
-  { href: '/support',    icon: 'volunteer_activism',    label: 'Support Us' },
-  { href: '/contact',    icon: 'mail',                  label: 'Contact Us' },
-  { href: '/faq',        icon: 'contact_support',       label: 'Common Questions' },
+  { href: '/about', icon: 'info', label: 'About Us' },
+  { href: '/post-manga', icon: 'volunteer_activism', label: 'Support Us' },
+  { href: '/contact', icon: 'mail', label: 'Contact Us' },
+  { href: '/faq', icon: 'contact_support', label: 'Common Questions' },
 ];
 
 const POLICY_LINKS = [
-  { href: '/privacy',    icon: 'security',              label: 'Privacy Policy' },
-  { href: '/terms',      icon: 'description',           label: 'Terms of Service' },
-  { href: '/disclaimer', icon: 'gavel',                 label: 'Legal Disclaimer' },
+  { href: '/privacy', icon: 'security', label: 'Privacy Policy' },
+  { href: '/terms', icon: 'description', label: 'Terms of Service' },
+  { href: '/disclaimer', icon: 'gavel', label: 'Legal Disclaimer' },
 ];
 
 const GOAL_DATA = {
@@ -57,8 +57,8 @@ function SidebarItem({ href, icon, label, active, external, onClick, goal }) {
         cursor: 'pointer', transition: 'all 0.15s',
         userSelect: 'none',
       }}
-      onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'var(--surface-2)'; e.currentTarget.style.color = 'var(--text)'; }}}
-      onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-2)'; }}}
+      onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'var(--surface-2)'; e.currentTarget.style.color = 'var(--text)'; } }}
+      onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-2)'; } }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
         <span className="material-icons" style={{ fontSize: '1.2rem', opacity: active ? 1 : 0.7 }}>{icon}</span>
@@ -74,28 +74,25 @@ function SidebarItem({ href, icon, label, active, external, onClick, goal }) {
     return <a href={href} target="_blank" rel="noopener noreferrer" onClick={onClick}>{content}</a>;
   }
 
-  if (href === '/support') {
-    return <div onClick={onClick}>{content}</div>;
-  }
-
+  // Render internal navigation using Next.js Link for all routes
   return <Link href={href} onClick={onClick}>{content}</Link>;
 }
 
 // ── Sidebar Component ─────────────────────────────────────────────────────────
 export default function Sidebar({ isOpen, onClose }) {
 
-  const pathname  = usePathname();
+  const pathname = usePathname();
   const { user, logout } = useAuth() || {};
-  const { openLogin, openRegister, openSupport } = useModals();
+  const { openLogin, openRegister } = useModals();
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
     setMounted(true);
   }, []);
 
-  const handleLogout = () => { 
-    logout?.(); 
-    onClose?.(); 
+  const handleLogout = () => {
+    logout?.();
+    onClose?.();
   };
 
   if (!mounted) return null;
@@ -137,7 +134,7 @@ export default function Sidebar({ isOpen, onClose }) {
           <Link href="/" onClick={onClose} style={{
             fontWeight: 800, fontSize: '1.3rem', letterSpacing: '-0.5px',
             background: 'linear-gradient(135deg, var(--accent), var(--accent-2))',
- WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
           }}>
             Mani Reader
           </Link>
@@ -197,7 +194,7 @@ export default function Sidebar({ isOpen, onClose }) {
                 active={pathname === item.href}
                 onClick={() => {
                   if (item.label === 'Support Us' || item.href === '/support') {
-                    openSupport?.();
+                    // Support action removed
                   }
                   onClose?.();
                 }}
@@ -246,12 +243,7 @@ export default function Sidebar({ isOpen, onClose }) {
                 key={item.href + item.label}
                 {...item}
                 active={pathname === item.href}
-                onClick={() => {
-                  if (item.label === 'Support Us' || item.href === '/support') {
-                    openSupport?.();
-                  }
-                  onClose?.();
-                }}
+                onClick={onClose}
               />
             ))}
           </div>
@@ -284,32 +276,6 @@ export default function Sidebar({ isOpen, onClose }) {
                 onClick={onClose}
               />
             ))}
-          </div>
-
-          {/* Support / Goal Bar */}
-          <div style={{ margin: '16px 20px', padding: '16px', background: 'var(--surface)', borderRadius: 16, border: '1px solid var(--border)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text)' }}>Support Progress</div>
-              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--accent)' }}>{Math.round((GOAL_DATA.current / GOAL_DATA.target) * 100)}%</div>
-            </div>
-            
-            <div style={{ height: 8, background: 'var(--surface-2)', borderRadius: 4, overflow: 'hidden', marginBottom: 8 }}>
-              <div style={{ 
-                height: '100%', 
-                width: `${(GOAL_DATA.current / GOAL_DATA.target) * 100}%`, 
-                background: 'linear-gradient(90deg, var(--accent), var(--accent-2))',
-                borderRadius: 4,
-                transition: 'width 0.5s ease'
-              }} />
-            </div>
-
-            <div style={{ fontSize: '0.7rem', color: 'var(--text-3)', lineHeight: 1.4, marginBottom: 12 }}>
-              Target: <b>{GOAL_DATA.label}</b>. Support us to unlock this feature for everyone!
-            </div>
-
-            <button onClick={() => { openSupport?.(); onClose?.(); }} className="btn jewel-btn btn-sm" style={{ width: '100%', padding: '8px', fontSize: '0.75rem' }}>
-              Support Mani Reader
-            </button>
           </div>
 
           {/* Separator */}

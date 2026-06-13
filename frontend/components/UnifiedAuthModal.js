@@ -1,7 +1,6 @@
 'use client';
 import React from 'react';
 import { useAuth } from '../lib/auth';
-import SupportModal from './SupportModal';
 
 export default function UnifiedAuthModal({ isOpen, onClose, initialView = 'login' }) {
   const [view, setView] = React.useState(initialView); // 'login' | 'register'
@@ -10,7 +9,6 @@ export default function UnifiedAuthModal({ isOpen, onClose, initialView = 'login
   const [name, setName] = React.useState('');
   const [error, setError] = React.useState('');
   const [loading, setLoading] = React.useState(false);
-  const [showSupport, setShowSupport] = React.useState(false);
   
   const { login, register } = useAuth() || {};
 
@@ -34,10 +32,6 @@ export default function UnifiedAuthModal({ isOpen, onClose, initialView = 'login
       setLoading(false);
     }
   };
-
-  if (showSupport) {
-    return <SupportModal isOpen={true} onClose={() => setShowSupport(false)} />;
-  }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -101,13 +95,6 @@ export default function UnifiedAuthModal({ isOpen, onClose, initialView = 'login
           ) : (
             <p>Already have an account? <button onClick={() => setView('login')}>Sign In</button></p>
           )}
-          
-          <div className="support-link-container">
-            <button className="support-trigger" onClick={() => setShowSupport(true)}>
-              <span className="material-icons">favorite</span>
-              Support Mani Reader
-            </button>
-          </div>
         </div>
 
         <style jsx>{`
@@ -197,23 +184,6 @@ export default function UnifiedAuthModal({ isOpen, onClose, initialView = 'login
             padding: 0;
             margin-left: 4px;
           }
-          
-          .support-link-container {
-            margin-top: 24px;
-            padding-top: 20px;
-            border-top: 1px solid var(--border);
-          }
-          .support-trigger {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.9rem;
-            color: var(--text-2);
-            opacity: 0.8;
-            transition: var(--transition);
-          }
-          .support-trigger:hover { opacity: 1; color: var(--accent); }
-          .support-trigger span { font-size: 1.1rem; color: var(--red); }
         `}</style>
       </div>
     </div>

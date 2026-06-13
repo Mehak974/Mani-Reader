@@ -36,7 +36,7 @@ export default function ChapterList({ chapters = [], mangaId, progress = [] }) {
       await bookmarkApi.set(mangaId, chId, 0);
       showToast('Chapter bookmarked ✓');
     } catch (err) {
-      console.error('Bookmark error:', err);
+      // Suppress console error
       showToast('Failed to bookmark', 'error');
     }
   };

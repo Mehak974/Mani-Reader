@@ -104,7 +104,7 @@ export default function MangaDetailClient({ id, initialManga, initialChapters })
       setManga(res.data);
       showToast('Rating saved ✓');
     } catch (err) {
-      console.error('Rate failed:', err);
+      // Suppress console error
       showToast('Failed to rate', 'error');
     }
   }

@@ -13,10 +13,9 @@ export default function ClientProviders({ children }) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js').then(
           (registration) => {
-            console.log('SW registered:', registration.scope);
             registration.update(); // Force update to v2-flush
           },
-          (err) => console.log('SW registration failed:', err)
+          (err) => { /* Suppress console error */ }
         );
       });
     }

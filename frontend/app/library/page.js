@@ -116,10 +116,12 @@ function LibraryContent() {
                 >
                   {/* Cover */}
                   <Link href={`/manga/${bm.mangaId}`}>
-                    <img
+                    <Image
                       src={coverUrl}
                       alt={bm.manga?.title}
-                      style={{ width: 72, height: 96, objectFit: 'cover', borderRadius: 8 }}
+                      width={72}
+                      height={96}
+                      style={{ objectFit: 'cover', borderRadius: 8 }}
                       onError={(e) => { e.target.src = '/placeholder-cover.jpg'; }}
                     />
                   </Link>

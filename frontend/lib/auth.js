@@ -10,9 +10,19 @@ export function AuthProvider({ children }) {
   const [revealNsfw, setRevealNsfw] = React.useState(false);
 
   React.useEffect(() => {
+    const isLoggedIn = typeof window !== 'undefined' && localStorage.getItem('mani_logged_in') === 'true';
+    if (!isLoggedIn) {
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
     authApi.me()
       .then(({ data }) => setUser(data))
-      .catch(() => setUser(null))
+      .catch(() => {
+        setUser(null);
+        if (typeof window !== 'undefined') localStorage.removeItem('mani_logged_in');
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -20,6 +30,7 @@ export function AuthProvider({ children }) {
     const { data } = await authApi.login(email, password);
     setAccessToken(data.accessToken);
     setUser(data.user);
+    if (typeof window !== 'undefined') localStorage.setItem('mani_logged_in', 'true');
     return data;
   }
 
@@ -27,6 +38,7 @@ export function AuthProvider({ children }) {
     const { data } = await authApi.register(email, password);
     setAccessToken(data.accessToken);
     setUser(data.user);
+    if (typeof window !== 'undefined') localStorage.setItem('mani_logged_in', 'true');
     return data;
   }
 
@@ -35,6 +47,7 @@ export function AuthProvider({ children }) {
     setAccessToken(null);
     setUser(null);
     setRevealNsfw(false);
+    if (typeof window !== 'undefined') localStorage.removeItem('mani_logged_in');
   }
 
   return (

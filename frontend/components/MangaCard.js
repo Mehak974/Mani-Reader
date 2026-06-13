@@ -61,6 +61,7 @@ export default function MangaCard({ manga, showNsfw = false, priority = false })
             className={`manga-cover-img ${isBlurred ? 'blur-nsfw' : ''}`}
             style={{ objectFit: 'cover', transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)' }}
             unoptimized={coverUrl.includes('/api/image')}
+            onError={(e) => e.currentTarget.src = '/placeholder-cover.jpg'}
           />
           <div className="manga-card-overlay" />
 

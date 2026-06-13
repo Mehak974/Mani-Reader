@@ -33,10 +33,10 @@ export const metadata = {
   },
   icons: {
     icon: [
-      { url: '/icon.jpeg', sizes: '48x48', type: 'image/jpeg' },
-      { url: '/icon.jpeg', sizes: 'any' },
+      { url: '/icon.png', sizes: '48x48', type: 'image/png' },
+      { url: '/icon.png', sizes: 'any' },
     ],
-    apple: '/icon.jpeg',
+    apple: '/icon.png',
   },
   openGraph: {
     type: 'website',
@@ -77,6 +77,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning className={`notranslate ${inter.className} ${outfit.className}`} translate="no">
       <head>
+        {/* Preconnect to Google Fonts */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <meta name="google" content="notranslate" />
                 {/* Using next/font for optimal loading */}
                 <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
@@ -98,12 +101,14 @@ export default function RootLayout({ children }) {
             })
           }}
         />
-        <Script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4938022536946038"
-          crossOrigin="anonymous"
-          strategy="afterInteractive"
-        />
+        {process.env.NODE_ENV === 'production' && (
+          <Script
+            async
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4938022536946038"
+            crossOrigin="anonymous"
+            strategy="afterInteractive"
+          />
+        )}
       </head>
       <body suppressHydrationWarning>
         <ClientProviders>
