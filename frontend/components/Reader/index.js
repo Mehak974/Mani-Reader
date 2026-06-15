@@ -6,7 +6,7 @@ import { useAuth } from '../../lib/auth';
 import { progressApi, bookmarkApi, historyApi } from '../../lib/api';
 
 // ── Vertical Reader ────────────────────────────────────────────────────────────
-export function VerticalReader({ pages, chapterId, mangaId, prevChapter, nextChapter, currentChapter }) {
+export function VerticalReader({ pages, chapterId, mangaId, prevChapter, nextChapter, currentChapter, chapters }) {
   const [loaded, setLoaded] = React.useState(new Set());
   const [currentPage, setCurrentPage] = React.useState(0);
   const [showControls, setShowControls] = React.useState(true); // 🤫 Immersive Mode
@@ -126,8 +126,36 @@ export function VerticalReader({ pages, chapterId, mangaId, prevChapter, nextCha
           </Link>
         </div>
 
-        <div style={{ fontWeight: 800, color: 'var(--text)', fontSize: '1.1rem', letterSpacing: '-0.02em' }}>
-          Chapter {chNum}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {chapters && chapters.length > 0 ? (
+            <select
+              value={chapterId}
+              onChange={(e) => router.push(`/read/${e.target.value}?mangaId=${mangaId}`)}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                background: 'rgba(20, 20, 20, 0.8)',
+                color: 'var(--text)',
+                border: '1px solid var(--border)',
+                borderRadius: '8px',
+                padding: '6px 12px',
+                fontSize: '0.95rem',
+                fontWeight: '700',
+                outline: 'none',
+                cursor: 'pointer',
+                fontFamily: 'inherit'
+              }}
+            >
+              {chapters.map((ch) => (
+                <option key={ch.id} value={ch.id}>
+                  Chapter {ch.chapterNumber || ch.number || ''} {ch.title ? `- ${ch.title}` : ''}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <div style={{ fontWeight: 800, color: 'var(--text)', fontSize: '1.1rem', letterSpacing: '-0.02em' }}>
+              Chapter {chNum}
+            </div>
+          )}
         </div>
 
         <div className="reader-controls" style={{ display: 'flex', gap: '8px' }}>
@@ -211,7 +239,7 @@ export function VerticalReader({ pages, chapterId, mangaId, prevChapter, nextCha
 }
 
 // ── Paged Reader ───────────────────────────────────────────────────────────────
-export function PagedReader({ pages, chapterId, mangaId, prevChapter, nextChapter, currentChapter }) {
+export function PagedReader({ pages, chapterId, mangaId, prevChapter, nextChapter, currentChapter, chapters }) {
   const [current, setCurrent] = React.useState(0);
   const [showControls, setShowControls] = React.useState(true); // 🤫 Immersive Mode
   const router = useRouter();
@@ -283,8 +311,36 @@ export function PagedReader({ pages, chapterId, mangaId, prevChapter, nextChapte
           </Link>
         </div>
 
-        <div style={{ fontWeight: 800, color: 'var(--text)', fontSize: '1.1rem' }}>
-          Chapter {chNum}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {chapters && chapters.length > 0 ? (
+            <select
+              value={chapterId}
+              onChange={(e) => router.push(`/read/${e.target.value}?mangaId=${mangaId}`)}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                background: 'rgba(20, 20, 20, 0.8)',
+                color: 'var(--text)',
+                border: '1px solid var(--border)',
+                borderRadius: '8px',
+                padding: '6px 12px',
+                fontSize: '0.95rem',
+                fontWeight: '700',
+                outline: 'none',
+                cursor: 'pointer',
+                fontFamily: 'inherit'
+              }}
+            >
+              {chapters.map((ch) => (
+                <option key={ch.id} value={ch.id}>
+                  Chapter {ch.chapterNumber || ch.number || ''} {ch.title ? `- ${ch.title}` : ''}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <div style={{ fontWeight: 800, color: 'var(--text)', fontSize: '1.1rem' }}>
+              Chapter {chNum}
+            </div>
+          )}
         </div>
 
         <div className="reader-controls" style={{ display: 'flex', gap: '8px' }}>

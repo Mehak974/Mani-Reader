@@ -8,20 +8,20 @@ import { mangaApi } from '../../../lib/api';
 function ReaderContent() {
   const params = useParams();
   const searchParams = useSearchParams();
-  
+
   // Handle catch-all route [...chapterId] which returns an array
-  const chapterId = Array.isArray(params.chapterId) 
-    ? params.chapterId.join('/') 
+  const chapterId = Array.isArray(params.chapterId)
+    ? params.chapterId.join('/')
     : params.chapterId;
 
   const mangaId = searchParams.get('mangaId') || '';
 
-  const [pages,       setPages]       = React.useState([]);
+  const [pages, setPages] = React.useState([]);
   const [externalUrl, setExternalUrl] = React.useState(null);
-  const [chapters,    setChapters]    = React.useState([]);
-  const [loading,     setLoading]     = React.useState(true);
-  const [error,       setError]       = React.useState(null);
-  const [mode,        setMode]        = React.useState('vertical'); // 'vertical' | 'paged'
+  const [chapters, setChapters] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState(null);
+  const [mode, setMode] = React.useState('vertical'); // 'vertical' | 'paged'
 
   React.useEffect(() => {
     Promise.all([
@@ -41,11 +41,10 @@ function ReaderContent() {
     return [...chapters].sort((a, b) => {
       const numA = parseFloat(a.chapterNumber || a.number || 0);
       const numB = parseFloat(b.chapterNumber || b.number || 0);
-      return numA - numB; // ascending: ch1, ch2, ch3...
+      return numA - numB;
     });
   }, [chapters]);
 
-  // Find adjacent chapters in the sorted (ascending) list
   const currentIdx = sortedChapters.findIndex((c) => c.id === chapterId);
   const prevChapter = currentIdx > 0 ? sortedChapters[currentIdx - 1]?.id : null;
   const nextChapter = currentIdx < sortedChapters.length - 1 ? sortedChapters[currentIdx + 1]?.id : null;
@@ -77,7 +76,7 @@ function ReaderContent() {
       </div>
     </div>
   );
-  
+
   if (pages.length === 0 && externalUrl) return (
     <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center', color: 'white', maxWidth: 400, padding: 20 }}>
@@ -86,10 +85,10 @@ function ReaderContent() {
         <p style={{ color: 'var(--text-3)', marginBottom: 24 }}>
           This chapter is hosted on an external platform and cannot be read directly here.
         </p>
-        <a 
-          href={externalUrl} 
-          target="_blank" 
-          rel="noopener noreferrer" 
+        <a
+          href={externalUrl}
+          target="_blank"
+          rel="noopener noreferrer"
           className="btn btn-primary"
           style={{ width: '100%', marginBottom: 16 }}
         >
@@ -113,7 +112,7 @@ function ReaderContent() {
           prevChapter={prevChapter}
           nextChapter={nextChapter}
           currentChapter={currentChapter}
-          allChapters={sortedChapters}
+          chapters={sortedChapters}
         />
       ) : (
         <PagedReader
@@ -123,7 +122,7 @@ function ReaderContent() {
           prevChapter={prevChapter}
           nextChapter={nextChapter}
           currentChapter={currentChapter}
-          allChapters={sortedChapters}
+          chapters={sortedChapters}
         />
       )}
     </div>

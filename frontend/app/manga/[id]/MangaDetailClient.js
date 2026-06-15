@@ -156,7 +156,7 @@ export default function MangaDetailClient({ id, initialManga, initialChapters })
 
   const coverUrl = React.useMemo(() => {
     if (!manga?.cover) return '/placeholder-cover.jpg';
-    
+
     // If it's already proxied, a worker, or a safe direct domain, use it as is
     const safeDomains = ['image.tmdb.org', 'imgur.com', 'blogspot.com', 'googleusercontent.com', 'placehold.co', 'wp.com'];
     const hasSafeDomain = safeDomains.some(d => manga.cover.includes(d));
@@ -296,11 +296,11 @@ export default function MangaDetailClient({ id, initialManga, initialChapters })
           {/* Line 1: Header (Web/Tablet: Side-by-side | Mobile: Side-by-side) */}
           <div className="manga-header-row">
             <div className="manga-detail-cover" style={{ position: 'relative', overflow: 'hidden', borderRadius: '18px' }}>
-              <img 
-                src={coverUrl} 
-                alt={manga?.title} 
+              <img
+                src={coverUrl}
+                alt={manga?.title}
                 className={manga?.nsfw && !revealNsfw ? 'blur-nsfw' : ''}
-                onError={(e) => { e.target.src = '/placeholder-cover.jpg'; }} 
+                onError={(e) => { e.target.src = '/placeholder-cover.jpg'; }}
                 style={{ width: '100%', display: 'block' }}
               />
               {manga?.nsfw && !revealNsfw && (
@@ -326,7 +326,7 @@ export default function MangaDetailClient({ id, initialManga, initialChapters })
                   }}>
                     Content is 18+ contain nudidity want to reveal?
                   </div>
-                  <button 
+                  <button
                     onClick={() => setRevealNsfw(true)}
                     className="btn btn-primary"
                     style={{ padding: '8px 20px', borderRadius: '10px', fontSize: '0.8rem' }}
@@ -339,7 +339,7 @@ export default function MangaDetailClient({ id, initialManga, initialChapters })
 
             <div className="manga-detail-meta">
               <h1 className="manga-title glow-text">{manga?.title}</h1>
-              
+
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                 {manga?.status && (
                   <div className="manga-detail-status" style={{ border: '1px solid var(--border)', background: 'var(--surface-3)', fontSize: '0.75rem', padding: '4px 10px' }}>
@@ -385,7 +385,7 @@ export default function MangaDetailClient({ id, initialManga, initialChapters })
           <div className="action-row">
             {chapters.length > 0 && (
               <div className="start-reading-line" style={{ flex: 1 }}>
-                <a href={`/read/${lastRead ? chapters.find(c => c.id === lastRead.chapterId)?.id || chapters[chapters.length - 1]?.id : chapters[chapters.length - 1]?.id}?mangaId=${id}`}>
+                <a href={`/read/${lastRead ? chapters.find(c => c.id === lastRead.chapterId)?.id || chapters[0]?.id : chapters[0]?.id}?mangaId=${id}`}>
                   <button className="btn btn-amethyst w-full" style={{ padding: '14px 0', fontSize: '1rem', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                     <span className="material-icons">play_circle_filled</span>
                     Start Reading
@@ -394,9 +394,9 @@ export default function MangaDetailClient({ id, initialManga, initialChapters })
               </div>
             )}
             <div className="collection-line" style={{ flex: 1 }}>
-              <button 
-                className="btn btn-ghost w-full" 
-                style={{ border: '1px solid var(--border)', padding: '14px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} 
+              <button
+                className="btn btn-ghost w-full"
+                style={{ border: '1px solid var(--border)', padding: '14px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
                 onClick={() => user ? setLibModal(true) : showToast('Login to add to collection', 'error')}
               >
                 <span className="material-icons">add_box</span>
