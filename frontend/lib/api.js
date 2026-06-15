@@ -172,6 +172,9 @@ export const blogApi = {
   create: (data) => api.post('/blog', data),
   update: (id, data) => api.patch(`/blog/${id}`, data),
   delete: (id) => api.delete(`/blog/${id}`),
+  createEntry: (blogId, data) => api.post(`/blog/${blogId}/entries`, data),
+  updateEntry: (blogId, entryId, data) => api.patch(`/blog/${blogId}/entries/${entryId}`, data),
+  deleteEntry: (blogId, entryId) => api.delete(`/blog/${blogId}/entries/${entryId}`),
 };
 
 export default api;

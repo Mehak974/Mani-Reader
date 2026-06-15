@@ -109,7 +109,9 @@ function AdminDashboardContent() {
   const { user, loading: authLoading, logout } = useAuth() || {};
   const router = useRouter();
 
-  const [activeTab, setActiveTab] = React.useState('overview'); // overview, users, guests, manga, vips, messages, system, settings
+  const [activeTab, setActiveTab] = React.useState('users'); // users, manga, vips, messages, system, settings, blog
+  const [selectedBlog, setSelectedBlog] = React.useState(null);
+  const [entryEditId, setEntryEditId] = React.useState(null);
   const [stats, setStats] = React.useState(null);
   const [users, setUsers] = React.useState([]);
   const [guestUsers, setGuestUsers] = React.useState([]);
@@ -210,25 +212,13 @@ function AdminDashboardContent() {
       const sRes = await adminApi.stats();
       setStats(sRes.data);
 
-      if (activeTab === 'overview') {
-        const [trRes, anaRes, graphRes] = await Promise.all([
-          adminApi.topReaders(),
-          adminApi.dashboardAnalytics(),
-          adminApi.graphData(graphType)
+      if (activeTab === 'users' || activeTab === 'vips') {
+        const [uRes, trRes] = await Promise.all([
+          adminApi.users(),
+          adminApi.topReaders()
         ]);
-        setTopReaders(trRes.data);
-        setAnalytics(anaRes.data);
-        setGraphData(graphRes.data);
-        
-        setHealth({
-          cpu: `${Math.floor(Math.random() * 20 + 10)}%`,
-          disk: '42%',
-          dbLatency: `${Math.floor(Math.random() * 8 + 4)}ms`,
-          memory: `${(Math.random() * 0.4 + 1.1).toFixed(1)}GB`
-        });
-      } else if (activeTab === 'users' || activeTab === 'vips') {
-        const uRes = await adminApi.users();
         setUsers(activeTab === 'vips' ? uRes.data.filter(u => u.isVip) : uRes.data);
+        setTopReaders(trRes.data);
       } else if (activeTab === 'manga') {
         const [mRes, searchRes] = await Promise.all([adminApi.mangaStats(), adminApi.searchStats()]);
         setMangas(mRes.data);
@@ -236,9 +226,6 @@ function AdminDashboardContent() {
       } else if (activeTab === 'messages') {
         const res = await adminApi.messages();
         setMessages(res.data);
-      } else if (activeTab === 'guests') {
-        const res = await adminApi.guestUsers();
-        setGuestUsers(res.data);
       } else if (activeTab === 'system') {
         const [logRes, ipRes] = await Promise.all([adminApi.auditLogs(), adminApi.getBannedIps()]);
         setAuditLogs(logRes.data);
@@ -357,9 +344,7 @@ function AdminDashboardContent() {
         </div>
 
         <div style={{ flex: 1, padding: '0 16px', overflowY: 'auto' }}>
-          <NavItem id="overview" label="Dashboard" icon="dashboard" />
           <NavItem id="users" label="User Accounts" icon="group" />
-          <NavItem id="guests" label="Guest Data" icon="no_accounts" />
           <NavItem id="manga" label="Manga Data" icon="library_books" />
           <NavItem id="vips" label="VIP Subscriptions" icon="verified" />
           <NavItem id="messages" label="User Inquiries" icon="forum" />
@@ -405,354 +390,129 @@ function AdminDashboardContent() {
         {/* Scrollable Content */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }} className="admin-content">
           
-          {activeTab === 'overview' && (
-            <>
-              {/* Section 1: Real-time & Core Cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20, marginBottom: 32 }}>
-                <div style={{ background: '#fff', padding: '24px', borderRadius: 24, border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: 12, background: '#6366f110', color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <span className="material-icons">people</span>
-                    </div>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Users</span>
-                  </div>
-                  <div style={{ fontSize: '2rem', fontWeight: 900, color: '#0f172a' }}>{analytics?.totalUsers || 0}</div>
-                  <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
-                    <div style={{ fontSize: '0.7rem', color: '#64748b' }}>Reg: <span style={{ fontWeight: 800, color: '#6366f1' }}>{analytics?.registeredUsers || 0}</span></div>
-                    <div style={{ fontSize: '0.7rem', color: '#64748b' }}>Guests: <span style={{ fontWeight: 800, color: '#f59e0b' }}>{analytics?.guestUsersCount || 0}</span></div>
-                  </div>
-                </div>
 
-                <div style={{ background: '#fff', padding: '24px', borderRadius: 24, border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: 12, background: '#10b98110', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <span className="material-icons">menu_book</span>
-                    </div>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Chapters Read</span>
-                  </div>
-                  <div style={{ display: 'flex', gap: 20 }}>
-                    <div>
-                      <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#0f172a' }}>{analytics?.today.userChapters || 0}</div>
-                      <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8' }}>USERS</div>
-                    </div>
-                    <div style={{ width: 1, height: 30, background: '#e2e8f0' }} />
-                    <div>
-                      <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#10b981' }}>{analytics?.today.guestChapters || 0}</div>
-                      <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8' }}>GUESTS</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ background: '#fff', padding: '24px', borderRadius: 24, border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: 12, background: '#06b6d410', color: '#06b6d4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <span className="material-icons">visibility</span>
-                    </div>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Pages Viewed</span>
-                  </div>
-                  <div style={{ display: 'flex', gap: 20 }}>
-                    <div>
-                      <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#0f172a' }}>{analytics?.today.userTraffic || 0}</div>
-                      <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8' }}>USERS</div>
-                    </div>
-                    <div style={{ width: 1, height: 30, background: '#e2e8f0' }} />
-                    <div>
-                      <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#06b6d4' }}>{analytics?.today.guestTraffic || 0}</div>
-                      <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8' }}>GUESTS</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ background: '#fff', padding: '24px', borderRadius: 24, border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)', position: 'relative', overflow: 'hidden' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: 12, background: '#ef444410', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <span className="material-icons">sensors</span>
-                    </div>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Active Now</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                    <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#0f172a' }}>{analytics?.activeNow || 0}</div>
-                    <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#22c55e', display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <div className="pulse-dot" style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e' }} />
-                      LIVE
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Section 2: Graphs with Filters */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                 <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>Traffic & Engagement Trends</h3>
-                 <div style={{ display: 'flex', background: '#e2e8f0', padding: 4, borderRadius: 12 }}>
-                    {['today', 'monthly', 'yearly'].map(t => (
-                      <button 
-                        key={t}
-                        onClick={() => setGraphType(t)}
-                        style={{ padding: '6px 16px', borderRadius: 10, border: 'none', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer', background: graphType === t ? '#fff' : 'transparent', color: graphType === t ? '#0f172a' : '#64748b', transition: 'all 0.2s', textTransform: 'capitalize' }}
-                      >{t}</button>
-                    ))}
-                 </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 24, marginBottom: 32 }}>
-                <GraphBox title="Activity Overview">
-                  <AreaChart data={graphData}>
-                    <defs>
-                      <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
-                    <Tooltip contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
-                    <Area type="monotone" dataKey="chapters" name="Chapters Read" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorUsers)" />
-                    <Area type="monotone" dataKey="traffic" name="Traffic" stroke="#06b6d4" strokeWidth={3} fill="transparent" />
-                  </AreaChart>
-                </GraphBox>
-
-                <GraphBox title="Financial Performance">
-                  <LineChart data={graphData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
-                    <Tooltip contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
-                    <Line type="monotone" dataKey="revenue" name="Revenue ($)" stroke="#ec4899" strokeWidth={4} dot={{ r: 6, fill: '#ec4899', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} />
-                  </LineChart>
-                </GraphBox>
-              </div>
-
-              {/* Section 3: Performance Cards */}
-              <div style={{ marginBottom: 24 }}>
-                 <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span className="material-icons" style={{ fontSize: '1.2rem', color: 'var(--accent)' }}>assessment</span>
-                    Performance Deep Dive (Today)
-                 </h3>
-                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20, marginBottom: 32 }}>
-                    <MetricCard 
-                      label="New Users" 
-                      value={analytics?.today?.newUsers || 0} 
-                      subValue={`REG: ${analytics?.today?.regUsers || 0} | GUESTS: ${analytics?.today?.guestUsers || 0}`}
-                      trend="up" icon="person_add" color="#6366f1" 
-                    />
-                    <MetricCard label="Chapters Read" value={analytics?.today?.chaptersRead || 0} trend="up" icon="menu_book" color="#10b981" />
-                    <MetricCard label="Ads Watched" value={analytics?.today?.adsWatched || 0} trend="up" icon="ads_click" color="#f59e0b" />
-                    <MetricCard label="Monthly Revenue" value={`$${analytics?.month?.revenue || '0.00'}`} trend="up" icon="payments" color="#ec4899" />
-                    <MetricCard label="Traffic (Pages)" value={analytics?.today?.traffic || 0} trend="up" icon="trending_up" color="#06b6d4" />
-                    <MetricCard label="Time Spent" value={formatTime(analytics?.today?.timeSpent || 0)} trend="up" icon="timer" color="#8b5cf6" />
-                 </div>
-              </div>
-
-              <div className="dashboard-bottom">
-                <div style={{ background: '#fff', borderRadius: 24, border: '1px solid #e2e8f0', padding: 24 }}>
-                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                     <h3 style={{ fontSize: '1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 10 }}>
-                       <span className="material-icons" style={{ color: 'var(--accent)' }}>workspace_premium</span>
-                       Reader Leaderboard
-                     </h3>
-                     <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#94a3b8' }}>ALL TIME</span>
-                   </div>
-                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                     {topReaders.map((r, i) => (
-                       <div key={r.id} style={{ display: 'flex', alignItems: 'center', padding: '16px', background: '#f8fafc', borderRadius: 16, border: '1px solid #f1f5f9' }}>
-                         <div style={{ width: 32, height: 32, borderRadius: 10, background: i < 3 ? 'var(--accent)' : '#fff', color: i < 3 ? '#fff' : '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, marginRight: 16, fontSize: '0.9rem', border: i < 3 ? 'none' : '1px solid #e2e8f0' }}>{i+1}</div>
-                         <div style={{ flex: 1, minWidth: 0 }}>
-                           <div style={{ fontWeight: 800, color: '#1e293b', fontSize: '0.85rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.email}</div>
-                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <div style={{ width: 8, height: 8, borderRadius: '50%', background: (new Date() - new Date(r.lastActiveAt)) < 5 * 60 * 1000 ? '#22c55e' : '#cbd5e1' }} />
-                              <div style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 600 }}>{formatTime(Math.round((new Date() - new Date(r.lastActiveAt)) / 1000 / 60))} ago</div>
-                           </div>
-                         </div>
-                         <div style={{ textAlign: 'right' }}>
-                           <div style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--accent)' }}>{r.chaptersRead}</div>
-                           <div style={{ fontSize: '0.6rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Chapters</div>
-                         </div>
-                       </div>
-                     ))}
-                   </div>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                   <div style={{ background: '#fff', borderRadius: 24, border: '1px solid #e2e8f0', padding: 24 }}>
-                      <h3 style={{ marginBottom: 20, fontSize: '1rem', fontWeight: 800 }}>Server Health</h3>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                         <HealthBar label="CPU Load" value={health.cpu} percent={parseInt(health.cpu)} color="#6366f1" />
-                         <HealthBar label="Disk Space" value={health.disk} percent={parseInt(health.disk)} color="#f59e0b" />
-                         <HealthBar label="DB Latency" value={health.dbLatency} percent={parseInt(health.dbLatency) * 5} color="#10b981" />
-                         <HealthBar label="Memory Usage" value={health.memory} percent={parseFloat(health.memory) * 40} color="#ec4899" />
-                      </div>
-                      <div style={{ marginTop: 24, padding: '12px', background: '#f0fdf4', borderRadius: 12, border: '1px solid #dcfce7', textAlign: 'center', fontSize: '0.7rem', fontWeight: 800, color: '#16a34a' }}>
-                        NODES FULLY OPERATIONAL
-                      </div>
-                   </div>
-                   <div style={{ background: '#fff', borderRadius: 24, border: '1px solid #e2e8f0', padding: 24 }}>
-                      <h3 style={{ marginBottom: 16, fontSize: '1rem', fontWeight: 800 }}>Quick System Actions</h3>
-                      <button onClick={handleClearCache} style={{ width: '100%', padding: '12px', borderRadius: 12, background: '#f8fafc', border: '1px solid #e2e8f0', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer', marginBottom: 10 }}>Purge Redis Cache</button>
-                      <button onClick={() => setActiveTab('settings')} style={{ width: '100%', padding: '12px', borderRadius: 12, background: 'var(--accent)', color: '#fff', border: 'none', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer' }}>Manage Global Config</button>
-                   </div>
-                </div>
-              </div>
-            </>
-          )}
 
           {activeTab === 'manga' && (
             <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 20, overflowX: 'auto' }}>
                <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 600 }}>
                   <thead>
-                    <tr style={{ background: '#f8fafc', textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>
-                      <th onClick={() => requestSort('title')} style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800, cursor: 'pointer' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          Manga {sortConfig.key === 'title' && <span className="material-icons" style={{ fontSize: '0.8rem' }}>{sortConfig.direction === 'asc' ? 'arrow_upward' : 'arrow_downward'}</span>}
-                        </div>
-                      </th>
-                      <th onClick={() => requestSort('chapterCount')} style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800, cursor: 'pointer' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          Chapters {sortConfig.key === 'chapterCount' && <span className="material-icons" style={{ fontSize: '0.8rem' }}>{sortConfig.direction === 'asc' ? 'arrow_upward' : 'arrow_downward'}</span>}
-                        </div>
-                      </th>
-                      <th onClick={() => requestSort('readCount')} style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800, cursor: 'pointer' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          Reads {sortConfig.key === 'readCount' && <span className="material-icons" style={{ fontSize: '0.8rem' }}>{sortConfig.direction === 'asc' ? 'arrow_upward' : 'arrow_downward'}</span>}
-                        </div>
-                      </th>
-                      <th onClick={() => requestSort('uniqueUsers')} style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800, cursor: 'pointer' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          Users {sortConfig.key === 'uniqueUsers' && <span className="material-icons" style={{ fontSize: '0.8rem' }}>{sortConfig.direction === 'asc' ? 'arrow_upward' : 'arrow_downward'}</span>}
-                        </div>
-                      </th>
-                      <th onClick={() => requestSort('averageRating')} style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800, cursor: 'pointer' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          Rating {sortConfig.key === 'averageRating' && <span className="material-icons" style={{ fontSize: '0.8rem' }}>{sortConfig.direction === 'asc' ? 'arrow_upward' : 'arrow_downward'}</span>}
-                        </div>
-                      </th>
-                      <th style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800, textAlign: 'right' }}>Actions</th>
-                    </tr>
-                  </thead>
+                     <tr style={{ background: '#f8fafc', textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>
+                       <th onClick={() => requestSort('title')} style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800, cursor: 'pointer' }}>
+                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                           Manga {sortConfig.key === 'title' && <span className="material-icons" style={{ fontSize: '0.8rem' }}>{sortConfig.direction === 'asc' ? 'arrow_upward' : 'arrow_downward'}</span>}
+                         </div>
+                       </th>
+                       <th onClick={() => requestSort('readCount')} style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800, cursor: 'pointer' }}>
+                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                           Reads {sortConfig.key === 'readCount' && <span className="material-icons" style={{ fontSize: '0.8rem' }}>{sortConfig.direction === 'asc' ? 'arrow_upward' : 'arrow_downward'}</span>}
+                         </div>
+                       </th>
+                       <th style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800, textAlign: 'right' }}>Actions</th>
+                     </tr>
+                   </thead>
                   <tbody>
-                    {sortedMangas.map(m => (
-                      <tr key={m.id} style={{ borderBottom: '1px solid #f1f5f9', opacity: m.isHidden ? 0.6 : 1 }}>
-                        <td style={{ padding: '14px 16px' }}>
-                          <div style={{ fontWeight: 700, color: '#1e293b', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 8 }}>
-                            {m.title}
-                            {m.isHidden && <span className="material-icons" style={{ fontSize: '1rem', color: '#64748b' }}>visibility_off</span>}
-                          </div>
-                        </td>
-                        <td style={{ padding: '14px 16px' }}>
-                           <span style={{ padding: '4px 8px', background: '#f1f5f9', borderRadius: 6, fontWeight: 800, color: '#475569', fontSize: '0.8rem' }}>{m.chapterCount}</span>
-                        </td>
-                        <td style={{ padding: '14px 16px', fontWeight: 700, fontSize: '0.8rem' }}>{m.readCount.toLocaleString()}</td>
-                        <td style={{ padding: '14px 16px', fontWeight: 700, fontSize: '0.8rem', color: 'var(--accent)' }}>{m.uniqueUsers.toLocaleString()}</td>
-                        <td style={{ padding: '14px 16px', fontSize: '0.8rem', fontWeight: 700 }}>Rating: {m.averageRating}</td>
-                        <td style={{ padding: '14px 16px', textAlign: 'right' }}>
-                          <button 
-                            onClick={async () => {
-                              try {
-                                await adminApi.hideManga(m.id, !m.isHidden);
-                                setMangas(prev => prev.map(item => item.id === m.id ? { ...item, isHidden: !m.isHidden } : item));
-                                showToast(m.isHidden ? 'Manga Visible' : 'Manga Hidden');
-                              } catch { showToast('Action failed', 'error'); }
-                            }}
-                            style={{ padding: '6px 12px', borderRadius: 8, background: m.isHidden ? '#f0fdf4' : '#f1f5f9', border: 'none', color: m.isHidden ? '#166534' : '#64748b', fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer' }}
-                          >
-                            {m.isHidden ? 'Show' : 'Hide'}
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
+                     {sortedMangas.map(m => (
+                       <tr key={m.id} style={{ borderBottom: '1px solid #f1f5f9', opacity: m.isHidden ? 0.6 : 1 }}>
+                         <td style={{ padding: '14px 16px' }}>
+                           <div style={{ fontWeight: 700, color: '#1e293b', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+                             {m.title}
+                             {m.isHidden && <span className="material-icons" style={{ fontSize: '1rem', color: '#64748b' }}>visibility_off</span>}
+                           </div>
+                         </td>
+                         <td style={{ padding: '14px 16px', fontWeight: 700, fontSize: '0.8rem' }}>{m.readCount.toLocaleString()}</td>
+                         <td style={{ padding: '14px 16px', textAlign: 'right' }}>
+                           <button 
+                             onClick={async () => {
+                               try {
+                                 await adminApi.hideManga(m.id, !m.isHidden);
+                                 setMangas(prev => prev.map(item => item.id === m.id ? { ...item, isHidden: !m.isHidden } : item));
+                                 showToast(m.isHidden ? 'Manga Visible' : 'Manga Hidden');
+                               } catch { showToast('Action failed', 'error'); }
+                             }}
+                             style={{ padding: '6px 12px', borderRadius: 8, background: m.isHidden ? '#f0fdf4' : '#f1f5f9', border: 'none', color: m.isHidden ? '#166534' : '#64748b', fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer' }}
+                           >
+                             {m.isHidden ? 'Show' : 'Hide'}
+                           </button>
+                         </td>
+                       </tr>
+                     ))}
+                   </tbody>
                </table>
             </div>
           )}
 
           {(activeTab === 'users' || activeTab === 'vips') && (
-            <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 20, overflowX: 'auto' }}>
-               <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 600 }}>
-                  <thead>
-                    <tr style={{ background: '#f8fafc', textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>
-                      <th style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800 }}>User</th>
-                      <th style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800 }}>Tier</th>
-                      <th style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800 }}>Ads</th>
-                      <th style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800 }}>Time</th>
-                      <th style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800, textAlign: 'right' }}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {users.map(u => (
-                      <tr key={u.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                        <td style={{ padding: '14px 16px' }}>
-                          <div style={{ fontWeight: 700, color: '#1e293b', fontSize: '0.85rem' }}>{u.email}</div>
-                        </td>
-                        <td style={{ padding: '14px 16px' }}>
-                          {u.isBanned ? (
-                            <span style={{ padding: '4px 8px', borderRadius: 6, fontSize: '0.65rem', fontWeight: 800, background: '#fee2e2', color: '#ef4444' }}>BANNED</span>
-                          ) : u.isVip ? (
-                            <span style={{ padding: '4px 8px', borderRadius: 6, fontSize: '0.65rem', fontWeight: 800, background: '#f5f3ff', color: '#5b21b6' }}>VIP</span>
-                          ) : (
-                            <span style={{ padding: '4px 8px', borderRadius: 6, fontSize: '0.65rem', fontWeight: 800, background: '#f1f5f9', color: '#64748b' }}>FREE</span>
-                          )}
-                        </td>
-                        <td style={{ padding: '14px 16px', fontSize: '0.8rem' }}>{u.adsWatched}</td>
-                         <td style={{ padding: '14px 16px', fontSize: '0.8rem', fontWeight: 700 }}>{formatTime((u.timeSpent || 0) / 1000 / 60)}</td>
-                        <td style={{ padding: '14px 16px', textAlign: 'right' }}>
-                          <button onClick={() => viewUserDetail(u.id)} style={{ padding: '6px 12px', borderRadius: 8, background: '#f1f5f9', border: 'none', fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer', marginRight: 6 }}>View</button>
-                          <button onClick={() => toggleBan(u)} style={{ padding: '6px 12px', borderRadius: 8, background: u.isBanned ? '#f0fdf4' : '#fee2e2', border: 'none', color: u.isBanned ? '#166534' : '#ef4444', fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer', marginRight: 6 }}>{u.isBanned ? 'Unban' : 'Ban'}</button>
-                          <button onClick={() => deleteUser(u.id)} style={{ color: '#ef4444', background: 'transparent', cursor: 'pointer', border: 'none' }}><span className="material-icons" style={{ fontSize: '1.2rem' }}>delete</span></button>
-                        </td>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 24, alignItems: 'start' }} className="admin-users-layout">
+              <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 20, overflowX: 'auto' }}>
+                 <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 500 }}>
+                    <thead>
+                      <tr style={{ background: '#f8fafc', textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>
+                        <th style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800 }}>User</th>
+                        <th style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800 }}>Tier</th>
+                        <th style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800 }}>Ads</th>
+                        <th style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800 }}>Time</th>
+                        <th style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800, textAlign: 'right' }}>Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-               </table>
+                    </thead>
+                    <tbody>
+                      {users.map(u => (
+                        <tr key={u.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <td style={{ padding: '14px 16px' }}>
+                            <div style={{ fontWeight: 700, color: '#1e293b', fontSize: '0.85rem' }}>{u.email}</div>
+                          </td>
+                          <td style={{ padding: '14px 16px' }}>
+                            {u.isBanned ? (
+                              <span style={{ padding: '4px 8px', borderRadius: 6, fontSize: '0.65rem', fontWeight: 800, background: '#fee2e2', color: '#ef4444' }}>BANNED</span>
+                            ) : u.isVip ? (
+                              <span style={{ padding: '4px 8px', borderRadius: 6, fontSize: '0.65rem', fontWeight: 800, background: '#f5f3ff', color: '#5b21b6' }}>VIP</span>
+                            ) : (
+                              <span style={{ padding: '4px 8px', borderRadius: 6, fontSize: '0.65rem', fontWeight: 800, background: '#f1f5f9', color: '#64748b' }}>FREE</span>
+                            )}
+                          </td>
+                          <td style={{ padding: '14px 16px', fontSize: '0.8rem' }}>{u.adsWatched}</td>
+                           <td style={{ padding: '14px 16px', fontSize: '0.8rem', fontWeight: 700 }}>{formatTime((u.timeSpent || 0) / 1000 / 60)}</td>
+                          <td style={{ padding: '14px 16px', textAlign: 'right' }}>
+                            <button onClick={() => viewUserDetail(u.id)} style={{ padding: '6px 12px', borderRadius: 8, background: '#f1f5f9', border: 'none', fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer', marginRight: 6 }}>View</button>
+                            <button onClick={() => toggleBan(u)} style={{ padding: '6px 12px', borderRadius: 8, background: u.isBanned ? '#f0fdf4' : '#fee2e2', border: 'none', color: u.isBanned ? '#166534' : '#ef4444', fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer', marginRight: 6 }}>{u.isBanned ? 'Unban' : 'Ban'}</button>
+                            <button onClick={() => deleteUser(u.id)} style={{ color: '#ef4444', background: 'transparent', cursor: 'pointer', border: 'none' }}><span className="material-icons" style={{ fontSize: '1.2rem' }}>delete</span></button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                 </table>
+              </div>
+
+              <div style={{ background: '#fff', borderRadius: 20, border: '1px solid #e2e8f0', padding: 20 }}>
+                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                   <h3 style={{ fontSize: '1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 10 }}>
+                     <span className="material-icons" style={{ color: 'var(--accent)' }}>workspace_premium</span>
+                     Reader Leaderboard
+                   </h3>
+                   <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#94a3b8' }}>ALL TIME</span>
+                 </div>
+                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                   {topReaders.map((r, i) => (
+                     <div key={r.id} style={{ display: 'flex', alignItems: 'center', padding: '12px', background: '#f8fafc', borderRadius: 12, border: '1px solid #f1f5f9' }}>
+                       <div style={{ width: 28, height: 28, borderRadius: 8, background: i < 3 ? 'var(--accent)' : '#fff', color: i < 3 ? '#fff' : '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, marginRight: 12, fontSize: '0.8rem', border: i < 3 ? 'none' : '1px solid #e2e8f0' }}>{i+1}</div>
+                       <div style={{ flex: 1, minWidth: 0 }}>
+                         <div style={{ fontWeight: 800, color: '#1e293b', fontSize: '0.8rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.email}</div>
+                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: (new Date() - new Date(r.lastActiveAt)) < 5 * 60 * 1000 ? '#22c55e' : '#cbd5e1' }} />
+                            <div style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 600 }}>{formatTime(Math.round((new Date() - new Date(r.lastActiveAt)) / 1000 / 60))} ago</div>
+                         </div>
+                       </div>
+                       <div style={{ textAlign: 'right' }}>
+                         <div style={{ fontSize: '1rem', fontWeight: 900, color: 'var(--accent)' }}>{r.chaptersRead}</div>
+                         <div style={{ fontSize: '0.55rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Chapters</div>
+                       </div>
+                     </div>
+                   ))}
+                 </div>
+              </div>
             </div>
           )}
 
-          {activeTab === 'guests' && (
-            <div style={{ background: '#fff', borderRadius: 24, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-              <div style={{ padding: '24px 32px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <h2 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#0f172a' }}>Unique Guest Users</h2>
-                  <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: 4 }}>Tracked by unique Device ID to prevent double counting (Carrier NAT IPs merged).</p>
-                </div>
-                <div style={{ padding: '8px 16px', background: '#fef3c7', color: '#92400e', borderRadius: 12, fontSize: '0.8rem', fontWeight: 800 }}>
-                  {guestUsers.length} UNIQUE GUESTS
-                </div>
-              </div>
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                  <thead>
-                    <tr style={{ background: '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>
-                      <th style={{ padding: '16px 32px', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>IP Address</th>
-                      <th style={{ padding: '16px 32px', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Device ID</th>
-                      <th style={{ padding: '16px 32px', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Last Active</th>
-                      <th style={{ padding: '16px 32px', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>User Agent</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {guestUsers.map((g) => (
-                      <tr key={g.id} style={{ borderBottom: '1px solid #f8fafc', transition: 'background 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
-                        <td style={{ padding: '16px 32px' }}>
-                          <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.9rem' }}>{g.ip}</div>
-                        </td>
-                        <td style={{ padding: '16px 32px' }}>
-                          <div style={{ fontSize: '0.75rem', color: '#64748b', fontFamily: 'monospace', background: '#f1f5f9', padding: '4px 8px', borderRadius: 6, display: 'inline-block' }}>{g.deviceId || 'Unknown'}</div>
-                        </td>
-                        <td style={{ padding: '16px 32px', fontSize: '0.85rem', color: '#475569' }}>
-                          {new Date(g.lastActive).toLocaleString()}
-                        </td>
-                        <td style={{ padding: '16px 32px', fontSize: '0.7rem', color: '#94a3b8', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={g.userAgent}>
-                          {g.userAgent || 'N/A'}
-                        </td>
-                      </tr>
-                    ))}
-                    {guestUsers.length === 0 && (
-                      <tr>
-                        <td colSpan="4" style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>No guest data captured yet.</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+
 
           {activeTab === 'messages' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -880,183 +640,343 @@ function AdminDashboardContent() {
 
           {activeTab === 'blog' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
-              <div style={{ background: '#fff', borderRadius: 24, border: '1px solid #e2e8f0', padding: 24 }}>
-                <h3 style={{ marginBottom: 20, fontWeight: 800 }}>{blogEditId ? 'Edit Recommendation List' : 'Upload Curated Recommendation List'}</h3>
-                <form 
-                  onSubmit={async (e) => {
-                    e.preventDefault();
-                    const title = e.target.blogTitle.value.trim();
-                    const slug = e.target.blogSlug.value.trim();
-                    const category = e.target.blogCategory.value;
-                    const content = e.target.blogContent.value.trim();
-
-                    if (!title || !slug || !category || !content) {
-                      return showToast('Please fill all fields', 'error');
-                    }
-
-                    try {
-                      const { blogApi } = await import('../../lib/api');
-                      if (blogEditId) {
-                        const res = await blogApi.update(blogEditId, { title, slug, category, content });
-                        setBlogPosts(prev => prev.map(p => p.id === blogEditId ? res.data : p));
-                        showToast('Blog updated successfully!');
-                        setBlogEditId(null);
-                      } else {
-                        const res = await blogApi.create({ title, slug, category, content });
-                        setBlogPosts(prev => [res.data, ...prev]);
-                        showToast('Blog created successfully!');
-                      }
-                      e.target.reset();
-                    } catch (err) {
-                      showToast(err.response?.data?.error || 'Failed to save blog post', 'error');
-                    }
-                  }}
-                  style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
-                >
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              {selectedBlog ? (
+                // ── Manga Entries Management Sub-view ─────────────────────────
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
-                      <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 6 }}>Title</label>
-                      <input name="blogTitle" defaultValue={blogEditId ? blogPosts.find(p => p.id === blogEditId)?.title : ''} placeholder="e.g. Best Romance Manga" style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.85rem' }} required />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 6 }}>URL Slug</label>
-                      <input name="blogSlug" defaultValue={blogEditId ? blogPosts.find(p => p.id === blogEditId)?.slug : ''} placeholder="e.g. best-romance-manga" style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.85rem' }} required />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 6 }}>Category</label>
-                    <select name="blogCategory" defaultValue={blogEditId ? blogPosts.find(p => p.id === blogEditId)?.category : 'romance'} style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.85rem', background: '#fff' }}>
-                      <option value="romance">Romance</option>
-                      <option value="action">Action</option>
-                      <option value="isekai">Isekai/Fantasy</option>
-                      <option value="historical">Historical</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 6 }}>Content Markup (Markdown supported)</label>
-                    <textarea name="blogContent" defaultValue={blogEditId ? blogPosts.find(p => p.id === blogEditId)?.content : ''} placeholder="Write recommendations, markdown links, chapters list..." style={{ width: '100%', height: 200, padding: 12, borderRadius: 12, border: '1px solid #e2e8f0', fontSize: '0.9rem', outline: 'none', resize: 'vertical' }} required />
-                  </div>
-
-                  <div style={{ display: 'flex', gap: 12 }}>
-                    <button type="submit" style={{ padding: '12px 24px', borderRadius: 12, background: 'var(--accent)', color: '#fff', fontWeight: 800, border: 'none', cursor: 'pointer' }}>
-                      {blogEditId ? 'Update Post' : 'Publish List'}
-                    </button>
-                    {blogEditId && (
-                      <button type="button" onClick={() => setBlogEditId(null)} style={{ padding: '12px 24px', borderRadius: 12, background: '#f1f5f9', color: '#475569', fontWeight: 800, border: 'none', cursor: 'pointer' }}>
-                        Cancel
+                      <button 
+                        onClick={() => { setSelectedBlog(null); setEntryEditId(null); }}
+                        style={{ background: 'transparent', border: 'none', color: 'var(--accent)', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}
+                      >
+                        <span className="material-icons">arrow_back</span> Back to Blog Lists
                       </button>
-                    )}
+                      <h3 style={{ fontSize: '1.25rem', fontWeight: 900 }}>Manage Entries: {selectedBlog.title}</h3>
+                      <span style={{ fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 800 }}>Category: {selectedBlog.category}</span>
+                    </div>
                   </div>
-                </form>
-              </div>
 
-              <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 20, overflow: 'hidden' }}>
-                <div style={{ padding: 20, borderBottom: '1px solid #e2e8f0' }}>
-                  <h3 style={{ fontWeight: 800 }}>Uploaded Lists</h3>
+                  <div style={{ background: '#fff', borderRadius: 24, border: '1px solid #e2e8f0', padding: 24 }}>
+                    <h4 style={{ marginBottom: 20, fontWeight: 800 }}>
+                      {entryEditId ? 'Edit Manga Entry' : 'Add Manga Entry'}
+                    </h4>
+                    <form 
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        const title = e.target.entryTitle.value.trim();
+                        const slug = e.target.entrySlug.value.trim();
+                        const content = e.target.entryContent.value.trim();
+                        const image = e.target.entryImage.value.trim();
+
+                        if (!title || !slug || !content) {
+                          return showToast('Please fill title, slug and content', 'error');
+                        }
+
+                        try {
+                          const { blogApi } = await import('../../lib/api');
+                          if (entryEditId) {
+                            const res = await blogApi.updateEntry(selectedBlog.id, entryEditId, { title, slug, content, image });
+                            setSelectedBlog(prev => ({
+                              ...prev,
+                              entries: prev.entries.map(entry => entry.id === entryEditId ? res.data : entry)
+                            }));
+                            showToast('Entry updated successfully!');
+                            setEntryEditId(null);
+                          } else {
+                            const res = await blogApi.createEntry(selectedBlog.id, { title, slug, content, image });
+                            setSelectedBlog(prev => ({
+                              ...prev,
+                              entries: [...(prev.entries || []), res.data]
+                            }));
+                            showToast('Entry added successfully!');
+                          }
+                          e.target.reset();
+                        } catch (err) {
+                          showToast(err.response?.data?.error || 'Failed to save entry', 'error');
+                        }
+                      }}
+                      style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
+                    >
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                        <div>
+                          <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 6 }}>Title</label>
+                          <input 
+                            name="entryTitle" 
+                            defaultValue={entryEditId ? selectedBlog.entries?.find(en => en.id === entryEditId)?.title : ''} 
+                            placeholder="e.g. Solo Leveling" 
+                            style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.85rem' }} 
+                            required 
+                          />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 6 }}>URL Slug</label>
+                          <input 
+                            name="entrySlug" 
+                            defaultValue={entryEditId ? selectedBlog.entries?.find(en => en.id === entryEditId)?.slug : ''} 
+                            placeholder="e.g. solo-leveling" 
+                            style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.85rem' }} 
+                            required 
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
+                        <div>
+                          <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 6 }}>Image URL</label>
+                          <input 
+                            name="entryImage" 
+                            defaultValue={entryEditId ? selectedBlog.entries?.find(en => en.id === entryEditId)?.image : ''} 
+                            placeholder="e.g. https://example.com/cover.jpg" 
+                            style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.85rem' }} 
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 6 }}>Content Markup</label>
+                        <textarea 
+                          name="entryContent" 
+                          defaultValue={entryEditId ? selectedBlog.entries?.find(en => en.id === entryEditId)?.content : ''} 
+                          placeholder="Write entry description/content details..." 
+                          style={{ width: '100%', height: 120, padding: 12, borderRadius: 12, border: '1px solid #e2e8f0', fontSize: '0.9rem', outline: 'none', resize: 'vertical' }} 
+                          required 
+                        />
+                      </div>
+
+                      <div style={{ display: 'flex', gap: 12 }}>
+                        <button type="submit" style={{ padding: '12px 24px', borderRadius: 12, background: 'var(--accent)', color: '#fff', fontWeight: 800, border: 'none', cursor: 'pointer' }}>
+                          {entryEditId ? 'Update Entry' : 'Add Entry'}
+                        </button>
+                        {entryEditId && (
+                          <button 
+                            type="button" 
+                            onClick={() => setEntryEditId(null)} 
+                            style={{ padding: '12px 24px', borderRadius: 12, background: '#f1f5f9', color: '#475569', fontWeight: 800, border: 'none', cursor: 'pointer' }}
+                          >
+                            Cancel
+                          </button>
+                        )}
+                      </div>
+                    </form>
+                  </div>
+
+                  <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 20, overflow: 'hidden' }}>
+                    <div style={{ padding: 20, borderBottom: '1px solid #e2e8f0' }}>
+                      <h3 style={{ fontWeight: 800 }}>Blog Entries</h3>
+                    </div>
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                        <thead>
+                          <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                            <th style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800 }}>Image</th>
+                            <th style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800 }}>Title</th>
+                            <th style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800 }}>Slug</th>
+                            <th style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800 }}>Content</th>
+                            <th style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800, textAlign: 'right' }}>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {Array.isArray(selectedBlog?.entries) && selectedBlog.entries.map(en => (
+                            <tr key={en.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                              <td style={{ padding: '14px 16px' }}>
+                                {en.image ? (
+                                  <img src={en.image} alt={en.title} style={{ width: 40, height: 60, objectFit: 'cover', borderRadius: 6 }} />
+                                ) : (
+                                  <div style={{ width: 40, height: 60, background: '#f1f5f9', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <span className="material-icons" style={{ fontSize: '1.2rem', color: '#cbd5e1' }}>image</span>
+                                  </div>
+                                )}
+                              </td>
+                              <td style={{ padding: '14px 16px', fontWeight: 700, fontSize: '0.85rem' }}>{en.title}</td>
+                              <td style={{ padding: '14px 16px', fontSize: '0.8rem', color: '#64748b' }}>{en.slug}</td>
+                              <td style={{ padding: '14px 16px', fontSize: '0.8rem', color: '#475569', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{en.content}</td>
+                              <td style={{ padding: '14px 16px', textAlign: 'right' }}>
+                                <button onClick={() => setEntryEditId(en.id)} style={{ padding: '6px 12px', borderRadius: 8, background: '#f1f5f9', border: 'none', fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer', marginRight: 6 }}>Edit</button>
+                                <button 
+                                  onClick={async () => {
+                                    if (!confirm('Delete this entry?')) return;
+                                    try {
+                                      const { blogApi } = await import('../../lib/api');
+                                      await blogApi.deleteEntry(selectedBlog.id, en.id);
+                                      setSelectedBlog(prev => ({
+                                        ...prev,
+                                        entries: prev.entries.filter(item => item.id !== en.id)
+                                      }));
+                                      showToast('Entry deleted');
+                                    } catch { showToast('Failed to delete entry', 'error'); }
+                                  }}
+                                  style={{ color: '#ef4444', background: 'transparent', cursor: 'pointer', border: 'none' }}
+                                >
+                                  <span className="material-icons" style={{ fontSize: '1.2rem' }}>delete</span>
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                          {(!Array.isArray(selectedBlog?.entries) || selectedBlog.entries.length === 0) && (
+                            <tr>
+                              <td colSpan="5" style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>No entries added to this list yet. Use the form above to add manga recommendation entries.</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                    <thead>
-                      <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                        <th style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800 }}>Title</th>
-                        <th style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800 }}>Slug</th>
-                        <th style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800 }}>Category</th>
-                        <th style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800, textAlign: 'right' }}>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {blogPosts.map(p => (
-                        <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                          <td style={{ padding: '14px 16px', fontWeight: 700, fontSize: '0.85rem' }}>{p.title}</td>
-                          <td style={{ padding: '14px 16px', fontSize: '0.8rem', color: '#64748b' }}>{p.slug}</td>
-                          <td style={{ padding: '14px 16px', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--accent)' }}>{p.category}</td>
-                          <td style={{ padding: '14px 16px', textAlign: 'right' }}>
-                            <button onClick={() => setBlogEditId(p.id)} style={{ padding: '6px 12px', borderRadius: 8, background: '#f1f5f9', border: 'none', fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer', marginRight: 6 }}>Edit</button>
-                            <button 
-                              onClick={async () => {
-                                if (!confirm('Delete this post?')) return;
-                                try {
-                                  const { blogApi } = await import('../../lib/api');
-                                  await blogApi.delete(p.id);
-                                  setBlogPosts(prev => prev.filter(item => item.id !== p.id));
-                                  showToast('Post deleted');
-                                } catch { showToast('Failed to delete post', 'error'); }
-                              }}
-                              style={{ color: '#ef4444', background: 'transparent', cursor: 'pointer', border: 'none' }}
-                            >
-                              <span className="material-icons" style={{ fontSize: '1.2rem' }}>delete</span>
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                      {blogPosts.length === 0 && (
-                        <tr>
-                          <td colSpan="4" style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>No list pages uploaded yet. Fill the form above to add a dynamic post.</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+              ) : (
+                // ── Blog Lists View ───────────────────────────────────────────
+                <>
+                  <div style={{ background: '#fff', borderRadius: 24, border: '1px solid #e2e8f0', padding: 24 }}>
+                    <h3 style={{ marginBottom: 20, fontWeight: 800 }}>{blogEditId ? 'Edit Recommendation List' : 'Upload Curated Recommendation List'}</h3>
+                    <form 
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        const title = e.target.blogTitle.value.trim();
+                        const slug = e.target.blogSlug.value.trim();
+                        const category = e.target.blogCategory.value;
+                        const content = e.target.blogContent.value.trim();
+
+                        if (!title || !slug || !category || !content) {
+                          return showToast('Please fill all fields', 'error');
+                        }
+
+                        try {
+                          const { blogApi } = await import('../../lib/api');
+                          if (blogEditId) {
+                            const res = await blogApi.update(blogEditId, { title, slug, category, content });
+                            setBlogPosts(prev => prev.map(p => p.id === blogEditId ? res.data : p));
+                            showToast('Blog updated successfully!');
+                            setBlogEditId(null);
+                          } else {
+                            const res = await blogApi.create({ title, slug, category, content });
+                            setBlogPosts(prev => [res.data, ...prev]);
+                            showToast('Blog created successfully!');
+                          }
+                          e.target.reset();
+                        } catch (err) {
+                          showToast(err.response?.data?.error || 'Failed to save blog post', 'error');
+                        }
+                      }}
+                      style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
+                    >
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                        <div>
+                          <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 6 }}>Title</label>
+                          <input name="blogTitle" defaultValue={blogEditId ? blogPosts.find(p => p.id === blogEditId)?.title : ''} placeholder="e.g. Best Romance Manga" style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.85rem' }} required />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 6 }}>URL Slug</label>
+                          <input name="blogSlug" defaultValue={blogEditId ? blogPosts.find(p => p.id === blogEditId)?.slug : ''} placeholder="e.g. best-romance-manga" style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.85rem' }} required />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 6 }}>Category</label>
+                        <select name="blogCategory" defaultValue={blogEditId ? blogPosts.find(p => p.id === blogEditId)?.category : 'romance'} style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.85rem', background: '#fff' }}>
+                          <option value="romance">Romance</option>
+                          <option value="action">Action</option>
+                          <option value="historical">Historical</option>
+                          <option value="fantasy/isekai">Fantasy/Isekai</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 6 }}>Description</label>
+                        <textarea name="blogContent" defaultValue={blogEditId ? blogPosts.find(p => p.id === blogEditId)?.content : ''} placeholder="Write brief list description..." style={{ width: '100%', height: 100, padding: 12, borderRadius: 12, border: '1px solid #e2e8f0', fontSize: '0.9rem', outline: 'none', resize: 'vertical' }} required />
+                      </div>
+
+                      <div style={{ display: 'flex', gap: 12 }}>
+                        <button type="submit" style={{ padding: '12px 24px', borderRadius: 12, background: 'var(--accent)', color: '#fff', fontWeight: 800, border: 'none', cursor: 'pointer' }}>
+                          {blogEditId ? 'Update Post' : 'Publish List'}
+                        </button>
+                        {blogEditId && (
+                          <button type="button" onClick={() => setBlogEditId(null)} style={{ padding: '12px 24px', borderRadius: 12, background: '#f1f5f9', color: '#475569', fontWeight: 800, border: 'none', cursor: 'pointer' }}>
+                            Cancel
+                          </button>
+                        )}
+                      </div>
+                    </form>
+                  </div>
+
+                  <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 20, overflow: 'hidden' }}>
+                    <div style={{ padding: 20, borderBottom: '1px solid #e2e8f0' }}>
+                      <h3 style={{ fontWeight: 800 }}>Uploaded Lists</h3>
+                    </div>
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                        <thead>
+                          <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                            <th style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800 }}>Title</th>
+                            <th style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800 }}>Slug</th>
+                            <th style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800 }}>Category</th>
+                            <th style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800, textAlign: 'right' }}>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {blogPosts.map(p => (
+                            <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                              <td style={{ padding: '14px 16px', fontWeight: 700, fontSize: '0.85rem' }}>{p.title}</td>
+                              <td style={{ padding: '14px 16px', fontSize: '0.8rem', color: '#64748b' }}>{p.slug}</td>
+                              <td style={{ padding: '14px 16px', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--accent)' }}>{p.category}</td>
+                              <td style={{ padding: '14px 16px', textAlign: 'right' }}>
+                                <button 
+                                  onClick={async () => {
+                                    setSelectedBlog(p);
+                                    try {
+                                      const { blogApi } = await import('../../lib/api');
+                                      const res = await blogApi.get(p.slug);
+                                      setSelectedBlog(res.data);
+                                    } catch (err) {
+                                      showToast('Failed to load blog entries', 'error');
+                                    }
+                                  }} 
+                                  style={{ padding: '6px 12px', borderRadius: 8, background: 'var(--accent)', color: '#fff', border: 'none', fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer', marginRight: 6 }}
+                                >
+                                  Manga Entries
+                                </button>
+                                <button onClick={() => setBlogEditId(p.id)} style={{ padding: '6px 12px', borderRadius: 8, background: '#f1f5f9', border: 'none', fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer', marginRight: 6 }}>Edit</button>
+                                <button 
+                                  onClick={async () => {
+                                    if (!confirm('Delete this post?')) return;
+                                    try {
+                                      const { blogApi } = await import('../../lib/api');
+                                      await blogApi.delete(p.id);
+                                      setBlogPosts(prev => prev.filter(item => item.id !== p.id));
+                                      showToast('Post deleted');
+                                    } catch { showToast('Failed to delete post', 'error'); }
+                                  }}
+                                  style={{ color: '#ef4444', background: 'transparent', cursor: 'pointer', border: 'none' }}
+                                >
+                                  <span className="material-icons" style={{ fontSize: '1.2rem' }}>delete</span>
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                          {blogPosts.length === 0 && (
+                            <tr>
+                              <td colSpan="4" style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>No list pages uploaded yet. Fill the form above to add a dynamic post.</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
           {activeTab === 'settings' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
-               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24 }}>
-                  <div style={{ background: '#fff', borderRadius: 24, border: '1px solid #e2e8f0', padding: 24 }}>
-                    <h3 style={{ marginBottom: 20, fontWeight: 800 }}>Broadcast Center</h3>
-                    <p style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: 16 }}>Send a global message to all active readers.</p>
-                    <textarea 
-                      placeholder="Type announcement here..."
-                      value={broadcastMsg}
-                      onChange={(e) => setBroadcastMsg(e.target.value)}
-                      style={{ width: '100%', height: 100, padding: 12, borderRadius: 12, border: '1px solid #e2e8f0', fontSize: '0.9rem', outline: 'none', marginBottom: 16, resize: 'none' }}
-                    />
-                    <button onClick={handleBroadcast} style={{ width: '100%', padding: '12px', borderRadius: 12, background: 'var(--accent)', color: '#fff', fontWeight: 800, border: 'none', cursor: 'pointer' }}>Broadcast Announcement</button>
-                  </div>
-
-                  <div style={{ background: '#fff', borderRadius: 24, border: '1px solid #e2e8f0', padding: 24 }}>
-                    <h3 style={{ marginBottom: 20, fontWeight: 800 }}>Search Analytics</h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                       {searchAnalytics.map((s, i) => (
-                         <div key={s.keyword} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: '#f8fafc', borderRadius: 12, border: '1px solid #f1f5f9' }}>
-                           <div style={{ display: 'flex', gap: 12 }}>
-                              <span style={{ fontWeight: 800, color: '#94a3b8' }}>#{i+1}</span>
-                              <span style={{ fontWeight: 700, color: '#1e293b' }}>{s.keyword}</span>
-                           </div>
-                           <span style={{ color: 'var(--accent)', fontWeight: 900 }}>{s.count}</span>
-                         </div>
-                       ))}
-                       {searchAnalytics.length === 0 && <div style={{ color: '#94a3b8', textAlign: 'center', padding: 40 }}>No search data.</div>}
-                    </div>
-                  </div>
-               </div>
-
                <div style={{ background: '#fff', borderRadius: 24, border: '1px solid #e2e8f0', padding: 24 }}>
-                  <h3 style={{ marginBottom: 24, fontWeight: 800 }}>Estimated Ad Revenue (Last 7 Days)</h3>
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', height: 200, paddingBottom: 20 }}>
-                     {adStats.map(s => (
-                       <div key={s.name} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                          <div style={{ width: '100%', height: `${(s.revenue / 70) * 100}%`, background: 'var(--accent)', borderRadius: '4px 4px 0 0', position: 'relative' }} title={`$${s.revenue}`}>
-                             <div style={{ position: 'absolute', top: -20, left: '50%', transform: 'translateX(-50%)', fontSize: '0.65rem', fontWeight: 800 }}>${s.revenue}</div>
-                          </div>
-                          <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b' }}>{s.name}</span>
-                       </div>
-                     ))}
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginTop: 24 }}>
-                     <div style={{ padding: 16, background: '#f0fdf4', borderRadius: 16, border: '1px solid #dcfce7' }}>
-                        <div style={{ fontSize: '0.7rem', color: '#166534', fontWeight: 800 }}>TOTAL IMPRESSIONS</div>
-                        <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#166534' }}>{adStats.reduce((acc, s) => acc + s.impressions, 0).toLocaleString()}</div>
-                     </div>
-                     <div style={{ padding: 16, background: '#f5f3ff', borderRadius: 16, border: '1px solid #ede9fe' }}>
-                        <div style={{ fontSize: '0.7rem', color: '#5b21b6', fontWeight: 800 }}>ESTIMATED PAYOUT</div>
-                        <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#5b21b6' }}>${adStats.reduce((acc, s) => acc + parseFloat(s.revenue), 0).toFixed(2)}</div>
-                     </div>
-                  </div>
+                 <h3 style={{ marginBottom: 20, fontWeight: 800 }}>Broadcast Center</h3>
+                 <p style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: 16 }}>Send a global message to all active readers.</p>
+                 <textarea 
+                   placeholder="Type announcement here..."
+                   value={broadcastMsg}
+                   onChange={(e) => setBroadcastMsg(e.target.value)}
+                   style={{ width: '100%', height: 100, padding: 12, borderRadius: 12, border: '1px solid #e2e8f0', fontSize: '0.9rem', outline: 'none', marginBottom: 16, resize: 'none' }}
+                 />
+                 <button onClick={handleBroadcast} style={{ width: '100%', padding: '12px', borderRadius: 12, background: 'var(--accent)', color: '#fff', fontWeight: 800, border: 'none', cursor: 'pointer' }}>Broadcast Announcement</button>
                </div>
 
                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24 }}>

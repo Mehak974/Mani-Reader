@@ -22,7 +22,12 @@ router.get('/', async (req, res) => {
 router.get('/:slug', async (req, res) => {
   try {
     const post = await prisma.blogPost.findUnique({
-      where: { slug: req.params.slug }
+      where: { slug: req.params.slug },
+      include: {
+        entries: {
+          orderBy: { createdAt: 'asc' }
+        }
+      }
     });
     if (!post) return res.status(404).json({ error: 'Blog post not found' });
     res.json(post);
@@ -82,4 +87,62 @@ router.delete('/:id', authMiddleware, adminMiddleware, async (req, res) => {
   }
 });
 
+// POST /api/blog/:id/entries — Create entry (Admin only)
+router.post('/:id/entries', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const { title, slug, content, image } = req.body;
+    if (!title || !slug || !content) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+    const cleanSlug = slug.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const entry = await prisma.blogEntry.create({
+      data: {
+        blogPostId: req.params.id,
+        title,
+        slug: cleanSlug,
+        content,
+        image: image || null
+      }
+    });
+    res.status(201).json(entry);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PATCH /api/blog/:id/entries/:entryId — Update entry (Admin only)
+router.patch('/:id/entries/:entryId', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const { title, slug, content, image } = req.body;
+    const updateData = {};
+    if (title !== undefined) updateData.title = title;
+    if (content !== undefined) updateData.content = content;
+    if (image !== undefined) updateData.image = image;
+    if (slug !== undefined) {
+      updateData.slug = slug.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    }
+
+    const entry = await prisma.blogEntry.update({
+      where: { id: req.params.entryId },
+      data: updateData
+    });
+    res.json(entry);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /api/blog/:id/entries/:entryId — Delete entry (Admin only)
+router.delete('/:id/entries/:entryId', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    await prisma.blogEntry.delete({
+      where: { id: req.params.entryId }
+    });
+    res.json({ message: 'Blog entry deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
+

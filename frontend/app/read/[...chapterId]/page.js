@@ -35,10 +35,20 @@ function ReaderContent() {
       .finally(() => setLoading(false));
   }, [chapterId, mangaId]);
 
-  // Find adjacent chapters
-  const currentIdx = chapters.findIndex((c) => c.id === chapterId);
-  const prevChapter = currentIdx > 0 ? chapters[currentIdx - 1]?.id : null;
-  const nextChapter = currentIdx < chapters.length - 1 ? chapters[currentIdx + 1]?.id : null;
+  // Sort chapters ascending by number so prev/next always work correctly
+  // regardless of what order the API returns them in
+  const sortedChapters = React.useMemo(() => {
+    return [...chapters].sort((a, b) => {
+      const numA = parseFloat(a.chapterNumber || a.number || 0);
+      const numB = parseFloat(b.chapterNumber || b.number || 0);
+      return numA - numB; // ascending: ch1, ch2, ch3...
+    });
+  }, [chapters]);
+
+  // Find adjacent chapters in the sorted (ascending) list
+  const currentIdx = sortedChapters.findIndex((c) => c.id === chapterId);
+  const prevChapter = currentIdx > 0 ? sortedChapters[currentIdx - 1]?.id : null;
+  const nextChapter = currentIdx < sortedChapters.length - 1 ? sortedChapters[currentIdx + 1]?.id : null;
 
   if (loading) return (
     <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -91,7 +101,7 @@ function ReaderContent() {
   );
 
   // Find current chapter object
-  const currentChapter = chapters.find((c) => c.id === chapterId);
+  const currentChapter = sortedChapters.find((c) => c.id === chapterId);
 
   return (
     <div>
@@ -103,6 +113,7 @@ function ReaderContent() {
           prevChapter={prevChapter}
           nextChapter={nextChapter}
           currentChapter={currentChapter}
+          allChapters={sortedChapters}
         />
       ) : (
         <PagedReader
@@ -112,6 +123,7 @@ function ReaderContent() {
           prevChapter={prevChapter}
           nextChapter={nextChapter}
           currentChapter={currentChapter}
+          allChapters={sortedChapters}
         />
       )}
     </div>

@@ -312,5 +312,23 @@ model BlogPost {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  entries   BlogEntry[]
+
   @@map("blog_posts")
 }
+
+model BlogEntry {
+  id         String   @id @default(uuid())
+  blogPostId String
+  title      String
+  slug       String   // url slug
+  content    String   @db.Text // Content Markup
+  image      String?  // Image URL
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  blogPost   BlogPost @relation(fields: [blogPostId], references: [id], onDelete: Cascade)
+
+  @@map("blog_entries")
+}
+

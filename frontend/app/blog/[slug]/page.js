@@ -282,23 +282,133 @@ export default async function BlogPostPage({ params }) {
 
             {/* Recommendations Content Body */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-              {parsedContent.map((block, idx) => {
-                if (block.type === 'text') {
-                  return (
-                    <p key={idx} style={{ 
-                      fontSize: '1.1rem', 
-                      lineHeight: 1.8, 
-                      color: 'var(--text-2)', 
-                      whiteSpace: 'pre-wrap',
-                      padding: '0 8px'
-                    }}>
-                      {formatText(block.text)}
-                    </p>
-                  );
-                } else if (block.type === 'list-item') {
-                  return (
+              {(!activePost.entries || activePost.entries.length === 0) ? (
+                <>
+                  {parsedContent.map((block, idx) => {
+                    if (block.type === 'text') {
+                      return (
+                        <p key={idx} style={{ 
+                          fontSize: '1.1rem', 
+                          lineHeight: 1.8, 
+                          color: 'var(--text-2)', 
+                          whiteSpace: 'pre-wrap',
+                          padding: '0 8px'
+                        }}>
+                          {formatText(block.text)}
+                        </p>
+                      );
+                    } else if (block.type === 'list-item') {
+                      return (
+                        <div 
+                          key={idx}
+                          style={{
+                            background: 'rgba(18, 18, 26, 0.45)',
+                            backdropFilter: 'blur(16px)',
+                            border: '1px solid rgba(255, 255, 255, 0.05)',
+                            borderRadius: 20,
+                            padding: 30,
+                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            position: 'relative'
+                          }}
+                          className="recommendation-list-item-card"
+                        >
+                          {/* Left Badge with Rank */}
+                          <div style={{
+                            width: 48,
+                            height: 48,
+                            borderRadius: '50%',
+                            border: `2px solid ${activeColor}`,
+                            background: `rgba(${activeColor === '#ffd700' ? '255,215,0' : activeColor === '#00d2d3' ? '0,210,211' : activeColor === '#ff9f43' ? '255,159,67' : '255,77,109'}, 0.08)`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '1.25rem',
+                            fontWeight: 900,
+                            color: activeColor,
+                            flexShrink: 0,
+                            boxShadow: `0 0 15px -3px ${activeColor}80`
+                          }} className="rank-badge">
+                            #{block.number}
+                          </div>
+
+                          {/* Optional Manga Image */}
+                          {block.image && (
+                            <div style={{
+                              width: 110,
+                              height: 165,
+                              borderRadius: 12,
+                              overflow: 'hidden',
+                              flexShrink: 0,
+                              border: '1px solid rgba(255, 255, 255, 0.08)',
+                              boxShadow: '0 8px 20px rgba(0, 0, 0, 0.4)',
+                              position: 'relative'
+                            }} className="manga-item-image-container">
+                              <Image
+                                src={block.image}
+                                alt={block.title}
+                                fill
+                                style={{ objectFit: 'cover' }}
+                                referrerPolicy="no-referrer"
+                                placeholder="blur"
+                                blurDataURL="/placeholder-cover.jpg"
+                              />
+                            </div>
+                          )}
+
+                          {/* Info & Button */}
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                            <div>
+                              <h3 style={{ 
+                                fontSize: '1.35rem', 
+                                fontWeight: 800, 
+                                color: '#fff', 
+                                lineHeight: 1.3,
+                                marginBottom: 8
+                              }}>
+                                {block.title}
+                              </h3>
+                              <p style={{ 
+                                fontSize: '0.98rem', 
+                                lineHeight: 1.6, 
+                                color: 'var(--text-2)', 
+                                opacity: 0.9,
+                                whiteSpace: 'pre-wrap'
+                              }}>
+                                {block.description}
+                              </p>
+                            </div>
+
+                            {/* Search Link Button */}
+                            <div style={{ marginTop: 8 }}>
+                              <Link 
+                                href={`/browse?keyword=${encodeURIComponent(block.title)}`}
+                                className="btn btn-ghost btn-sm read-link"
+                                style={{ 
+                                  borderRadius: 10,
+                                  background: 'rgba(255, 255, 255, 0.03)',
+                                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                                  color: 'var(--text-2)',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 6
+                                }}
+                              >
+                                <span className="material-icons" style={{ fontSize: '1rem' }}>menu_book</span>
+                                Read on ManiReader
+                              </Link>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })}
+                </>
+              ) : (
+                <>
+                  {activePost.entries.map((entry, idx) => (
                     <div 
-                      key={idx}
+                      key={entry.id}
                       style={{
                         background: 'rgba(18, 18, 26, 0.45)',
                         backdropFilter: 'blur(16px)',
@@ -306,7 +416,9 @@ export default async function BlogPostPage({ params }) {
                         borderRadius: 20,
                         padding: 30,
                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                        position: 'relative'
+                        position: 'relative',
+                        display: 'flex',
+                        gap: 24
                       }}
                       className="recommendation-list-item-card"
                     >
@@ -326,11 +438,11 @@ export default async function BlogPostPage({ params }) {
                         flexShrink: 0,
                         boxShadow: `0 0 15px -3px ${activeColor}80`
                       }} className="rank-badge">
-                        #{block.number}
+                        #{idx + 1}
                       </div>
 
                       {/* Optional Manga Image */}
-                      {block.image && (
+                      {entry.image && (
                         <div style={{
                           width: 110,
                           height: 165,
@@ -341,14 +453,11 @@ export default async function BlogPostPage({ params }) {
                           boxShadow: '0 8px 20px rgba(0, 0, 0, 0.4)',
                           position: 'relative'
                         }} className="manga-item-image-container">
-                          <Image
-                            src={block.image}
-                            alt={block.title}
-                            fill
-                            style={{ objectFit: 'cover' }}
+                          <img
+                            src={entry.image}
+                            alt={entry.title}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                             referrerPolicy="no-referrer"
-                            placeholder="blur"
-                            blurDataURL="/placeholder-cover.jpg"
                           />
                         </div>
                       )}
@@ -363,7 +472,7 @@ export default async function BlogPostPage({ params }) {
                             lineHeight: 1.3,
                             marginBottom: 8
                           }}>
-                            {block.title}
+                            {entry.title}
                           </h3>
                           <p style={{ 
                             fontSize: '0.98rem', 
@@ -372,14 +481,14 @@ export default async function BlogPostPage({ params }) {
                             opacity: 0.9,
                             whiteSpace: 'pre-wrap'
                           }}>
-                            {block.description}
+                            {formatText(entry.content)}
                           </p>
                         </div>
 
                         {/* Search Link Button */}
                         <div style={{ marginTop: 8 }}>
                           <Link 
-                            href={`/browse?keyword=${encodeURIComponent(block.title)}`}
+                            href={`/manga/${entry.slug}`}
                             className="btn btn-ghost btn-sm read-link"
                             style={{ 
                               borderRadius: 10,
@@ -397,10 +506,9 @@ export default async function BlogPostPage({ params }) {
                         </div>
                       </div>
                     </div>
-                  );
-                }
-                return null;
-              })}
+                  ))}
+                </>
+              )}
             </div>
           </article>
 

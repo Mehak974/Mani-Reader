@@ -385,7 +385,7 @@ export default function MangaDetailClient({ id, initialManga, initialChapters })
           <div className="action-row">
             {chapters.length > 0 && (
               <div className="start-reading-line" style={{ flex: 1 }}>
-                <a href={`/read/${lastRead ? chapters.find(c => c.id === lastRead.chapterId)?.id || chapters[0]?.id : chapters[0]?.id}?mangaId=${id}`}>
+                <a href={`/read/${lastRead ? chapters.find(c => c.id === lastRead.chapterId)?.id || chapters[chapters.length - 1]?.id : chapters[chapters.length - 1]?.id}?mangaId=${id}`}>
                   <button className="btn btn-amethyst w-full" style={{ padding: '14px 0', fontSize: '1rem', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                     <span className="material-icons">play_circle_filled</span>
                     Start Reading

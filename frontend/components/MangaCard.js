@@ -58,6 +58,7 @@ export default function MangaCard({ manga, showNsfw = false, priority = false })
             fill
             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 20vw"
             priority={priority}
+            quality={50}
             className={`manga-cover-img ${isBlurred ? 'blur-nsfw' : ''}`}
             style={{ objectFit: 'cover', transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)' }}
             unoptimized={coverUrl.includes('/api/image')}
