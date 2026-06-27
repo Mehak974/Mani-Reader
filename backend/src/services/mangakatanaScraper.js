@@ -337,7 +337,8 @@ async function browseManga(filters = {}) {
       const titleEl = $(el).find('.title a');
       const id = (titleEl.attr('href') || '').split('/').pop();
       const title = titleEl.text().trim();
-      const image = $(el).find('.wrap_img img').attr('src') || $(el).find('.wrap_img img').attr('data-src');
+      const imgEl = $(el).find('.wrap_img img');
+      const image = imgEl.attr('data-src') || imgEl.attr('src');
       const genres = $(el).find('.genres a').map((i, g) => $(g).text().trim()).get();
       
       if (!id || !title) return;
