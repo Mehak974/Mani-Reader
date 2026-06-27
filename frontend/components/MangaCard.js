@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 
 import { useAuth } from '../lib/auth';
+import { getApiServerUrl } from '../lib/api';
 
 export default function MangaCard({ manga, showNsfw = false, priority = false }) {
   const { revealNsfw, setRevealNsfw } = useAuth() || {};
@@ -12,13 +13,6 @@ export default function MangaCard({ manga, showNsfw = false, priority = false })
   const isBlurred = manga.nsfw && !revealNsfw;
 
   const rawCover = manga.image || manga.cover;
-
-  const getApiServerUrl = () => {
-    const rawUrl = process.env.NEXT_PUBLIC_API_URL;
-    if (!rawUrl) return '';
-    const cleanedUrl = rawUrl.endsWith('/') ? rawUrl.slice(0, -1) : rawUrl;
-    return cleanedUrl.endsWith('/api') ? cleanedUrl.slice(0, -4) : cleanedUrl;
-  };
 
   // 🏎️ Smart Proxy
   const coverUrl = rawCover

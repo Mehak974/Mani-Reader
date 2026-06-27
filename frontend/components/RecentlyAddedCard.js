@@ -2,6 +2,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { getApiServerUrl } from '../lib/api';
 
 export default function RecentlyAddedCard({ manga }) {
   const [isExpanded, setIsExpanded] = React.useState(false);
@@ -10,17 +11,6 @@ export default function RecentlyAddedCard({ manga }) {
   if (!manga) return null;
 
   const apiBase = process.env.NEXT_PUBLIC_API_URL || '/api';
-  const getApiServerUrl = () => {
-    const rawUrl = process.env.NEXT_PUBLIC_API_URL;
-    if (!rawUrl) {
-      if (typeof window !== 'undefined' && window.location.hostname.includes('manireader.online')) {
-        return 'https://api.manireader.online';
-      }
-      return '';
-    }
-    const cleanedUrl = rawUrl.endsWith('/') ? rawUrl.slice(0, -1) : rawUrl;
-    return cleanedUrl.endsWith('/api') ? cleanedUrl.slice(0, -4) : cleanedUrl;
-  };
 
   const rawCover = manga.image || manga.cover;
   // 🏎️ Smart Proxy: Only wrap in local /api/image if it's an external HTTP link AND not already proxied

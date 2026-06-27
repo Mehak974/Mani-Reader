@@ -3,7 +3,7 @@ import React from 'react';
 import Link from 'next/link';
 import { AuthProvider, useAuth } from '../../lib/auth';
 import Navbar from '../../components/Navbar';
-import { historyApi } from '../../lib/api';
+import { historyApi, getApiServerUrl } from '../../lib/api';
 import { useRouter } from 'next/navigation';
 import LoginRequiredModal from '../../components/LoginRequiredModal';
 
@@ -82,18 +82,6 @@ function HistoryContent() {
             {history
               .filter((h, index, self) => index === self.findIndex((t) => t.mangaId === h.mangaId))
               .map((h) => {
-              const getApiServerUrl = () => {
-                const rawUrl = process.env.NEXT_PUBLIC_API_URL;
-                if (!rawUrl) {
-                  if (typeof window !== 'undefined' && window.location.hostname.includes('manireader.online')) {
-                    return 'https://api.manireader.online';
-                  }
-                  return '';
-                }
-                const cleanedUrl = rawUrl.endsWith('/') ? rawUrl.slice(0, -1) : rawUrl;
-                return cleanedUrl.endsWith('/api') ? cleanedUrl.slice(0, -4) : cleanedUrl;
-              };
-
               const cover = h.manga?.cover
                 ? `${getApiServerUrl()}/api/image?url=${encodeURIComponent(h.manga.cover)}`
                 : '/placeholder-cover.jpg';

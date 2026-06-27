@@ -1,5 +1,17 @@
 import axios from 'axios';
 
+export const getApiServerUrl = () => {
+  const rawUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (rawUrl) {
+    const cleaned = rawUrl.endsWith('/') ? rawUrl.slice(0, -1) : rawUrl;
+    return cleaned.endsWith('/api') ? cleaned.slice(0, -4) : cleaned;
+  }
+  if (typeof window !== 'undefined' && window.location.hostname.includes('manireader.online')) {
+    return 'https://api.manireader.online';
+  }
+  return '';
+};
+
 const getBaseUrl = () => {
   // Use environment variable if provided
   const rawUrl = process.env.NEXT_PUBLIC_API_URL;

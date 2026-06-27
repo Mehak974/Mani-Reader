@@ -5,7 +5,7 @@ import Navbar from '../../../components/Navbar';
 import MangaCard from '../../../components/MangaCard';
 import ChapterList from '../../../components/ChapterList';
 import AdBanner from '../../../components/AdBanner';
-import { mangaApi, libraryApi, progressApi, bookmarkApi } from '../../../lib/api';
+import { mangaApi, libraryApi, progressApi, bookmarkApi, getApiServerUrl } from '../../../lib/api';
 
 export default function MangaDetailClient({ id, initialManga, initialChapters }) {
   const { user, revealNsfw, setRevealNsfw } = useAuth() || {};
@@ -141,18 +141,6 @@ export default function MangaDetailClient({ id, initialManga, initialChapters })
       </div>
     );
   }
-
-  const getApiServerUrl = () => {
-    const rawUrl = process.env.NEXT_PUBLIC_API_URL;
-    if (!rawUrl) {
-      if (typeof window !== 'undefined' && window.location.hostname.includes('manireader.online')) {
-        return 'https://api.manireader.online';
-      }
-      return '';
-    }
-    const cleanedUrl = rawUrl.endsWith('/') ? rawUrl.slice(0, -1) : rawUrl;
-    return cleanedUrl.endsWith('/api') ? cleanedUrl.slice(0, -4) : cleanedUrl;
-  };
 
   const coverUrl = React.useMemo(() => {
     if (!manga?.cover) return '/placeholder-cover.jpg';

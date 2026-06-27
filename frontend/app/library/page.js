@@ -3,7 +3,7 @@ import React from 'react';
 import Link from 'next/link';
 import { AuthProvider, useAuth } from '../../lib/auth';
 import Navbar from '../../components/Navbar';
-import { bookmarkApi } from '../../lib/api';
+import { bookmarkApi, getApiServerUrl } from '../../lib/api';
 import { useRouter } from 'next/navigation';
 
 import LoginRequiredModal from '../../components/LoginRequiredModal';
@@ -86,18 +86,6 @@ function LibraryContent() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {bookmarks.map((bm) => {
-              const getApiServerUrl = () => {
-                const rawUrl = process.env.NEXT_PUBLIC_API_URL;
-                if (!rawUrl) {
-                  if (typeof window !== 'undefined' && window.location.hostname.includes('manireader.online')) {
-                    return 'https://api.manireader.online';
-                  }
-                  return '';
-                }
-                const cleanedUrl = rawUrl.endsWith('/') ? rawUrl.slice(0, -1) : rawUrl;
-                return cleanedUrl.endsWith('/api') ? cleanedUrl.slice(0, -4) : cleanedUrl;
-              };
-
               const coverUrl = bm.manga?.cover
                 ? `${getApiServerUrl()}/api/image?url=${encodeURIComponent(bm.manga.cover)}`
                 : '/placeholder-cover.jpg';
