@@ -21,8 +21,13 @@ router.get('/', async (req, res) => {
 // GET /api/blog/:slug — retrieve single post
 router.get('/:slug', async (req, res) => {
   try {
-    const post = await prisma.blogPost.findUnique({
-      where: { slug: req.params.slug },
+    const post = await prisma.blogPost.findFirst({
+      where: {
+        OR: [
+          { id: req.params.slug },
+          { slug: req.params.slug }
+        ]
+      },
       include: {
         entries: {
           orderBy: { createdAt: 'asc' }
@@ -43,7 +48,13 @@ router.post('/', authMiddleware, adminMiddleware, async (req, res) => {
     if (!title || !slug || !content || !category) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
-    const cleanSlug = slug.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    let cleanSlug = slug.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    if (!cleanSlug) {
+      cleanSlug = title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    }
+    if (!cleanSlug) {
+      cleanSlug = 'post-' + Math.random().toString(36).substring(2, 7);
+    }
     const post = await prisma.blogPost.create({
       data: { title, slug: cleanSlug, content, category }
     });
@@ -62,7 +73,14 @@ router.patch('/:id', authMiddleware, adminMiddleware, async (req, res) => {
     if (content !== undefined) updateData.content = content;
     if (category !== undefined) updateData.category = category;
     if (slug !== undefined) {
-      updateData.slug = slug.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      let cleanSlug = slug.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      if (!cleanSlug && title) {
+        cleanSlug = title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      }
+      if (!cleanSlug) {
+        cleanSlug = 'post-' + Math.random().toString(36).substring(2, 7);
+      }
+      updateData.slug = cleanSlug;
     }
 
     const post = await prisma.blogPost.update({
