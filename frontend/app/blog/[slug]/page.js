@@ -3,6 +3,8 @@ import Image from 'next/image';
 import { blogApi } from '../../../lib/api';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
+
 // Dynamically fetch and display each individual article list
 export async function generateMetadata({ params }) {
   const { slug } = await params;

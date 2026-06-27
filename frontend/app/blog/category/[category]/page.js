@@ -2,6 +2,8 @@ import Link from 'next/link';
 import Navbar from '../../../../components/Navbar';
 import { blogApi } from '../../../../lib/api';
 
+export const dynamic = 'force-dynamic';
+
 export async function generateMetadata({ params }) {
   const { category } = await params;
   const capitalized = category.charAt(0).toUpperCase() + category.slice(1);
