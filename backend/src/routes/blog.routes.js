@@ -94,10 +94,25 @@ router.post('/:id/entries', authMiddleware, adminMiddleware, async (req, res) =>
     if (!title || !slug || !content) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
+
+    // Find the associated blog post by either UUID id or slug
+    const post = await prisma.blogPost.findFirst({
+      where: {
+        OR: [
+          { id: req.params.id },
+          { slug: req.params.id }
+        ]
+      }
+    });
+
+    if (!post) {
+      return res.status(404).json({ error: 'Associated blog post not found' });
+    }
+
     const cleanSlug = slug.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     const entry = await prisma.blogEntry.create({
       data: {
-        blogPostId: req.params.id,
+        blogPostId: post.id,
         title,
         slug: cleanSlug,
         content,
