@@ -18,11 +18,13 @@ export default async function CategoryBlogsPage({ params }) {
   const capCategory = category.charAt(0).toUpperCase() + category.slice(1);
   
   let posts = [];
+  let errorMsg = null;
   try {
     const res = await blogApi.list(category);
     posts = res.data || [];
   } catch (err) {
     console.error('Failed to load blog posts for category:', err.message);
+    errorMsg = err.message + ' (BaseURL: ' + (err.config?.baseURL || 'not set') + ')';
   }
 
   const getCategoryColor = (cat = '') => {
@@ -118,6 +120,13 @@ export default async function CategoryBlogsPage({ params }) {
             Browse curated reviews, matching comparisons, and tier lists for {capCategory.toLowerCase()} series.
           </p>
         </div>
+
+        {/* Error message callout */}
+        {errorMsg && (
+          <div style={{ padding: 16, background: '#fee2e2', color: '#ef4444', borderRadius: 12, marginBottom: 24, fontSize: '0.9rem', border: '1px solid #fecaca' }}>
+            <strong>Error loading posts:</strong> {errorMsg}
+          </div>
+        )}
 
         {/* Blogs List */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
