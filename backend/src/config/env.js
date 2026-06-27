@@ -32,7 +32,19 @@ module.exports = {
     timeout: 30000,
   },
 
-  imageProxyUrl: process.env.IMAGE_PROXY_URL || null,
+  imageProxyUrl: (() => {
+    const api = process.env.API_URL || 'https://api.manireader.online';
+    const proxy = process.env.IMAGE_PROXY_URL;
+    if (!proxy) {
+      return process.env.NODE_ENV === 'production'
+        ? `${api}/api/image`
+        : `http://localhost:${process.env.PORT || '4000'}/api/image`;
+    }
+    if (proxy.startsWith('/')) {
+      return `${api}${proxy}`;
+    }
+    return proxy;
+  })(),
 
   cache: {
     redisUrl: process.env.REDIS_URL || null,
