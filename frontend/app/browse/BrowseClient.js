@@ -171,45 +171,56 @@ function BrowseContent() {
   }, [keyword, page, selectedOrder, genreState, selectedStatus, genreMode]);
   */
 
+  const updateUrl = (p = 1, kw = inputKeyword) => {
+    const include = Object.entries(genreState).filter(([, v]) => v === 'include').map(([k]) => k);
+    const exclude = Object.entries(genreState).filter(([, v]) => v === 'exclude').map(([k]) => k);
+
+    const qs = new URLSearchParams();
+    if (include.length > 0) qs.set('include', include.join(','));
+    if (exclude.length > 0) qs.set('exclude', exclude.join(','));
+    if (selectedStatus > 0) qs.set('status', selectedStatus);
+    if (selectedOrder > 0) qs.set('order', selectedOrder);
+    if (kw) qs.set('keyword', kw);
+    if (genreMode === 'or') qs.set('include_mode', 'or');
+    qs.set('page', p);
+
+    router.push(`/browse?${qs.toString()}`);
+  };
+
   // ⚡ INSTANT SEARCH: Fetch results as user types (with debounce)
   React.useEffect(() => {
     const timer = setTimeout(() => {
       if (inputKeyword !== keyword) {
-        setKeyword(inputKeyword);
-        setPage(1);
+        updateUrl(1, inputKeyword);
       }
     }, 600); // 600ms debounce
     return () => clearTimeout(timer);
   }, [inputKeyword, keyword]);
 
   const handleSearch = (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setGenreState({}); // ⚡ Reset filters for global search
-    setKeyword(inputKeyword);
-    setPage(1);
+    updateUrl(1, inputKeyword);
     setShowFilter(false);
   };
 
   const handleApply = () => {
-    setPage(1);
     setShowFilter(false);
-    fetchResults(1);
+    updateUrl(1);
   };
 
   const handleReset = () => {
     setGenreState({});
     setSelectedStatus(0);
     setSelectedOrder(0);
-    setKeyword('');
     setInputKeyword('');
-    setPage(1);
+    setShowFilter(false);
+    router.push('/browse');
   };
 
   const handlePageChange = (p) => {
     if (p < 1 || p > totalPages) return;
-    const qs = new URLSearchParams(window.location.search);
-    qs.set('page', p);
-    router.push(`/browse?${qs.toString()}`);
+    updateUrl(p);
     // Scroll will be handled by browser or we can keep it for smoothness
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
