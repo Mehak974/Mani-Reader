@@ -58,6 +58,7 @@ export function setAccessToken(token) { _accessToken = token; }
 export function getAccessToken() { return _accessToken; }
 
 api.interceptors.request.use((config) => {
+  config.baseURL = getBaseUrl();
   if (_accessToken) config.headers['Authorization'] = `Bearer ${_accessToken}`;
 
   if (typeof window !== 'undefined') {
