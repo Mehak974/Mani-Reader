@@ -923,7 +923,7 @@ function AdminDashboardContent() {
                                     setSelectedBlog(p);
                                     try {
                                       const { blogApi } = await import('../../lib/api');
-                                      const res = await blogApi.get(p.id);
+                                      const res = await blogApi.get(p.slug);
                                       setSelectedBlog(res.data);
                                     } catch (err) {
                                       showToast('Failed to load blog entries', 'error');

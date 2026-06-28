@@ -21,13 +21,8 @@ router.get('/', async (req, res) => {
 // GET /api/blog/:slug — retrieve single post
 router.get('/:slug', async (req, res) => {
   try {
-    const post = await prisma.blogPost.findFirst({
-      where: {
-        OR: [
-          { id: req.params.slug },
-          { slug: req.params.slug }
-        ]
-      },
+    const post = await prisma.blogPost.findUnique({
+      where: { slug: req.params.slug },
       include: {
         entries: {
           orderBy: { createdAt: 'asc' }
@@ -48,13 +43,7 @@ router.post('/', authMiddleware, adminMiddleware, async (req, res) => {
     if (!title || !slug || !content || !category) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
-    let cleanSlug = slug.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    if (!cleanSlug) {
-      cleanSlug = title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    }
-    if (!cleanSlug) {
-      cleanSlug = 'post-' + Math.random().toString(36).substring(2, 7);
-    }
+    const cleanSlug = slug.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     const post = await prisma.blogPost.create({
       data: { title, slug: cleanSlug, content, category }
     });
@@ -73,14 +62,7 @@ router.patch('/:id', authMiddleware, adminMiddleware, async (req, res) => {
     if (content !== undefined) updateData.content = content;
     if (category !== undefined) updateData.category = category;
     if (slug !== undefined) {
-      let cleanSlug = slug.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-      if (!cleanSlug && title) {
-        cleanSlug = title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-      }
-      if (!cleanSlug) {
-        cleanSlug = 'post-' + Math.random().toString(36).substring(2, 7);
-      }
-      updateData.slug = cleanSlug;
+      updateData.slug = slug.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     }
 
     const post = await prisma.blogPost.update({
@@ -112,25 +94,10 @@ router.post('/:id/entries', authMiddleware, adminMiddleware, async (req, res) =>
     if (!title || !slug || !content) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
-
-    // Find the associated blog post by either UUID id or slug
-    const post = await prisma.blogPost.findFirst({
-      where: {
-        OR: [
-          { id: req.params.id },
-          { slug: req.params.id }
-        ]
-      }
-    });
-
-    if (!post) {
-      return res.status(404).json({ error: 'Associated blog post not found' });
-    }
-
     const cleanSlug = slug.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     const entry = await prisma.blogEntry.create({
       data: {
-        blogPostId: post.id,
+        blogPostId: req.params.id,
         title,
         slug: cleanSlug,
         content,

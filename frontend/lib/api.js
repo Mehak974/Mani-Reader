@@ -1,21 +1,7 @@
 import axios from 'axios';
 
 export const getApiServerUrl = () => {
-  if (typeof window === 'undefined') {
-    const backendUrl = process.env.BACKEND_URL || process.env['BACKEND_URL'];
-    if (backendUrl) {
-      const cleaned = backendUrl.endsWith('/') ? backendUrl.slice(0, -1) : backendUrl;
-      return cleaned.endsWith('/api') ? cleaned.slice(0, -4) : cleaned;
-    }
-    const localUrl = process.env.NEXT_PUBLIC_API_URL || process.env['NEXT_PUBLIC_API_URL'];
-    if (localUrl && localUrl.includes('localhost')) {
-      const cleaned = localUrl.endsWith('/') ? localUrl.slice(0, -1) : localUrl;
-      return cleaned.endsWith('/api') ? cleaned.slice(0, -4) : cleaned;
-    }
-    return 'https://api.manireader.online';
-  }
-
-  const rawUrl = process.env['NEXT_PUBLIC_API_URL'] || process.env.NEXT_PUBLIC_API_URL;
+  const rawUrl = process.env.NEXT_PUBLIC_API_URL;
   if (rawUrl) {
     const cleaned = rawUrl.endsWith('/') ? rawUrl.slice(0, -1) : rawUrl;
     return cleaned.endsWith('/api') ? cleaned.slice(0, -4) : cleaned;
@@ -27,23 +13,8 @@ export const getApiServerUrl = () => {
 };
 
 const getBaseUrl = () => {
-  // If running on the server side, check BACKEND_URL first
-  if (typeof window === 'undefined') {
-    const backendUrl = process.env.BACKEND_URL || process.env['BACKEND_URL'];
-    if (backendUrl) {
-      const cleaned = backendUrl.endsWith('/') ? backendUrl.slice(0, -1) : backendUrl;
-      return cleaned.endsWith('/api') ? cleaned : `${cleaned}/api`;
-    }
-    const localUrl = process.env.NEXT_PUBLIC_API_URL || process.env['NEXT_PUBLIC_API_URL'];
-    if (localUrl && localUrl.includes('localhost')) {
-      const cleaned = localUrl.endsWith('/') ? localUrl.slice(0, -1) : localUrl;
-      return cleaned.endsWith('/api') ? cleaned : `${cleaned}/api`;
-    }
-    return 'https://api.manireader.online/api';
-  }
-
   // Use environment variable if provided
-  const rawUrl = process.env['NEXT_PUBLIC_API_URL'] || process.env.NEXT_PUBLIC_API_URL;
+  const rawUrl = process.env.NEXT_PUBLIC_API_URL;
   if (rawUrl) {
     const cleaned = rawUrl.endsWith('/') ? rawUrl.slice(0, -1) : rawUrl;
     return cleaned.endsWith('/api') ? cleaned : `${cleaned}/api`;
@@ -70,7 +41,6 @@ export function setAccessToken(token) { _accessToken = token; }
 export function getAccessToken() { return _accessToken; }
 
 api.interceptors.request.use((config) => {
-  config.baseURL = getBaseUrl();
   if (_accessToken) config.headers['Authorization'] = `Bearer ${_accessToken}`;
 
   if (typeof window !== 'undefined') {

@@ -2,8 +2,6 @@ import Link from 'next/link';
 import Navbar from '../../components/Navbar';
 import { blogApi } from '../../lib/api';
 
-export const dynamic = 'force-dynamic';
-
 export const metadata = {
   title: 'Best Manga Curated Lists & Reviews | ManiReader',
   description: 'Explore premium handpicked lists of the best Action, Romance, Historical, and Isekai manhwa & manga recommendations.',
