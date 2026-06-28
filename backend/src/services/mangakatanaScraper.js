@@ -38,6 +38,41 @@ async function searchManga(query, page = 1) {
     const $ = cheerio.load(response.data);
     const results = [];
 
+    // Handle direct redirect to manga detail page
+    const finalUrl = response.request?.res?.responseUrl || '';
+    if (finalUrl.includes('/manga/')) {
+      const id = finalUrl.split('/manga/').pop().replace(/\/$/, '');
+      if (id) {
+        const title = $('h1.heading').text().trim();
+        const image = $('.cover img').attr('src') || $('.cover img').attr('data-src');
+        const description = $('.summary p').text().trim();
+        const status = $('.item_info .status').text().replace(/Status:/i, '').trim();
+        const genres = [];
+        $('.info .genres a, .item_info .genres a').each((i, el) => {
+          const g = $(el).text().trim();
+          if (g && !genres.includes(g)) genres.push(g);
+        });
+
+        results.push({
+          id,
+          title,
+          image,
+          description,
+          status,
+          genres,
+          source: 'mangakatana'
+        });
+
+        return {
+          results,
+          totalResults: 1,
+          totalPages: 1,
+          currentPage: 1,
+          hasNextPage: false
+        };
+      }
+    }
+
     // Extract total results
     const totalTxt = $('.entry-title').text();
     const totalMatch = totalTxt.match(/\(([^)]+)\)/);

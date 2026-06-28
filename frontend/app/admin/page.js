@@ -652,7 +652,7 @@ function AdminDashboardContent() {
                         <span className="material-icons">arrow_back</span> Back to Blog Lists
                       </button>
                       <h3 style={{ fontSize: '1.25rem', fontWeight: 900 }}>Manage Entries: {selectedBlog.title}</h3>
-                      <span style={{ fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 800 }}>Category: {selectedBlog.category}</span>
+                      <span style={{ fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 800 }}>Category: {selectedBlog.category?.name || selectedBlog.category}</span>
                     </div>
                   </div>
 
@@ -871,7 +871,7 @@ function AdminDashboardContent() {
 
                       <div>
                         <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 6 }}>Category</label>
-                        <select name="blogCategory" defaultValue={blogEditId ? blogPosts.find(p => p.id === blogEditId)?.category : 'romance'} style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.85rem', background: '#fff' }}>
+                        <select name="blogCategory" defaultValue={blogEditId ? (blogPosts.find(p => p.id === blogEditId)?.category?.name?.toLowerCase() || blogPosts.find(p => p.id === blogEditId)?.category) : 'romance'} style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.85rem', background: '#fff' }}>
                           <option value="romance">Romance</option>
                           <option value="action">Action</option>
                           <option value="historical">Historical</option>
@@ -916,7 +916,7 @@ function AdminDashboardContent() {
                             <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                               <td style={{ padding: '14px 16px', fontWeight: 700, fontSize: '0.85rem' }}>{p.title}</td>
                               <td style={{ padding: '14px 16px', fontSize: '0.8rem', color: '#64748b' }}>{p.slug}</td>
-                              <td style={{ padding: '14px 16px', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--accent)' }}>{p.category}</td>
+                              <td style={{ padding: '14px 16px', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--accent)' }}>{p.category?.name || p.category}</td>
                               <td style={{ padding: '14px 16px', textAlign: 'right' }}>
                                 <button 
                                   onClick={async () => {
