@@ -69,7 +69,7 @@ router.get(['/browse/recent', '/browse/latest'], optionalAuth, async (req, res) 
     const results = await mangaService.getRecent(page, req.user?.userId);
     // ⚡ Edge Cache: 15 mins for latest
     res.setHeader('Cache-Control', 'public, s-maxage=900, stale-while-revalidate=59');
-    res.json({ results, page });
+    res.json({ results, page, totalPages: 500 });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

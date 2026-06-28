@@ -43,7 +43,7 @@ export default function HomeClient({ initialData = {} }) {
   const [actionLoading, setActionLoading] = React.useState(!initialData.action);
   const [romanceLoading, setRomanceLoading] = React.useState(!initialData.romance);
   const [recentPage, setRecentPage] = React.useState(1);
-  const [totalPages, setTotalPages] = React.useState(1);
+  const [totalPages, setTotalPages] = React.useState(initialData.recentTotalPages || 1);
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
@@ -105,10 +105,10 @@ export default function HomeClient({ initialData = {} }) {
         return results;
       };
 
-      setPopularUpdates(processGenre(fantasyRes, 20));
-      const actionResults = processGenre([action1, action2], 18);
-      setPopularAction(actionResults.length > 0 ? actionResults : popularUpdates.slice(0, 18));
-      setPopularRomance(processGenre([romance1, romance2], 18));
+      setPopularUpdates(processGenre(fantasyRes, 16));
+      const actionResults = processGenre([action1, action2], 16);
+      setPopularAction(actionResults.length > 0 ? actionResults : popularUpdates.slice(0, 16));
+      setPopularRomance(processGenre([romance1, romance2], 16));
     })
       .catch(err => {
         // Suppress console error
@@ -253,27 +253,6 @@ export default function HomeClient({ initialData = {} }) {
             <div className="container">
               <div className="section-header" style={{ marginBottom: '32px' }} suppressHydrationWarning>
                 <h2 className="section-title">✨ <span>Recently</span> Added</h2>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  {mounted && (
-                    <>
-                      <button
-                        disabled={recentPage <= 1 || loading}
-                        onClick={() => handlePageChange(recentPage - 1)}
-                        className="btn btn-ghost btn-sm"
-                      >
-                        <span className="material-icons">chevron_left</span>
-                      </button>
-                      <span style={{ fontWeight: 700, color: 'var(--accent)' }}>Page {recentPage}</span>
-                      <button
-                        disabled={loading}
-                        onClick={() => handlePageChange(recentPage + 1)}
-                        className="btn btn-ghost btn-sm"
-                      >
-                        <span className="material-icons">chevron_right</span>
-                      </button>
-                    </>
-                  )}
-                </div>
               </div>
 
               {loading ? (
@@ -321,12 +300,7 @@ export default function HomeClient({ initialData = {} }) {
                         <span className="material-icons" style={{ fontSize: '1.2rem' }}>chevron_right</span>
                       </button>
 
-                      {totalPages > 1 && !getPageNumbers().includes(totalPages) && (
-                        <>
-                          {recentPage < totalPages - 3 && <span style={{ color: 'var(--text-3)', margin: '0 4px' }}>...</span>}
-                          <button onClick={() => handlePageChange(totalPages)} className="btn-page">{totalPages}</button>
-                        </>
-                      )}
+
                     </div>
                   )}
                 </>

@@ -3,7 +3,8 @@ import MangaDetailClient from './MangaDetailClient';
 
 export async function generateMetadata({ params }) {
   const { id } = await params;
-  const apiUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.manireader.online';
+  const rawApiUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.manireader.online';
+  const apiUrl = rawApiUrl.endsWith('/api') ? rawApiUrl.slice(0, -4) : rawApiUrl.endsWith('/') ? rawApiUrl.slice(0, -1) : rawApiUrl;
   try {
     const res = await fetch(`${apiUrl}/api/manga/${id}`, { next: { revalidate: 3600 } });
     const r = await res.json();
@@ -28,7 +29,8 @@ export async function generateMetadata({ params }) {
 
 export default async function MangaPage({ params }) {
   const { id } = await params;
-  const apiUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.manireader.online';
+  const rawApiUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.manireader.online';
+  const apiUrl = rawApiUrl.endsWith('/api') ? rawApiUrl.slice(0, -4) : rawApiUrl.endsWith('/') ? rawApiUrl.slice(0, -1) : rawApiUrl;
   
   // Fetch initial data for JSON-LD and initial rendering
   let manga = null;

@@ -24,18 +24,44 @@ const client = axios.create({
  * Search manga on Mangakatana
  */
 async function searchManga(query, page = 1) {
+  const cleanQuery = (q) => {
+    return q
+      .replace(/[:"'\-()!?,.\[\]\?\\\/]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
+
   try {
-    // 🛡️ Use Homepage Search with correct parameters
+    const primaryQuery = cleanQuery(query);
     const url = `/`;
-    const response = await client.get(url, {
+    let response = await client.get(url, {
       params: {
-        search: query,
+        search: primaryQuery,
         search_by: 'book_name', // ⚡ Corrected parameter
         page: page
       }
     });
 
-    const $ = cheerio.load(response.data);
+    let $ = cheerio.load(response.data);
+
+    // Fallback: If no results found, no redirect happened, and query has more than 3 words, try the first 3 words
+    const words = primaryQuery.split(' ').filter(w => w.length > 0);
+    const hasBookList = $('#book_list .item').length > 0;
+    const isRedirect = (response.request?.res?.responseUrl || '').includes('/manga/');
+    
+    if (!hasBookList && !isRedirect && words.length > 3) {
+      const fallbackQuery = words.slice(0, 3).join(' ');
+      console.log(`[MangaKatana] No results for "${primaryQuery}". Retrying fallback search: "${fallbackQuery}"`);
+      response = await client.get(url, {
+        params: {
+          search: fallbackQuery,
+          search_by: 'book_name',
+          page: page
+        }
+      });
+      $ = cheerio.load(response.data);
+    }
+
     const results = [];
 
     // Handle direct redirect to manga detail page
@@ -204,7 +230,50 @@ async function getChapterPages(chapterId) {
  */
 async function getPopular(page = 1, genre = null) {
   if (genre) {
-    return browseManga({ page, order: 5, include: [genre] });
+    try {
+      const genreSlug = genre.toLowerCase().replace(/\s+/g, '-');
+      const url = page > 1 ? `/genre/${genreSlug}/page/${page}` : `/genre/${genreSlug}`;
+      const response = await client.get(url);
+      const $ = cheerio.load(response.data);
+      const results = [];
+
+      $('#book_list .item').each((i, el) => {
+        const titleEl = $(el).find('.title a');
+        const href = titleEl.attr('href') || '';
+        const id = href.split('/').pop();
+        const title = titleEl.text().trim();
+        const imgEl = $(el).find('.wrap_img img');
+        const image = imgEl.attr('data-src') || imgEl.attr('src');
+        const status = $(el).find('.status').text().trim();
+        const updateDate = $(el).find('.date').text().replace(/First Chapter/i, '').trim();
+        const genres = $(el).find('.genres a').map((i, g) => $(g).text().trim()).get();
+        
+        if (!id || !title) return;
+
+        let lastChapterEl = $(el).find('.chapters .chapter a').first();
+        if (lastChapterEl.length === 0) lastChapterEl = $(el).find('.last_chap a').first();
+        
+        const lastChapter = lastChapterEl.text().trim();
+        const lastChapterId = lastChapterEl.attr('href')?.replace(/\/$/, '').split('/').pop();
+
+        results.push({
+          id,
+          title,
+          image,
+          status,
+          genres,
+          updateDate,
+          lastChapter: lastChapter || null,
+          lastChapterId: lastChapterId || null,
+          source: 'mangakatana'
+        });
+      });
+
+      return { results };
+    } catch (err) {
+      console.error(`[MangaKatana] getPopular by genre failed (${genre}):`, err.message);
+      return { results: [] };
+    }
   }
   try {
     const response = await client.get('/');

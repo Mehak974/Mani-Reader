@@ -434,6 +434,94 @@ async function getChapterPages(chapterId, mangaId) {
 async function getPopular(page = 1, userId = null, genre = null) {
   const cacheKey = `popular_v2:${page}:${genre || 'all'}`;
   const results = await cache.getOrSet(cacheKey, cache.ttl.searchTtl, async () => {
+    if (page === 1 && genre) {
+      try {
+        const { getPopularMangaByGenre } = require('./anilistService');
+        const anilistManga = await getPopularMangaByGenre(genre, 10);
+        
+        if (anilistManga && anilistManga.length > 0) {
+          const matchedResults = [];
+          let ingestedCount = 0;
+          
+          for (const item of anilistManga) {
+            let matchedManga = null;
+            
+            // 1. DB Lookup (Case-Insensitive)
+            for (const t of item.titles) {
+              const dbManga = await prisma.manga.findFirst({
+                where: {
+                  title: {
+                    equals: t,
+                    mode: 'insensitive'
+                  }
+                }
+              });
+              if (dbManga) {
+                matchedManga = mapManga(dbManga);
+                break;
+              }
+            }
+
+            // 2. Search & Ingest on MangaKatana (max 2 per request to prevent rate limits)
+            if (!matchedManga && ingestedCount < 2) {
+              try {
+                if (ingestedCount > 0) {
+                  await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+
+                const searchRes = await ingestion.searchManga(item.titles[0]);
+                const searchList = searchRes?.data?.results || searchRes?.results || [];
+                
+                if (searchList.length > 0) {
+                  const cleanCandidateTitles = item.titles.map(t => t.toLowerCase().replace(/[^a-z0-9]/g, ''));
+                  const bestMatch = searchList.find(s => {
+                    const cleanS = s.title.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    return cleanCandidateTitles.some(c => cleanS === c || cleanS.includes(c) || c.includes(cleanS));
+                  });
+
+                  if (bestMatch) {
+                    const fullInfo = await getMangaInfo(bestMatch.id);
+                    if (fullInfo) {
+                      matchedManga = fullInfo;
+                      ingestedCount++;
+                    }
+                  }
+                }
+              } catch (searchErr) {
+                console.warn(`[MangaService] Failed to resolve AniList title "${item.titles[0]}" on MangaKatana:`, searchErr.message);
+              }
+            }
+
+            if (matchedManga) {
+              matchedResults.push(matchedManga);
+            }
+          }
+
+          if (matchedResults.length > 0) {
+            if (matchedResults.length < 18) {
+              try {
+                const { data: scraperData } = await ingestion.getPopular(page, genre);
+                const scraperResults = (scraperData.results || []).map(mapManga);
+                const matchedIds = new Set(matchedResults.map(m => m.id));
+                for (const m of scraperResults) {
+                  if (!matchedIds.has(m.id)) {
+                    matchedResults.push(m);
+                    matchedIds.add(m.id);
+                    if (matchedResults.length >= 18) break;
+                  }
+                }
+              } catch (backfillErr) {
+                console.warn('[MangaService] AniList popular backfill failed:', backfillErr.message);
+              }
+            }
+            return matchedResults;
+          }
+        }
+      } catch (err) {
+        console.warn(`[MangaService] AniList popular retrieval failed for ${genre}, falling back:`, err.message);
+      }
+    }
+
     const { data } = await ingestion.getPopular(page, genre);
     let mapped = (data.results || []).map(mapManga);
 
@@ -508,6 +596,95 @@ async function getPopular(page = 1, userId = null, genre = null) {
 async function getRecent(page = 1, userId = null) {
   const cacheKey = `recent:${page}`;
   const results = await cache.getOrSet(cacheKey, cache.ttl.searchTtl, async () => {
+    if (page === 1) {
+      try {
+        const { getTrendingManga } = require('./anilistService');
+        const anilistManga = await getTrendingManga(20);
+        
+        if (anilistManga && anilistManga.length > 0) {
+          const matchedResults = [];
+          let ingestedCount = 0;
+          
+          for (const item of anilistManga) {
+            let matchedManga = null;
+            
+            // 1. DB Lookup (Case-Insensitive)
+            for (const t of item.titles) {
+              const dbManga = await prisma.manga.findFirst({
+                where: {
+                  title: {
+                    equals: t,
+                    mode: 'insensitive'
+                  }
+                }
+              });
+              if (dbManga) {
+                matchedManga = mapManga(dbManga);
+                break;
+              }
+            }
+
+            // 2. Search & Ingest on MangaKatana (max 2 per request to prevent rate limits)
+            if (!matchedManga && ingestedCount < 2) {
+              try {
+                if (ingestedCount > 0) {
+                  await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+
+                const searchRes = await ingestion.searchManga(item.titles[0]);
+                const searchList = searchRes?.data?.results || searchRes?.results || [];
+                
+                if (searchList.length > 0) {
+                  const cleanCandidateTitles = item.titles.map(t => t.toLowerCase().replace(/[^a-z0-9]/g, ''));
+                  const bestMatch = searchList.find(s => {
+                    const cleanS = s.title.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    return cleanCandidateTitles.some(c => cleanS === c || cleanS.includes(c) || c.includes(cleanS));
+                  });
+
+                  if (bestMatch) {
+                    const fullInfo = await getMangaInfo(bestMatch.id);
+                    if (fullInfo) {
+                      matchedManga = fullInfo;
+                      ingestedCount++;
+                    }
+                  }
+                }
+              } catch (searchErr) {
+                console.warn(`[MangaService] Failed to resolve AniList trending title "${item.titles[0]}" on MangaKatana:`, searchErr.message);
+              }
+            }
+
+            if (matchedManga) {
+              matchedResults.push(matchedManga);
+            }
+          }
+
+          if (matchedResults.length > 0) {
+            // Backfill from direct scraper to ensure at least 30 results
+            if (matchedResults.length < 30) {
+              try {
+                const { data } = await ingestion.getRecent(page);
+                const scraperResults = (data.results || []).map(mapManga);
+                const matchedIds = new Set(matchedResults.map(m => m.id));
+                for (const m of scraperResults) {
+                  if (!matchedIds.has(m.id)) {
+                    matchedResults.push(m);
+                    matchedIds.add(m.id);
+                    if (matchedResults.length >= 30) break;
+                  }
+                }
+              } catch (backfillErr) {
+                console.warn('[MangaService] AniList trending backfill failed:', backfillErr.message);
+              }
+            }
+            return matchedResults;
+          }
+        }
+      } catch (err) {
+        console.warn('[MangaService] AniList trending flow failed, falling back:', err.message);
+      }
+    }
+
     const { data } = await ingestion.getRecent(page);
     return (data.results || []).map(mapManga);
   });

@@ -133,6 +133,7 @@ function AdminDashboardContent() {
   const [bannedIps, setBannedIps] = React.useState([]);
   const [blogPosts, setBlogPosts] = React.useState([]);
   const [blogEditId, setBlogEditId] = React.useState(null);
+  const [blogSortConfig, setBlogSortConfig] = React.useState({ key: 'createdAt', direction: 'desc' });
   
   const [analytics, setAnalytics] = React.useState(null);
   const [graphType, setGraphType] = React.useState('monthly');
@@ -195,6 +196,34 @@ function AdminDashboardContent() {
     let direction = 'desc';
     if (sortConfig.key === key && sortConfig.direction === 'desc') direction = 'asc';
     setSortConfig({ key, direction });
+  };
+
+  const sortedBlogPosts = React.useMemo(() => {
+    return [...blogPosts].sort((a, b) => {
+      let valA = a[blogSortConfig.key];
+      let valB = b[blogSortConfig.key];
+
+      if (blogSortConfig.key === 'category') {
+        valA = a.category?.name || a.category || '';
+        valB = b.category?.name || b.category || '';
+      }
+
+      if (typeof valA === 'string') {
+        return blogSortConfig.direction === 'asc'
+          ? (valA || '').localeCompare(valB || '')
+          : (valB || '').localeCompare(valA || '');
+      }
+
+      const numA = new Date(valA).getTime() || 0;
+      const numB = new Date(valB).getTime() || 0;
+      return blogSortConfig.direction === 'asc' ? numA - numB : numB - numA;
+    });
+  }, [blogPosts, blogSortConfig]);
+
+  const requestBlogSort = (key) => {
+    let direction = 'desc';
+    if (blogSortConfig.key === key && blogSortConfig.direction === 'desc') direction = 'asc';
+    setBlogSortConfig({ key, direction });
   };
 
   React.useEffect(() => {
@@ -905,14 +934,26 @@ function AdminDashboardContent() {
                       <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                         <thead>
                           <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                            <th style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800 }}>Title</th>
-                            <th style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800 }}>Slug</th>
-                            <th style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800 }}>Category</th>
+                            <th onClick={() => requestBlogSort('title')} style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800, cursor: 'pointer' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                Title {blogSortConfig.key === 'title' && <span className="material-icons" style={{ fontSize: '0.8rem' }}>{blogSortConfig.direction === 'asc' ? 'arrow_upward' : 'arrow_downward'}</span>}
+                              </div>
+                            </th>
+                            <th onClick={() => requestBlogSort('slug')} style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800, cursor: 'pointer' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                Slug {blogSortConfig.key === 'slug' && <span className="material-icons" style={{ fontSize: '0.8rem' }}>{blogSortConfig.direction === 'asc' ? 'arrow_upward' : 'arrow_downward'}</span>}
+                              </div>
+                            </th>
+                            <th onClick={() => requestBlogSort('category')} style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800, cursor: 'pointer' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                Category {blogSortConfig.key === 'category' && <span className="material-icons" style={{ fontSize: '0.8rem' }}>{blogSortConfig.direction === 'asc' ? 'arrow_upward' : 'arrow_downward'}</span>}
+                              </div>
+                            </th>
                             <th style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800, textAlign: 'right' }}>Actions</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {blogPosts.map(p => (
+                          {sortedBlogPosts.map(p => (
                             <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                               <td style={{ padding: '14px 16px', fontWeight: 700, fontSize: '0.85rem' }}>{p.title}</td>
                               <td style={{ padding: '14px 16px', fontSize: '0.8rem', color: '#64748b' }}>{p.slug}</td>

@@ -34,13 +34,15 @@ export default async function Home() {
     },
   };
 
-  const apiUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.manireader.online';
+  const rawApiUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.manireader.online';
+  const apiUrl = rawApiUrl.endsWith('/api') ? rawApiUrl.slice(0, -4) : rawApiUrl.endsWith('/') ? rawApiUrl.slice(0, -1) : rawApiUrl;
   
   let initialData = {
     fantasy: [],
     action: [],
     romance: [],
     recent: [],
+    recentTotalPages: 1,
   };
 
   try {
@@ -93,10 +95,11 @@ export default async function Home() {
       return results;
     };
 
-    initialData.fantasy = processGenre([fantasyRes], 20);
-    initialData.action = processGenre([action1Res, action2Res], 18);
-    initialData.romance = processGenre([romance1Res, romance2Res], 18);
+    initialData.fantasy = processGenre([fantasyRes], 16);
+    initialData.action = processGenre([action1Res, action2Res], 16);
+    initialData.romance = processGenre([romance1Res, romance2Res], 16);
     initialData.recent = filterManga(recentRes?.data?.results || recentRes?.results || []).slice(0, 30);
+    initialData.recentTotalPages = recentRes?.data?.totalPages || recentRes?.totalPages || 1;
   } catch (e) {
     console.error('Home server-side fetch failed:', e);
   }

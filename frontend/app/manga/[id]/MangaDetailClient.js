@@ -143,17 +143,18 @@ export default function MangaDetailClient({ id, initialManga, initialChapters })
   }
 
   const coverUrl = React.useMemo(() => {
-    if (!manga?.cover) return '/placeholder-cover.jpg';
+    const rawCover = manga?.cover || manga?.image;
+    if (!rawCover) return '/placeholder-cover.jpg';
 
     // If it's already proxied, a worker, or a safe direct domain, use it as is
     const safeDomains = ['image.tmdb.org', 'imgur.com', 'blogspot.com', 'googleusercontent.com', 'placehold.co', 'wp.com'];
-    const hasSafeDomain = safeDomains.some(d => manga.cover.includes(d));
+    const hasSafeDomain = safeDomains.some(d => rawCover.includes(d));
 
-    if (manga.cover.startsWith('http') && !manga.cover.includes('/api/image') && !manga.cover.includes('workers.dev') && !hasSafeDomain) {
-      return `${getApiServerUrl()}/api/image?url=${encodeURIComponent(manga.cover)}`;
+    if (rawCover.startsWith('http') && !rawCover.includes('/api/image') && !rawCover.includes('workers.dev') && !hasSafeDomain) {
+      return `${getApiServerUrl()}/api/image?url=${encodeURIComponent(rawCover)}`;
     }
-    return manga.cover;
-  }, [manga?.cover]);
+    return rawCover;
+  }, [manga?.cover, manga?.image]);
 
   const readCount = progress.filter((p) => p.isRead).length;
   const lastRead = progress.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0];

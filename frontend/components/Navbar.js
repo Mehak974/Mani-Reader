@@ -79,6 +79,24 @@ export default function Navbar() {
               ))}
             </div>
 
+            {/* Desktop Search */}
+            <div className="desktop-search-wrap" style={{ position: 'relative', marginRight: '16px', width: '220px' }}>
+              <input 
+                type="text" 
+                placeholder="Search..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleSearch}
+                style={{ 
+                  width: '100%', padding: '8px 12px 8px 36px', borderRadius: 20, 
+                  background: 'var(--surface-2)', border: '1px solid var(--border)', 
+                  color: 'var(--text)', fontSize: '0.85rem', outline: 'none',
+                  transition: 'border-color 0.2s'
+                }} 
+              />
+              <span className="material-icons" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: '1.2rem', color: 'var(--text-3)' }}>search</span>
+            </div>
+
             <div className="navbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center' }} suppressHydrationWarning>
                 {!mounted ? (
