@@ -7,6 +7,9 @@ export const getApiServerUrl = () => {
       const cleaned = backendUrl.endsWith('/') ? backendUrl.slice(0, -1) : backendUrl;
       return cleaned.endsWith('/api') ? cleaned.slice(0, -4) : cleaned;
     }
+    if (process.env.NODE_ENV === 'production') {
+      return 'https://api.manireader.online';
+    }
   }
 
   const rawUrl = process.env['NEXT_PUBLIC_API_URL'] || process.env.NEXT_PUBLIC_API_URL;
@@ -27,6 +30,9 @@ const getBaseUrl = () => {
     if (backendUrl) {
       const cleaned = backendUrl.endsWith('/') ? backendUrl.slice(0, -1) : backendUrl;
       return cleaned.endsWith('/api') ? cleaned : `${cleaned}/api`;
+    }
+    if (process.env.NODE_ENV === 'production') {
+      return 'https://api.manireader.online/api';
     }
   }
 
