@@ -154,7 +154,7 @@ export default async function BlogPostPage({ params }) {
     return 'var(--accent)';
   };
 
-  const activeColor = getCategoryColor(activePost.category);
+  const activeColor = getCategoryColor(activePost.category?.name || activePost.category);
 
   return (
     <div className="page-wrapper" style={{ 
@@ -251,7 +251,7 @@ export default async function BlogPostPage({ params }) {
                 letterSpacing: '0.1em',
                 display: 'inline-block'
               }}>
-                {activePost.category} Recommendation List
+                {activePost.category?.name || activePost.category} Recommendation List
               </span>
 
               <h1 className="glow-text" style={{ 

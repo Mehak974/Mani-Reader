@@ -303,7 +303,7 @@ export default async function BlogIndexPage() {
                       display: 'block',
                       marginBottom: 6
                     }}>
-                      {post.category}
+                      {post.category?.name || post.category}
                     </span>
                     <h4 style={{ color: 'var(--text)', fontWeight: 700, fontSize: '1.1rem' }}>{post.title}</h4>
                     <span style={{ fontSize: '0.75rem', color: 'var(--text-3)' }}>

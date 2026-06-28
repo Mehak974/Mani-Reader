@@ -140,7 +140,7 @@ export default async function CategoryBlogsPage({ params }) {
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '0.75rem', fontWeight: 800, color: activeColor, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  {post.category} list
+                  {post.category?.name || post.category} list
                 </span>
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-3)' }}>
                   {new Date(post.createdAt).toLocaleDateString()}

@@ -9,7 +9,17 @@ router.get('/', async (req, res) => {
   try {
     const { category } = req.query;
     const posts = await prisma.blogPost.findMany({
-      where: category ? { category } : undefined,
+      where: category ? {
+        category: {
+          name: {
+            equals: category,
+            mode: 'insensitive'
+          }
+        }
+      } : undefined,
+      include: {
+        category: true
+      },
       orderBy: { createdAt: 'desc' }
     });
     res.json(posts);
@@ -24,6 +34,7 @@ router.get('/:slug', async (req, res) => {
     const post = await prisma.blogPost.findUnique({
       where: { slug: req.params.slug },
       include: {
+        category: true,
         entries: {
           orderBy: { createdAt: 'asc' }
         }
@@ -43,9 +54,20 @@ router.post('/', authMiddleware, adminMiddleware, async (req, res) => {
     if (!title || !slug || !content || !category) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
+    const formattedCategory = category.trim().charAt(0).toUpperCase() + category.trim().slice(1).toLowerCase();
+    const dbCategory = await prisma.category.upsert({
+      where: { name: formattedCategory },
+      update: {},
+      create: { name: formattedCategory }
+    });
     const cleanSlug = slug.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     const post = await prisma.blogPost.create({
-      data: { title, slug: cleanSlug, content, category }
+      data: { 
+        title, 
+        slug: cleanSlug, 
+        content, 
+        categoryId: dbCategory.id 
+      }
     });
     res.status(201).json(post);
   } catch (err) {
@@ -60,7 +82,15 @@ router.patch('/:id', authMiddleware, adminMiddleware, async (req, res) => {
     const updateData = {};
     if (title !== undefined) updateData.title = title;
     if (content !== undefined) updateData.content = content;
-    if (category !== undefined) updateData.category = category;
+    if (category !== undefined) {
+      const formattedCategory = category.trim().charAt(0).toUpperCase() + category.trim().slice(1).toLowerCase();
+      const dbCategory = await prisma.category.upsert({
+        where: { name: formattedCategory },
+        update: {},
+        create: { name: formattedCategory }
+      });
+      updateData.categoryId = dbCategory.id;
+    }
     if (slug !== undefined) {
       updateData.slug = slug.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     }
@@ -90,7 +120,7 @@ router.delete('/:id', authMiddleware, adminMiddleware, async (req, res) => {
 // POST /api/blog/:id/entries — Create entry (Admin only)
 router.post('/:id/entries', authMiddleware, adminMiddleware, async (req, res) => {
   try {
-    const { title, slug, content, image } = req.body;
+    const { title, slug, content, image, genre } = req.body;
     if (!title || !slug || !content) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
@@ -101,7 +131,10 @@ router.post('/:id/entries', authMiddleware, adminMiddleware, async (req, res) =>
         title,
         slug: cleanSlug,
         content,
-        image: image || null
+        description: content,
+        image: image || null,
+        imageUrl: image || '',
+        genre: genre || ''
       }
     });
     res.status(201).json(entry);
@@ -113,11 +146,20 @@ router.post('/:id/entries', authMiddleware, adminMiddleware, async (req, res) =>
 // PATCH /api/blog/:id/entries/:entryId — Update entry (Admin only)
 router.patch('/:id/entries/:entryId', authMiddleware, adminMiddleware, async (req, res) => {
   try {
-    const { title, slug, content, image } = req.body;
+    const { title, slug, content, image, genre } = req.body;
     const updateData = {};
     if (title !== undefined) updateData.title = title;
-    if (content !== undefined) updateData.content = content;
-    if (image !== undefined) updateData.image = image;
+    if (content !== undefined) {
+      updateData.content = content;
+      updateData.description = content;
+    }
+    if (image !== undefined) {
+      updateData.image = image;
+      updateData.imageUrl = image || '';
+    }
+    if (genre !== undefined) {
+      updateData.genre = genre;
+    }
     if (slug !== undefined) {
       updateData.slug = slug.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     }
