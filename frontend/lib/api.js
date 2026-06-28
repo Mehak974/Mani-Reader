@@ -13,17 +13,18 @@ export const getApiServerUrl = () => {
 };
 
 const getBaseUrl = () => {
-  // Use environment variable if provided
-  const rawUrl = process.env.NEXT_PUBLIC_API_URL;
+  const rawUrl = typeof process !== 'undefined' ? (process.env['NEXT_PUBLIC_API_URL'] || process.env.NEXT_PUBLIC_API_URL) : null;
   if (rawUrl) {
     const cleaned = rawUrl.endsWith('/') ? rawUrl.slice(0, -1) : rawUrl;
     return cleaned.endsWith('/api') ? cleaned : `${cleaned}/api`;
   }
-  // Fallback: if running on the live domain, target the live API
+  // Server-side fallback for production Vercel
+  if (typeof window === 'undefined') {
+    return 'https://api.manireader.online/api';
+  }
   if (typeof window !== 'undefined' && window.location.hostname.includes('manireader.online')) {
     return 'https://api.manireader.online/api';
   }
-  // Default to relative path for local development
   return '/api';
 };
 
@@ -41,6 +42,7 @@ export function setAccessToken(token) { _accessToken = token; }
 export function getAccessToken() { return _accessToken; }
 
 api.interceptors.request.use((config) => {
+  config.baseURL = getBaseUrl();
   if (_accessToken) config.headers['Authorization'] = `Bearer ${_accessToken}`;
 
   if (typeof window !== 'undefined') {
