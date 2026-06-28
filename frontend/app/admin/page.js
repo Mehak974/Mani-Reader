@@ -134,6 +134,7 @@ function AdminDashboardContent() {
   const [blogPosts, setBlogPosts] = React.useState([]);
   const [blogEditId, setBlogEditId] = React.useState(null);
   const [blogSortConfig, setBlogSortConfig] = React.useState({ key: 'createdAt', direction: 'desc' });
+  const [entrySortConfig, setEntrySortConfig] = React.useState({ key: 'title', direction: 'asc' });
   
   const [analytics, setAnalytics] = React.useState(null);
   const [graphType, setGraphType] = React.useState('monthly');
@@ -224,6 +225,28 @@ function AdminDashboardContent() {
     let direction = 'desc';
     if (blogSortConfig.key === key && blogSortConfig.direction === 'desc') direction = 'asc';
     setBlogSortConfig({ key, direction });
+  };
+
+  const sortedEntries = React.useMemo(() => {
+    if (!selectedBlog || !Array.isArray(selectedBlog.entries)) return [];
+    return [...selectedBlog.entries].sort((a, b) => {
+      let valA = a[entrySortConfig.key] || '';
+      let valB = b[entrySortConfig.key] || '';
+
+      if (typeof valA === 'string') {
+        return entrySortConfig.direction === 'asc'
+          ? valA.localeCompare(valB)
+          : valB.localeCompare(valA);
+      } else {
+        return entrySortConfig.direction === 'asc' ? valA - valB : valB - valA;
+      }
+    });
+  }, [selectedBlog?.entries, entrySortConfig]);
+
+  const requestEntrySort = (key) => {
+    let direction = 'asc';
+    if (entrySortConfig.key === key && entrySortConfig.direction === 'asc') direction = 'desc';
+    setEntrySortConfig({ key, direction });
   };
 
   React.useEffect(() => {
@@ -796,16 +819,26 @@ function AdminDashboardContent() {
                     <div style={{ overflowX: 'auto' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                         <thead>
-                          <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                          <tr style={{ background: '#f8fafc', border_bottom: '1px solid #e2e8f0' }}>
                             <th style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800 }}>Image</th>
-                            <th style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800 }}>Title</th>
-                            <th style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800 }}>Slug</th>
+                            <th 
+                              onClick={() => requestEntrySort('title')}
+                              style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800, cursor: 'pointer', userSelect: 'none' }}
+                            >
+                              Title {entrySortConfig.key === 'title' && (entrySortConfig.direction === 'asc' ? '▲' : '▼')}
+                            </th>
+                            <th 
+                              onClick={() => requestEntrySort('slug')}
+                              style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800, cursor: 'pointer', userSelect: 'none' }}
+                            >
+                              Slug {entrySortConfig.key === 'slug' && (entrySortConfig.direction === 'asc' ? '▲' : '▼')}
+                            </th>
                             <th style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800 }}>Content</th>
                             <th style={{ padding: '14px 16px', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 800, textAlign: 'right' }}>Actions</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {Array.isArray(selectedBlog?.entries) && selectedBlog.entries.map(en => (
+                          {sortedEntries.map(en => (
                             <tr key={en.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                               <td style={{ padding: '14px 16px' }}>
                                 {en.image ? (

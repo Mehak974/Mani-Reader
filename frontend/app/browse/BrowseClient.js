@@ -30,6 +30,7 @@ const GENRES = [
 ];
 
 const ORDERS = [
+  { label: 'Popular', value: 5, icon: 'trending_up' },
   { label: 'Latest', value: 0, icon: 'update' },
   { label: 'Newest', value: 1, icon: 'new_releases' },
   { label: 'A-Z', value: 3, icon: 'sort_by_alpha' },

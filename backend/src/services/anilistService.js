@@ -3,10 +3,10 @@ const axios = require('axios');
 /**
  * Fetch top popular manga by genre from AniList GraphQL API
  */
-async function getPopularMangaByGenre(genre, limit = 12) {
+async function getPopularMangaByGenre(genre, limit = 12, page = 1) {
   const query = `
-    query ($genre: String, $perPage: Int) {
-      Page (page: 1, perPage: $perPage) {
+    query ($genre: String, $perPage: Int, $page: Int) {
+      Page (page: $page, perPage: $perPage) {
         media (genre: $genre, type: MANGA, sort: POPULARITY_DESC) {
           id
           title {
@@ -26,7 +26,8 @@ async function getPopularMangaByGenre(genre, limit = 12) {
       query,
       variables: {
         genre,
-        perPage: limit
+        perPage: limit,
+        page
       }
     }, {
       headers: {

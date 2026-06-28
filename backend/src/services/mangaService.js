@@ -727,11 +727,155 @@ async function browse(filters = {}, userId = null) {
     if (cached) return applyContentFiltersToBrowseResult(cached, userId);
   }
 
-  const targetCount = 20;
+  const targetCount = 27;
+
+  // AniList integration for Popular genre lists (order = 5)
+  if (filters.order === 5 && filters.include && filters.include.length > 0 && !filters.keyword) {
+    try {
+      const genreSlug = filters.include[0];
+      const genre = genreSlug.charAt(0).toUpperCase() + genreSlug.slice(1);
+      const currentPage = filters.page || 1;
+      
+      const { getPopularMangaByGenre } = require('./anilistService');
+      // Fetch up to 50 popular manga for this page to ensure we have enough safe candidates
+      const anilistManga = await getPopularMangaByGenre(genre, 50, currentPage);
+      
+      const BLACKLIST_SLUGS = [
+        '18+', 'adult', 'smut', 'erotica', 'sexual-violence', 'sexual violence', 'harem', 'yaoi', 'yuri',
+        'incest', 'gore', 'mature', 'ecchi', 'hentai', 'pornographic', 'loli', 'shota'
+      ];
+      const isExplicit = filters.include.some(tag => 
+        BLACKLIST_SLUGS.includes(tag.toLowerCase()) || 
+        BLACKLIST_SLUGS.includes(tag.toLowerCase().replace(/\s+/g, '-'))
+      );
+      
+      if (anilistManga && anilistManga.length > 0) {
+        const matchedResults = [];
+        let ingestedCount = 0;
+        
+        for (const item of anilistManga) {
+          // Pre-filter NSFW/restricted titles if this is not an explicit adult search
+          if (!isExplicit) {
+            const hasRestrictedGenre = item.genres.some(g => BLACKLIST_SLUGS.includes(g.toLowerCase()));
+            if (hasRestrictedGenre) continue;
+          }
+
+          let matchedManga = null;
+          
+          // 1. DB Lookup (Case-Insensitive)
+          for (const t of item.titles) {
+            const dbManga = await prisma.manga.findFirst({
+              where: {
+                title: {
+                  equals: t,
+                  mode: 'insensitive'
+                }
+              }
+            });
+            if (dbManga) {
+              matchedManga = mapManga(dbManga);
+              break;
+            }
+          }
+
+          // 2. Search & Ingest on MangaKatana (max 2 per request to prevent rate limits)
+          if (!matchedManga && ingestedCount < 2 && matchedResults.length < 27) {
+            try {
+              if (ingestedCount > 0) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+              }
+
+              const searchRes = await ingestion.searchManga(item.titles[0]);
+              const searchList = searchRes?.data?.results || searchRes?.results || [];
+              
+              if (searchList.length > 0) {
+                const cleanCandidateTitles = item.titles.map(t => t.toLowerCase().replace(/[^a-z0-9]/g, ''));
+                const bestMatch = searchList.find(s => {
+                  const cleanS = s.title.toLowerCase().replace(/[^a-z0-9]/g, '');
+                  return cleanCandidateTitles.some(c => cleanS === c || cleanS.includes(c) || c.includes(cleanS));
+                });
+
+                if (bestMatch) {
+                  const fullInfo = await getMangaInfo(bestMatch.id);
+                  if (fullInfo) {
+                    matchedManga = fullInfo;
+                    ingestedCount++;
+                  }
+                }
+              }
+            } catch (searchErr) {
+              console.warn(`[MangaService] Browse resolution failed for AniList title "${item.titles[0]}":`, searchErr.message);
+            }
+          }
+
+          if (matchedManga) {
+            matchedResults.push(matchedManga);
+            if (matchedResults.length >= 27 && ingestedCount >= 2) {
+              break; // Met targets, stop resolution early
+            }
+          }
+        }
+
+        let filtered = await applyContentFilters(matchedResults, userId, isExplicit);
+
+        if (filtered.length < 27) {
+          try {
+            // Dynamic backfill from the scraper over multiple pages if necessary
+            let scraperPage = currentPage;
+            let scraperAttempts = 0;
+            const matchedIds = new Set(filtered.map(m => m.id));
+
+            while (filtered.length < 27 && scraperAttempts < 5) {
+              const scraperData = await ingestion.browseManga({ ...filters, page: scraperPage });
+              const scraperResults = (scraperData.data?.results || scraperData.results || []).map(mapManga);
+              if (scraperResults.length === 0) break;
+
+              const cleanScraper = await applyContentFilters(scraperResults, userId, isExplicit);
+              for (const m of cleanScraper) {
+                if (!matchedIds.has(m.id)) {
+                  filtered.push(m);
+                  matchedIds.add(m.id);
+                  if (filtered.length >= 27) break;
+                }
+              }
+              scraperPage++;
+              scraperAttempts++;
+            }
+          } catch (backfillErr) {
+            console.warn('[MangaService] Browse AniList backfill failed:', backfillErr.message);
+          }
+        }
+
+        const finalData = {
+          results: filtered.slice(0, 27),
+          currentPage,
+          totalResults: 500 * 27, // Assume 500 pages of 27
+          totalPages: 500
+        };
+
+        if (useCache) {
+          await cache.set(cacheKey, finalData, cache.ttl.searchTtl);
+        }
+        return finalData;
+      }
+    } catch (err) {
+      console.warn(`[MangaService] Browse AniList popular genre list retrieval failed, falling back:`, err.message);
+    }
+  }
+
   let results = [];
   let totalData = {};
   let currentPage = filters.page || 1;
   let attempts = 0;
+
+  const BLACKLIST_SLUGS = [
+    '18+', 'adult', 'smut', 'erotica', 'sexual-violence', 'sexual violence', 'harem', 'yaoi', 'yuri',
+    'incest', 'gore', 'mature', 'ecchi', 'hentai', 'pornographic', 'loli', 'shota'
+  ];
+  const isExplicit = !!filters.keyword || (filters.include && filters.include.some(tag => 
+    BLACKLIST_SLUGS.includes(tag.toLowerCase()) || 
+    BLACKLIST_SLUGS.includes(tag.toLowerCase().replace(/\s+/g, '-'))
+  ));
 
   // Fill strategy: keep fetching until we have targetCount safe results
   while (results.length < targetCount && attempts < 10) {
@@ -742,8 +886,6 @@ async function browse(filters = {}, userId = null) {
       totalData = res.data;
     }
 
-    // For keywords or specific genre inclusions, use explicit mode; for general browse, use safe guest filtering
-    const isExplicit = !!filters.keyword || (filters.include && filters.include.length > 0);
     const filtered = await applyContentFilters(res.data.results, userId, isExplicit);
     
     results = [...results, ...filtered];
@@ -754,7 +896,7 @@ async function browse(filters = {}, userId = null) {
   }
 
   const totalResults = totalData.totalResults || results.length;
-  const totalPages = totalData.totalPages || Math.ceil(totalResults / 20) || 1;
+  const totalPages = totalData.totalPages || Math.ceil(totalResults / targetCount) || 1;
 
   const finalData = {
     ...totalData,
