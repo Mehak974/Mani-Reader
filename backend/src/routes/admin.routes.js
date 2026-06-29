@@ -137,7 +137,8 @@ router.get('/users', async (req, res) => {
     const users = await prisma.user.findMany({
       select: { 
         id: true, email: true, role: true, isVip: true, 
-        adsWatched: true, adsClicked: true, timeSpent: true, createdAt: true, password: true 
+        adsWatched: true, adsClicked: true, timeSpent: true, createdAt: true
+        // FIX #2: password hash intentionally excluded — admins have no reason to see it
       },
       orderBy: { createdAt: 'desc' }
     });
