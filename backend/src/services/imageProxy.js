@@ -9,6 +9,8 @@
 
 const axios = require('axios');
 const cache = require('./cacheLayer');
+const dns = require('dns').promises;
+const net = require('net');
 
 // Common referer headers used by manga sites
 const REFERERS = {
@@ -39,6 +41,90 @@ function getReferer(imageUrl) {
   }
 }
 
+// ── SSRF Protection — CIDR-based IP validation (Fix #7) ──────────────────────
+//
+// The old string-prefix approach missed:
+//   • 172.17–172.31 (Docker/private — only '172.16.' was blocked before)
+//   • IPv6 private ranges fc00::/7 and ::1 in bracket notation like [::1]
+//
+// We resolve the hostname to its actual IP(s) at request time and check every
+// address against private/reserved CIDR blocks. This also defeats DNS rebinding.
+
+// Private / reserved IPv4 CIDR blocks
+const PRIVATE_CIDR_V4 = [
+  { base: '127.0.0.0',    bits: 8  },  // loopback
+  { base: '10.0.0.0',     bits: 8  },  // RFC-1918
+  { base: '172.16.0.0',   bits: 12 },  // RFC-1918 — covers 172.16–172.31
+  { base: '192.168.0.0',  bits: 16 },  // RFC-1918
+  { base: '169.254.0.0',  bits: 16 },  // link-local / AWS & GCP metadata
+  { base: '0.0.0.0',      bits: 8  },  // unspecified
+  { base: '100.64.0.0',   bits: 10 },  // shared address space (RFC-6598)
+  { base: '192.0.2.0',    bits: 24 },  // TEST-NET-1
+  { base: '198.51.100.0', bits: 24 },  // TEST-NET-2
+  { base: '203.0.113.0',  bits: 24 },  // TEST-NET-3
+];
+
+function ipToLong(ip) {
+  return ip.split('.').reduce((acc, oct) => (acc << 8) + parseInt(oct, 10), 0) >>> 0;
+}
+
+function isPrivateV4(ip) {
+  if (!net.isIPv4(ip)) return false;
+  const ipLong = ipToLong(ip);
+  return PRIVATE_CIDR_V4.some(({ base, bits }) => {
+    const mask = bits === 0 ? 0 : (~0 << (32 - bits)) >>> 0;
+    return (ipLong & mask) === (ipToLong(base) & mask);
+  });
+}
+
+function isPrivateV6(ip) {
+  if (!net.isIPv6(ip)) return false;
+  const n = ip.toLowerCase();
+  if (n === '::1') return true;                 // loopback
+  if (/^f[cd]/i.test(n)) return true;           // fc00::/7 unique-local (fc** + fd**)
+  if (/^fe[89ab]/i.test(n)) return true;        // fe80::/10 link-local
+  if (n.startsWith('::ffff:')) {                // IPv4-mapped
+    const v4 = n.slice(7);
+    if (net.isIPv4(v4)) return isPrivateV4(v4);
+  }
+  return false;
+}
+
+const BLOCKED_HOSTS = new Set([
+  'localhost',
+  'metadata.google.internal',
+  'manireader.online',
+  'api.manireader.online',
+]);
+
+async function isBlockedUrl(urlObj) {
+  const host = urlObj.hostname;
+
+  // 1. Block known internal hostnames
+  if (BLOCKED_HOSTS.has(host)) return true;
+
+  // 2. If the hostname is already a raw IP (or [IPv6] bracket form), check it directly
+  const rawIp = host.startsWith('[') && host.endsWith(']') ? host.slice(1, -1) : host;
+  if (net.isIPv4(rawIp)) return isPrivateV4(rawIp);
+  if (net.isIPv6(rawIp)) return isPrivateV6(rawIp);
+
+  // 3. Resolve hostname → IPs and check every address (fail-closed on DNS error)
+  try {
+    const results = await dns.lookup(host, { all: true, family: 0 });
+    for (const { address, family } of results) {
+      if (family === 4 && isPrivateV4(address)) return true;
+      if (family === 6 && isPrivateV6(address)) return true;
+    }
+  } catch {
+    // DNS failed — block it
+    return true;
+  }
+
+  return false;
+}
+
+// ── Proxy handler ─────────────────────────────────────────────────────────────
+
 /**
  * Proxy an image URL — pipes the response stream to `res`.
  * @param {string} imageUrl — The external image URL to proxy
@@ -49,24 +135,10 @@ async function proxyImage(imageUrl, res) {
     return res.status(400).json({ error: 'Invalid image URL' });
   }
 
-  // 🛡️ Security: Blocklist approach — block internal/private network ranges only.
-  // Using a blocklist (not allowlist) means ANY new manga cover source works
-  // in production without manual domain additions. SSRF is still prevented.
-  const BLOCKED_PATTERNS = [
-    'localhost', '127.0.0.1', '0.0.0.0', '::1',
-    '169.254.',                  // AWS/GCP metadata service
-    '10.',                       // RFC-1918 private range
-    '192.168.',                  // RFC-1918 private range
-    '172.16.',                   // RFC-1918 private range
-    'metadata.google.internal',  // GCP metadata
-    'manireader.online',         // prevent SSRF back to ourselves
-    'api.manireader.online',
-  ];
-
   let urlObj;
   try {
     urlObj = new URL(imageUrl);
-  } catch (e) {
+  } catch {
     return res.status(400).json({ error: 'Invalid URL format' });
   }
 
@@ -74,11 +146,9 @@ async function proxyImage(imageUrl, res) {
     return res.status(400).json({ error: 'Only http/https URLs are supported' });
   }
 
-  const host = urlObj.hostname;
-  const isBlocked = BLOCKED_PATTERNS.some(p => host === p || host.startsWith(p) || host.includes(p));
-
-  if (isBlocked) {
-    console.warn(`[ImageProxy] Blocked SSRF attempt to: ${host}`);
+  // SSRF check — resolves DNS and validates against private CIDR ranges
+  if (await isBlockedUrl(urlObj)) {
+    console.warn(`[ImageProxy] Blocked SSRF attempt to: ${urlObj.hostname}`);
     return res.status(403).json({ error: 'Forbidden', message: 'Private or internal domains are not allowed.' });
   }
 
