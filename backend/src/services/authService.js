@@ -19,6 +19,16 @@ function safeUser(user) {
   return safe;
 }
 
+async function storeRefreshToken(token, userId) {
+  await prisma.refreshToken.create({
+    data: {
+      token,
+      userId,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    },
+  });
+}
+
 // ── Service Methods ───────────────────────────────────────────────────────────
 
 async function register(email, password) {
@@ -34,28 +44,45 @@ async function register(email, password) {
   analyticsService.trackNewUser().catch(() => {});
 
   const payload = { userId: user.id, email: user.email, role: user.role };
-  return {
-    user: safeUser(user),
-    accessToken: signAccessToken(payload),
-    refreshToken: signRefreshToken(payload),
-  };
+  const accessToken = signAccessToken(payload);
+  const refreshToken = signRefreshToken(payload);
+
+  await storeRefreshToken(refreshToken, user.id);
+
+  return { user: safeUser(user), accessToken, refreshToken };
 }
 
 async function login(email, password) {
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) throw Object.assign(new Error('Invalid credentials'), { status: 401 });
 
+  // FIX #6: Reject banned accounts before issuing any token
+  if (user.isBanned) throw Object.assign(new Error('Account suspended'), { status: 403 });
+
+  // FIX #5: Social-login users have no password — reject instead of passing null to bcrypt
+  if (!user.password) {
+    throw Object.assign(
+      new Error('This account uses Google Sign-In. Please log in with Google.'),
+      { status: 401 }
+    );
+  }
+
   const valid = await bcrypt.compare(password, user.password);
   if (!valid) throw Object.assign(new Error('Invalid credentials'), { status: 401 });
 
   const payload = { userId: user.id, email: user.email, role: user.role };
-  return {
-    user: safeUser(user),
-    accessToken: signAccessToken(payload),
-    refreshToken: signRefreshToken(payload),
-  };
+  const accessToken = signAccessToken(payload);
+  const refreshToken = signRefreshToken(payload);
+
+  await storeRefreshToken(refreshToken, user.id);
+
+  return { user: safeUser(user), accessToken, refreshToken };
 }
 
+// FIX #9: Refresh token rotation.
+// Each call consumes the old token and issues a new one.
+// A token not in the DB is rejected and ALL sessions for that user are wiped
+// (signals a stolen token being reused after the legitimate user already rotated it).
 async function refresh(token) {
   let decoded;
   try {
@@ -64,11 +91,32 @@ async function refresh(token) {
     throw Object.assign(new Error('Invalid refresh token'), { status: 401 });
   }
 
+  const stored = await prisma.refreshToken.findUnique({ where: { token } });
+  if (!stored) {
+    // Token not in DB — possible theft / replay. Invalidate ALL tokens for this user.
+    await prisma.refreshToken.deleteMany({ where: { userId: decoded.userId } });
+    throw Object.assign(new Error('Refresh token reuse detected — all sessions invalidated'), { status: 401 });
+  }
+
   const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
   if (!user) throw Object.assign(new Error('User not found'), { status: 401 });
 
+  // FIX #6: Also block banned users on token refresh
+  if (user.isBanned) {
+    await prisma.refreshToken.deleteMany({ where: { userId: user.id } });
+    throw Object.assign(new Error('Account suspended'), { status: 403 });
+  }
+
+  // Rotate: delete old token, issue new pair
+  await prisma.refreshToken.delete({ where: { token } });
+
   const payload = { userId: user.id, email: user.email, role: user.role };
-  return { accessToken: signAccessToken(payload) };
+  const newAccessToken = signAccessToken(payload);
+  const newRefreshToken = signRefreshToken(payload);
+
+  await storeRefreshToken(newRefreshToken, user.id);
+
+  return { accessToken: newAccessToken, refreshToken: newRefreshToken };
 }
 
 async function updateNsfw(userId, nsfw) {
@@ -76,38 +124,42 @@ async function updateNsfw(userId, nsfw) {
 }
 
 async function deleteAccount(userId) {
+  // Clean up refresh tokens on account deletion (also handled by CASCADE, but explicit is safer)
+  await prisma.refreshToken.deleteMany({ where: { userId } });
   return prisma.user.delete({ where: { id: userId } });
 }
 
 async function googleLogin(email, googleId) {
   let user = await prisma.user.findUnique({ where: { email } });
-  
+
   if (!user) {
-    // Create new user for Google signup
     user = await prisma.user.create({
-      data: { 
-        email, 
+      data: {
+        email,
         googleId,
-        password: null, // Password is null for social login users
-        role: 'USER'
+        password: null,
+        role: 'USER',
       },
     });
     const analyticsService = require('./analyticsService');
     analyticsService.trackNewUser().catch(() => {});
   } else if (!user.googleId) {
-    // Link existing email account to Google if not already linked
     user = await prisma.user.update({
       where: { id: user.id },
-      data: { googleId }
+      data: { googleId },
     });
   }
 
+  // FIX #6: Block banned users from Google login too
+  if (user.isBanned) throw Object.assign(new Error('Account suspended'), { status: 403 });
+
   const payload = { userId: user.id, email: user.email, role: user.role };
-  return {
-    user: safeUser(user),
-    accessToken: signAccessToken(payload),
-    refreshToken: signRefreshToken(payload),
-  };
+  const accessToken = signAccessToken(payload);
+  const refreshToken = signRefreshToken(payload);
+
+  await storeRefreshToken(refreshToken, user.id);
+
+  return { user: safeUser(user), accessToken, refreshToken };
 }
 
 module.exports = { register, login, refresh, updateNsfw, deleteAccount, googleLogin };
