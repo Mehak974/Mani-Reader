@@ -52,7 +52,7 @@ app.use(ipBanMiddleware);
 // FIX #11: Use the battle-tested `cors` package instead of manual setHeader calls.
 // Manual implementation had edge-cases with non-matching origins and pre-flight handling.
 app.use(cors({
-  origin: ['https://manireader.online'],
+  origin: ['https://manireader.online', 'http://localhost:3000'],
   credentials: true,
   methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Device-ID'],

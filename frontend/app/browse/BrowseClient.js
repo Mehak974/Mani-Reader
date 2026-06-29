@@ -43,7 +43,7 @@ const STATUSES = [
   { label: 'Cancelled', value: 3 },
 ];
 
-function BrowseContent() {
+function BrowseContent({ defaultOrder = 0 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -72,7 +72,7 @@ function BrowseContent() {
   });
 
   const [selectedStatus, setSelectedStatus] = React.useState(parseInt(searchParams.get('status')) || 0);
-  const [selectedOrder, setSelectedOrder] = React.useState(parseInt(searchParams.get('order')) || 0);
+  const [selectedOrder, setSelectedOrder] = React.useState(parseInt(searchParams.get('order')) !== null && !isNaN(parseInt(searchParams.get('order'))) ? parseInt(searchParams.get('order')) : defaultOrder);
   const [genreMode, setGenreMode] = React.useState(searchParams.get('include_mode') === 'or' ? 'or' : 'and');
 
   const fetchResults = React.useCallback(async (p = 1) => {
@@ -620,10 +620,10 @@ function BrowseContent() {
   );
 }
 
-export default function BrowseClient() {
+export default function BrowseClient({ defaultOrder = 0 }) {
   return (
     <AuthProvider>
-      <BrowseContent />
+      <BrowseContent defaultOrder={defaultOrder} />
     </AuthProvider>
   );
 }

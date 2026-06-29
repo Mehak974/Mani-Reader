@@ -12,7 +12,7 @@ export async function generateMetadata({ params }) {
     
     return {
       title: `${manga.title} — Mani Reader`,
-      description: manga.description?.substring(0, 160) || `Read ${manga.title} on Mani Reader.`,
+      description: manga.description?.substring(0, 155) || `Read ${manga.title} on Mani Reader.`,
       alternates: {
         canonical: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://manireader.online'}/manga/${id}`,
       },

@@ -14,7 +14,16 @@ export async function generateMetadata({ params }) {
     const res = await blogApi.get(slug);
     if (res.data) {
       title = `${res.data.title} | ManiReader`;
-      description = res.data.content.substring(0, 150).replace(/[#*_]/g, '') + '...';
+      const plainText = res.data.content
+        .replace(/!\[.*?\]\(.*?\)/g, '') // remove images
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // remove links [text](url) -> text
+        .replace(/#+\s+/g, '') // remove headers
+        .replace(/[\*_`~]/g, '') // remove markdown styles (bold, italic, code, strikethrough)
+        .replace(/>\s+/g, '') // remove blockquotes
+        .replace(/-\s+/g, '') // remove list markers
+        .replace(/\s+/g, ' ') // collapse multiple spaces
+        .trim();
+      description = plainText.substring(0, 150) + '...';
     }
   } catch {}
 

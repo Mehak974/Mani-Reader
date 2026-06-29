@@ -111,6 +111,9 @@ export default async function Home() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      <h1 style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', border: 0 }}>
+        Mani Reader - Read Manga, Manhwa, and Manhua Online
+      </h1>
       <Suspense fallback={<div>Loading...</div>}>
         <HomeClient initialData={initialData} />
       </Suspense>
