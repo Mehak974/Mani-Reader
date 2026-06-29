@@ -1,4 +1,5 @@
 'use client';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -20,6 +21,12 @@ export default function MangaCard({ manga, showNsfw = false, priority = false })
       ? `${getApiServerUrl()}/api/image?url=${encodeURIComponent(rawCover)}`
       : rawCover)
     : '/placeholder-cover.jpg';
+
+  const [imgSrc, setImgSrc] = useState(coverUrl);
+
+  useEffect(() => {
+    setImgSrc(coverUrl);
+  }, [coverUrl]);
 
   return (
     <div className="manga-card-wrapper" style={{ position: 'relative', height: '100%' }}>
@@ -47,7 +54,7 @@ export default function MangaCard({ manga, showNsfw = false, priority = false })
       >
         <div className="manga-card-cover" style={{ position: 'relative', width: '100%', aspectRatio: '2/3', overflow: 'hidden', borderRadius: '16px' }}>
           <Image
-            src={coverUrl}
+            src={imgSrc}
             alt={manga.title}
             fill
             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 20vw"
@@ -55,8 +62,12 @@ export default function MangaCard({ manga, showNsfw = false, priority = false })
             quality={50}
             className={`manga-cover-img ${isBlurred ? 'blur-nsfw' : ''}`}
             style={{ objectFit: 'cover', transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)' }}
-            unoptimized={coverUrl.includes('/api/image')}
-            onError={(e) => e.currentTarget.src = '/placeholder-cover.jpg'}
+            unoptimized={imgSrc.includes('/api/image')}
+            onError={() => {
+              if (imgSrc !== '/placeholder-cover.jpg') {
+                setImgSrc('/placeholder-cover.jpg');
+              }
+            }}
           />
           <div className="manga-card-overlay" />
 
