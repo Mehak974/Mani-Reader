@@ -3,13 +3,24 @@ import { SpeedInsights } from '@vercel/speed-insights/next';
 import ClientProviders from '../components/ClientProviders';
 import Footer from '../components/Footer';
 import { Inter, Outfit } from 'next/font/google';
-
-const inter = Inter({ subsets: ['latin'], display: 'swap' });
-const outfit = Outfit({ subsets: ['latin'], display: 'swap' });
 import ScrollToTop from '../components/ScrollToTop';
+import Script from 'next/script';
+import MaterialIconsLoader from '../components/MaterialIconsLoader';
 import '../styles/globals.css';
 
-import Script from 'next/script';
+// next/font handles font loading with optimal preloading — no @import needed in CSS
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  preload: true,
+  variable: '--font-inter',
+});
+const outfit = Outfit({
+  subsets: ['latin'],
+  display: 'swap',
+  preload: true,
+  variable: '--font-outfit',
+});
 
 export const viewport = {
   width: 'device-width',
@@ -22,15 +33,13 @@ export const metadata = {
   metadataBase: new URL('https://manireader.online'),
   title: {
     default: 'Mani Reader — Discover Your Next Hidden Gem',
-    template: '%s | Mani Reader'
+    template: '%s | Mani Reader',
   },
   description: 'Mani Reader — Your premium ad-free manga sanctuary with libraries and bookmarks.',
   authors: [{ name: 'Mani Reader Team' }],
   creator: 'Mani Reader',
   publisher: 'Mani Reader',
-  alternates: {
-    canonical: '/',
-  },
+  alternates: { canonical: '/' },
   icons: {
     icon: [
       { url: '/icon.png', sizes: '48x48', type: 'image/png' },
@@ -45,14 +54,7 @@ export const metadata = {
     siteName: 'Mani Reader',
     title: 'Mani Reader — Discover Your Next Hidden Gem',
     description: 'Your premium ad-free manga reader with libraries and bookmarks.',
-    images: [
-      {
-        url: '/og-image.png',
-        width: 1200,
-        height: 630,
-        alt: 'Mani Reader - Premium Manga Experience',
-      },
-    ],
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Mani Reader - Premium Manga Experience' }],
   },
   twitter: {
     card: 'summary_large_image',
@@ -75,42 +77,44 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" suppressHydrationWarning className={`notranslate ${inter.className} ${outfit.className}`} translate="no">
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`notranslate ${inter.variable} ${outfit.variable} ${inter.className}`}
+      translate="no"
+    >
       <head>
-        {/* Preconnect to Google Fonts */}
+        {/*
+          ✅ Preconnect only to critical origins needed before first paint.
+          Material Icons and AdSense are deferred — they must NOT block LCP.
+        */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://api.manireader.online" />
+        <link rel="dns-prefetch" href="https://fonts.material.io" />
+
         <meta name="google" content="notranslate" />
-                {/* Using next/font for optimal loading */}
-                <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
-        {/* Fonts are loaded via next/font/google in the component */}
+
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               '@context': 'https://schema.org',
               '@type': 'WebSite',
-              'name': 'Mani Reader',
-              'url': 'https://manireader.online',
-              'description': 'Premium ad-free manga reader sanctuary.',
-              'potentialAction': {
+              name: 'Mani Reader',
+              url: 'https://manireader.online',
+              description: 'Premium ad-free manga reader sanctuary.',
+              potentialAction: {
                 '@type': 'SearchAction',
-                'target': 'https://manireader.online/browse?keyword={search_term_string}',
-                'query-input': 'required name=search_term_string'
-              }
-            })
+                target: 'https://manireader.online/browse?keyword={search_term_string}',
+                'query-input': 'required name=search_term_string',
+              },
+            }),
           }}
         />
-        {process.env.NODE_ENV === 'production' && (
-          <Script
-            async
-            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4938022536946038"
-            crossOrigin="anonymous"
-            strategy="afterInteractive"
-          />
-        )}
       </head>
       <body suppressHydrationWarning>
+        <MaterialIconsLoader />
         <ClientProviders>
           <main id="main-content">
             {children}
@@ -118,8 +122,21 @@ export default function RootLayout({ children }) {
           <Footer />
           <ScrollToTop />
         </ClientProviders>
+
         <Analytics />
         <SpeedInsights />
+
+        {/*
+          AdSense: lazyOnload = only loads after page is fully idle.
+          This removes it from the critical path entirely, fixing TBT.
+        */}
+        {process.env.NODE_ENV === 'production' && (
+          <Script
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4938022536946038"
+            crossOrigin="anonymous"
+            strategy="lazyOnload"
+          />
+        )}
       </body>
     </html>
   );

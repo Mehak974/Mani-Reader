@@ -1,52 +1,66 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-
 import { useAuth } from '../lib/auth';
-import { getApiServerUrl } from '../lib/api';
+
+// Compute the proxy URL outside the component so it's stable across renders
+function getCoverUrl(manga) {
+  const rawCover = manga?.image || manga?.cover;
+  if (!rawCover) return '/placeholder-cover.jpg';
+  if (!rawCover.startsWith('http')) return rawCover;
+
+  // Known hotlink-friendly CDNs — serve directly, no proxy needed
+  const safeDomains = [
+    'image.tmdb.org', 'imgur.com', 'blogspot.com', 'googleusercontent.com',
+    'placehold.co', 'wp.com', 'cloudinary.com',
+    'i0.wp.com', 'i1.wp.com', 'i2.wp.com', 'i3.wp.com',
+  ];
+  if (safeDomains.some(d => rawCover.includes(d))) return rawCover;
+  if (rawCover.includes('/api/image') || rawCover.includes('workers.dev')) return rawCover;
+
+  // Relative proxy path — works on any hostname in production
+  return `/api/image?url=${encodeURIComponent(rawCover)}`;
+}
 
 export default function MangaCard({ manga, showNsfw = false, priority = false }) {
   const { revealNsfw, setRevealNsfw } = useAuth() || {};
   if (!manga) return null;
 
-  // 🛡️ Premium UI: Blur if NSFW and NOT revealed
   const isBlurred = manga.nsfw && !revealNsfw;
+  const coverUrl = getCoverUrl(manga);
 
-  const rawCover = manga.image || manga.cover;
-
-  // 🏎️ Smart Proxy
-  const coverUrl = rawCover
-    ? (rawCover.startsWith('http') && !rawCover.includes('/api/image') && !rawCover.includes('workers.dev')
-      ? `${getApiServerUrl()}/api/image?url=${encodeURIComponent(rawCover)}`
-      : rawCover)
-    : '/placeholder-cover.jpg';
-
+  // imgSrc initializes with the correct URL immediately — no blank-screen mount dependency
   const [imgSrc, setImgSrc] = useState(coverUrl);
 
+  // Sync if manga prop changes (e.g. list updates)
   useEffect(() => {
-    setImgSrc(coverUrl);
-  }, [coverUrl]);
+    setImgSrc(getCoverUrl(manga));
+  }, [manga?.id, manga?.image, manga?.cover]);
+
+  const handleError = useCallback(() => {
+    if (imgSrc !== '/placeholder-cover.jpg') {
+      setImgSrc('/placeholder-cover.jpg');
+    }
+  }, [imgSrc]);
 
   return (
     <div className="manga-card-wrapper" style={{ position: 'relative', height: '100%' }}>
-      {/* Main Manga Link */}
       <Link
         href={`/manga/${manga.id}`}
         className="manga-card"
         style={{ display: 'flex', flexDirection: 'column', height: '100%', textDecoration: 'none' }}
         onClick={(e) => {
           if (isBlurred) {
-            e.preventDefault(); // Prevent navigation if blurred
+            e.preventDefault();
             setRevealNsfw(true);
           }
         }}
         onMouseEnter={() => {
           if (!isBlurred) {
             window.mangaTimeout = setTimeout(() => {
-              const apiBase = process.env.NEXT_PUBLIC_API_URL || '/api';
-              fetch(`${apiBase}/manga/${manga.id}`).catch(() => { });
-              fetch(`${apiBase}/chapters/${manga.id}`).catch(() => { });
+              fetch(`/api/manga/${manga.id}`).catch(() => { });
+              fetch(`/api/chapters/${manga.id}`).catch(() => { });
             }, 150);
           }
         }}
@@ -63,56 +77,28 @@ export default function MangaCard({ manga, showNsfw = false, priority = false })
             className={`manga-cover-img ${isBlurred ? 'blur-nsfw' : ''}`}
             style={{ objectFit: 'cover', transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)' }}
             unoptimized={imgSrc.includes('/api/image')}
-            onError={() => {
-              if (imgSrc !== '/placeholder-cover.jpg') {
-                setImgSrc('/placeholder-cover.jpg');
-              }
-            }}
+            onError={handleError}
           />
           <div className="manga-card-overlay" />
 
           {isBlurred && (
-            <div className="nsfw-overlay" style={{
-              position: 'absolute',
-              inset: 0,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 3,
-              background: 'rgba(0,0,0,0.6)',
-              backdropFilter: 'blur(10px)',
-              padding: '16px',
-              textAlign: 'center',
-              transition: 'all 0.3s'
+            <div style={{
+              position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center', zIndex: 3,
+              background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)',
+              padding: '16px', textAlign: 'center', transition: 'all 0.3s'
             }}>
-              <div style={{
-                color: '#fff',
-                fontSize: '0.8rem',
-                fontWeight: 700,
-                marginBottom: '12px',
-                lineHeight: '1.4'
-              }}>
+              <div style={{ color: '#fff', fontSize: '0.8rem', fontWeight: 700, marginBottom: '12px', lineHeight: '1.4' }}>
                 Content is 18+ contain nudity want to reveal?
               </div>
               <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  setRevealNsfw(true);
-                }}
+                onClick={(e) => { e.stopPropagation(); e.preventDefault(); setRevealNsfw(true); }}
                 className="reveal-btn"
                 style={{
-                  background: 'var(--accent)',
-                  color: '#fff',
-                  border: 'none',
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  fontSize: '0.75rem',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  boxShadow: '0 4px 12px rgba(108, 99, 255, 0.3)',
-                  transition: 'all 0.2s'
+                  background: 'var(--accent)', color: '#fff', border: 'none',
+                  padding: '8px 16px', borderRadius: '8px', fontSize: '0.75rem',
+                  fontWeight: 800, cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(108, 99, 255, 0.3)', transition: 'all 0.2s'
                 }}
                 onMouseEnter={e => e.target.style.transform = 'scale(1.05)'}
                 onMouseLeave={e => e.target.style.transform = 'scale(1)'}
@@ -122,26 +108,15 @@ export default function MangaCard({ manga, showNsfw = false, priority = false })
             </div>
           )}
 
-          {manga.nsfw && (
-            <span className="manga-card-badge badge-nsfw">18+</span>
-          )}
+          {manga.nsfw && <span className="manga-card-badge badge-nsfw">18+</span>}
 
           {manga.rating && (
             <span className="manga-card-badge badge-rating" style={{
-              background: 'rgba(255, 193, 7, 0.95)',
-              color: '#000',
-              fontWeight: 800,
-              fontSize: '0.75rem',
-              padding: '2px 8px',
-              borderRadius: '6px',
-              position: 'absolute',
-              top: '10px',
-              right: '10px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
-              zIndex: 2
+              background: 'rgba(255, 193, 7, 0.95)', color: '#000', fontWeight: 800,
+              fontSize: '0.75rem', padding: '2px 8px', borderRadius: '6px',
+              position: 'absolute', top: '10px', right: '10px',
+              display: 'flex', alignItems: 'center', gap: '4px',
+              boxShadow: '0 4px 10px rgba(0,0,0,0.3)', zIndex: 2
             }}>
               <span className="material-icons" style={{ fontSize: '0.9rem' }}>star</span>
               {manga.rating}
@@ -160,39 +135,23 @@ export default function MangaCard({ manga, showNsfw = false, priority = false })
 
         <div className="manga-card-body" style={{ padding: '12px 10px', minHeight: '80px' }}>
           <div className="manga-card-title" style={{
-            fontSize: '0.95rem',
-            fontWeight: 700,
-            color: 'var(--text)',
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-            lineHeight: '1.3',
-            marginBottom: '4px'
+            fontSize: '0.95rem', fontWeight: 700, color: 'var(--text)',
+            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+            overflow: 'hidden', lineHeight: '1.3', marginBottom: '4px'
           }}>
             {manga.title}
           </div>
         </div>
       </Link>
 
-      {/* Floating Chapter Link */}
       {manga.lastChapter && (
         <Link
           href={`/manga/${manga.id}/${manga.lastChapterId}`}
           style={{
-            position: 'absolute',
-            bottom: '12px',
-            left: '0',
-            fontSize: '0.75rem',
-            color: 'var(--accent)',
-            fontWeight: 600,
-            textDecoration: 'none',
-            maxWidth: '100%',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            zIndex: 5,
-            padding: '0 10px'
+            position: 'absolute', bottom: '12px', left: '0',
+            fontSize: '0.75rem', color: 'var(--accent)', fontWeight: 600,
+            textDecoration: 'none', maxWidth: '100%', overflow: 'hidden',
+            textOverflow: 'ellipsis', whiteSpace: 'nowrap', zIndex: 5, padding: '0 10px'
           }}
           onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
           onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
