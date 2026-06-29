@@ -142,39 +142,24 @@ export default function MangaDetailClient({ id, initialManga, initialChapters })
     );
   }
 
-  /*const coverUrl = React.useMemo(() => {
-    const rawCover = manga?.cover || manga?.image;
-    if (!rawCover) return '/placeholder-cover.jpg';
-
-    // If it's already proxied, a worker, or a safe direct domain, use it as is
-    const safeDomains = ['image.tmdb.org', 'imgur.com', 'blogspot.com', 'googleusercontent.com', 'placehold.co', 'wp.com'];
-    const hasSafeDomain = safeDomains.some(d => rawCover.includes(d));
-
-    if (rawCover.startsWith('http') && !rawCover.includes('/api/image') && !rawCover.includes('workers.dev') && !hasSafeDomain) {
-      return `${getApiServerUrl()}/api/image?url=${encodeURIComponent(rawCover)}`;
-    }
-    return rawCover;
-  }, [manga?.cover, manga?.image]);
-  */
-
   const coverUrl = React.useMemo(() => {
     const rawCover = manga?.cover || manga?.image;
     if (!rawCover) return '/placeholder-cover.jpg';
     if (!rawCover.startsWith('http')) return rawCover;
 
-    // Already proxied or safe direct domains — use as-is
+    // Already proxied or known safe direct-hotlink domains — use as-is
     const safeDomains = [
       'image.tmdb.org', 'imgur.com', 'blogspot.com',
       'googleusercontent.com', 'placehold.co', 'wp.com',
-      'cloudinary.com', 'cdnjs.cloudflare.com',
+      'cloudinary.com', 'i0.wp.com', 'i1.wp.com', 'i2.wp.com', 'i3.wp.com',
     ];
     if (safeDomains.some(d => rawCover.includes(d))) return rawCover;
     if (rawCover.includes('/api/image') || rawCover.includes('workers.dev')) return rawCover;
 
-    // Always use relative proxy path — works on every domain/hostname
+    // ✅ Use relative path — works on every hostname/domain in production
+    // (Next.js rewrites /api/* → backend, so no absolute URL needed)
     return `/api/image?url=${encodeURIComponent(rawCover)}`;
   }, [manga?.cover, manga?.image]);
-
 
   const readCount = progress.filter((p) => p.isRead).length;
   const lastRead = progress.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0];

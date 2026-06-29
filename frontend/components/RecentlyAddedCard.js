@@ -7,17 +7,18 @@ import { getApiServerUrl } from '../lib/api';
 export default function RecentlyAddedCard({ manga }) {
   const [isExpanded, setIsExpanded] = React.useState(false);
   const [isHovered, setIsHovered] = React.useState(false);
-  
+
   if (!manga) return null;
 
   const apiBase = process.env.NEXT_PUBLIC_API_URL || '/api';
 
   const rawCover = manga.image || manga.cover;
-  // 🏎️ Smart Proxy: Only wrap in local /api/image if it's an external HTTP link AND not already proxied
+  // 🏎️ Smart Proxy: Use relative /api/image path — works on any hostname in production
+  const safeDomains = ['image.tmdb.org', 'imgur.com', 'blogspot.com', 'googleusercontent.com', 'placehold.co', 'wp.com', 'cloudinary.com', 'i0.wp.com', 'i1.wp.com', 'i2.wp.com', 'i3.wp.com'];
   const coverUrl = rawCover
-    ? (rawCover.startsWith('http') && !rawCover.includes('/api/image') && !rawCover.includes('workers.dev')
-        ? `${getApiServerUrl()}/api/image?url=${encodeURIComponent(rawCover)}` 
-        : rawCover)
+    ? (rawCover.startsWith('http') && !rawCover.includes('/api/image') && !rawCover.includes('workers.dev') && !safeDomains.some(d => rawCover.includes(d))
+      ? `/api/image?url=${encodeURIComponent(rawCover)}`
+      : rawCover)
     : '/placeholder-cover.jpg';
 
   const description = manga.description || 'No description available.';
@@ -25,8 +26,8 @@ export default function RecentlyAddedCard({ manga }) {
   const truncated = isLong ? description.slice(0, 180) + '...' : description;
 
   return (
-    <div 
-      className="recent-added-card" 
+    <div
+      className="recent-added-card"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       style={{
@@ -43,14 +44,14 @@ export default function RecentlyAddedCard({ manga }) {
         position: 'relative'
       }}
     >
-      <Link 
-        href={`/manga/${manga.id}`} 
+      <Link
+        href={`/manga/${manga.id}`}
         style={{ flexShrink: 0 }}
         onMouseEnter={() => {
           // 🏎️ Only pre-warm if the user hovers for 150ms (prevents spamming during scroll)
           window.recentTimeout = setTimeout(() => {
-            fetch(`${apiBase}/manga/${manga.id}`).catch(() => {});
-            fetch(`${apiBase}/chapters/${manga.id}`).catch(() => {});
+            fetch(`${apiBase}/manga/${manga.id}`).catch(() => { });
+            fetch(`${apiBase}/chapters/${manga.id}`).catch(() => { });
           }, 150);
         }}
         onMouseLeave={() => clearTimeout(window.recentTimeout)}
@@ -62,8 +63,8 @@ export default function RecentlyAddedCard({ manga }) {
           overflow: 'hidden',
           boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
         }}>
-          <img 
-            src={coverUrl} 
+          <img
+            src={coverUrl}
             alt={manga.title}
             loading="lazy"
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
@@ -74,9 +75,9 @@ export default function RecentlyAddedCard({ manga }) {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <Link href={`/manga/${manga.id}`}>
-          <h3 style={{ 
-            fontSize: '1.1rem', 
-            fontWeight: 700, 
+          <h3 style={{
+            fontSize: '1.1rem',
+            fontWeight: 700,
             marginBottom: '8px',
             color: 'var(--text)',
             overflow: 'hidden',
@@ -87,18 +88,18 @@ export default function RecentlyAddedCard({ manga }) {
           </h3>
         </Link>
 
-        <div 
+        <div
           suppressHydrationWarning
-          style={{ 
-          fontSize: '0.85rem', 
-          color: 'var(--text-2)', 
-          lineHeight: '1.5',
-          marginBottom: '12px',
-          position: 'relative'
-        }}>
+          style={{
+            fontSize: '0.85rem',
+            color: 'var(--text-2)',
+            lineHeight: '1.5',
+            marginBottom: '12px',
+            position: 'relative'
+          }}>
           {isExpanded ? description : truncated}
           {isLong && (
-            <button 
+            <button
               onClick={(e) => {
                 e.preventDefault();
                 setIsExpanded(!isExpanded);
@@ -124,7 +125,7 @@ export default function RecentlyAddedCard({ manga }) {
             <span className="material-icons" style={{ fontSize: '1rem' }}>auto_stories</span>
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {manga.lastChapterId ? (
-                <Link 
+                <Link
                   href={`/manga/${manga.id}/${manga.lastChapterId}`}
                   style={{ color: 'inherit', textDecoration: 'none' }}
                   onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}

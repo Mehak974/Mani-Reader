@@ -24,14 +24,14 @@ function getReferer(imageUrl) {
   try {
     const url = new URL(imageUrl);
     const domain = url.hostname.replace('www.', '');
-    
+
     if (domain.includes('mangadex')) return 'https://mangadex.org';
     if (domain.includes('mangakatana')) return 'https://mangakatana.com/';
     if (domain.includes('manganato')) return 'https://manganato.com';
     if (domain.includes('mangakakalot')) return 'https://mangakakalot.com';
     if (domain.includes('comick')) return 'https://comick.io';
     if (domain.includes('batocomic') || domain.includes('mangatoto') || domain.includes('xbato') || domain.includes('batosi')) return 'https://mangatoto.com';
-    
+
     // Default to the domain of the image itself (often works for WP sites/Imgur)
     return `https://${domain}`;
   } catch {
@@ -49,22 +49,18 @@ async function proxyImage(imageUrl, res) {
     return res.status(400).json({ error: 'Invalid image URL' });
   }
 
-  // 🛡️ Security Fix: Domain Whitelist
-  // Only allow proxying from trusted manga sources to prevent open proxy abuse
-  const ALLOWED_DOMAINS = [
-    'mangadex.org', 'mangadex.com', 'mangakakalot.com', 'mangakakalot.tv', 'mangahere.cc', 
-    'mangakatana.com', 'manganato.com', 'chapmanganato.com', 'chapmanganato.to', 
-    'manganato.to', 'manganato.tv', 'mangaclash.com', 'mangatigre.net', 'mangatigre.com', 
-    'asuracomics.com', 'reaperscans.com', 'flamescans.org', 'nhentai.net', 'image.tmdb.org', 
-    'placehold.co', 'cloudinary.com', 'wp.com', 'i0.wp.com', 'i1.wp.com', 'i2.wp.com', 'i3.wp.com', 
-    'imgur.com', 'blogspot.com', 'googleusercontent.com', 'wp-manga.com', 'manga-swat.com', 
-    'manhwa68.com', 'manhuas.net', 'mangafreak.me', 'mangafreak.org', 'mangapanda.com', 
-    'mangareader.net', 'readm.org', 'mangabob.com', 'manganelo.com', 'manganelo.tv',
-    'comick.app', 'comick.fun', 'comick.io', 'bilibilicomics.com', 'webtoons.com', 'tapas.io',
-    'mangago.me', 'mangapark.net', 'mangapark.me', 'mangapill.com', 'mangafirst.jp',
-    'manhuascan.com', 'zinmanga.com', 'mangasee123.com', 'manga4life.com', 'mangaowl.net',
-    'comick.org', 'mangareader.to', 'mangatoto.com', 'batocomic.com', 'xbato.com', 
-    'batosi.lat', 'meo.comick.pictures', 'meo3.comick.pictures'
+  // 🛡️ Security: Blocklist approach — block internal/private network ranges only.
+  // Using a blocklist (not allowlist) means ANY new manga cover source works
+  // in production without manual domain additions. SSRF is still prevented.
+  const BLOCKED_PATTERNS = [
+    'localhost', '127.0.0.1', '0.0.0.0', '::1',
+    '169.254.',                  // AWS/GCP metadata service
+    '10.',                       // RFC-1918 private range
+    '192.168.',                  // RFC-1918 private range
+    '172.16.',                   // RFC-1918 private range
+    'metadata.google.internal',  // GCP metadata
+    'manireader.online',         // prevent SSRF back to ourselves
+    'api.manireader.online',
   ];
 
   let urlObj;
@@ -74,16 +70,16 @@ async function proxyImage(imageUrl, res) {
     return res.status(400).json({ error: 'Invalid URL format' });
   }
 
-  const isAllowed = ALLOWED_DOMAINS.some(domain => urlObj.hostname.endsWith(domain));
+  if (urlObj.protocol !== 'http:' && urlObj.protocol !== 'https:') {
+    return res.status(400).json({ error: 'Only http/https URLs are supported' });
+  }
 
-  if (!isAllowed) {
-    console.warn(`[ImageProxy] Blocked domain: ${urlObj.hostname}. Consider adding to ALLOWED_DOMAINS if trusted.`);
-    // Fallback: If it's a known image extension, we might want to allow it? 
-    // For now, still block but log so we can fix.
-    return res.status(403).json({ 
-      error: 'Forbidden', 
-      message: `Domain ${urlObj.hostname} is not whitelisted.` 
-    });
+  const host = urlObj.hostname;
+  const isBlocked = BLOCKED_PATTERNS.some(p => host === p || host.startsWith(p) || host.includes(p));
+
+  if (isBlocked) {
+    console.warn(`[ImageProxy] Blocked SSRF attempt to: ${host}`);
+    return res.status(403).json({ error: 'Forbidden', message: 'Private or internal domains are not allowed.' });
   }
 
   const cacheKey = `img:${imageUrl}`;
@@ -111,9 +107,9 @@ async function proxyImage(imageUrl, res) {
     }
 
     const buffer = Buffer.from(response.data);
-    
+
     // ⚡ Optimization: Only cache reasonably sized images to save memory
-    if (buffer.length < 1024 * 1024) { 
+    if (buffer.length < 1024 * 1024) {
       await cache.set(cacheKey, {
         contentType,
         data: buffer.toString('base64')
@@ -133,4 +129,3 @@ async function proxyImage(imageUrl, res) {
 }
 
 module.exports = { proxyImage };
-
