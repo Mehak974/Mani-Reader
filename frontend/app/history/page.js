@@ -10,9 +10,9 @@ import LoginRequiredModal from '../../components/LoginRequiredModal';
 function HistoryContent() {
   const { user, loading: authLoading } = useAuth() || {};
   const router = useRouter();
-  const [history, setHistory]   = React.useState([]);
-  const [loading, setLoading]   = React.useState(true);
-  const [toast,   setToast]     = React.useState(null);
+  const [history, setHistory] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [toast, setToast] = React.useState(null);
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type }); setTimeout(() => setToast(null), 3000);
@@ -51,11 +51,11 @@ function HistoryContent() {
   return (
     <div className="page-wrapper">
       <Navbar />
-      
+
       {!user && !authLoading && (
-        <LoginRequiredModal 
-          pageName="History" 
-          onCancel={() => router.push('/')} 
+        <LoginRequiredModal
+          pageName="History"
+          onCancel={() => router.push('/')}
         />
       )}
 
@@ -82,28 +82,28 @@ function HistoryContent() {
             {history
               .filter((h, index, self) => index === self.findIndex((t) => t.mangaId === h.mangaId))
               .map((h) => {
-              const cover = h.manga?.cover
-                ? `${getApiServerUrl()}/api/image?url=${encodeURIComponent(h.manga.cover)}`
-                : '/placeholder-cover.jpg';
-              return (
-                <Link
-                  key={h.id}
-                  href={`/read/${h.chapterId}?mangaId=${h.mangaId}`}
-                  className="history-item"
-                >
-                  <img className="history-thumb" src={cover} alt="" onError={(e) => { e.target.src = '/placeholder-cover.jpg'; }} />
-                  <div>
-                    <div className="history-title">{h.manga?.title || 'Unknown'}</div>
-                    <div className="history-sub">
-                      Chapter {h.chapter?.number}
+                const cover = h.manga?.cover
+                  ? `/api/image?url=${encodeURIComponent(h.manga.cover)}`
+                  : '/placeholder-cover.jpg';
+                return (
+                  <Link
+                    key={h.id}
+                    href={`/read/${h.chapterId}?mangaId=${h.mangaId}`}
+                    className="history-item"
+                  >
+                    <img className="history-thumb" src={cover} alt="" onError={(e) => { e.target.src = '/placeholder-cover.jpg'; }} />
+                    <div>
+                      <div className="history-title">{h.manga?.title || 'Unknown'}</div>
+                      <div className="history-sub">
+                        Chapter {h.chapter?.number}
+                      </div>
                     </div>
-                  </div>
-                  <div style={{ color: 'var(--text-3)', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
-                    {timeAgo(h.timestamp)}
-                  </div>
-                </Link>
-              );
-            })}
+                    <div style={{ color: 'var(--text-3)', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                      {timeAgo(h.timestamp)}
+                    </div>
+                  </Link>
+                );
+              })}
           </div>
         )}
       </div>

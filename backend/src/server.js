@@ -47,11 +47,12 @@ const app = express();
 
 // ── Critical Gatekeepers ──────────────────────────────────────────────────────
 const ipBanMiddleware = require('./middleware/ipBan');
-// app.use(ipBanMiddleware); // Temporarily disabled for debugging
+app.use(ipBanMiddleware); // Temporarily disabled for debugging
 
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (origin) {
+  const whitelist = ['https://manireader.online']; // Add more origins as needed
+  if (origin && whitelist.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
   res.setHeader('Access-Control-Allow-Credentials', 'true');

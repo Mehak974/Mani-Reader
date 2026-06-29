@@ -13,8 +13,8 @@ function LibraryContent() {
   const router = useRouter();
 
   const [bookmarks, setBookmarks] = React.useState([]);
-  const [loading,   setLoading]   = React.useState(true);
-  const [toast,     setToast]     = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+  const [toast, setToast] = React.useState(null);
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type }); setTimeout(() => setToast(null), 3000);
@@ -45,9 +45,9 @@ function LibraryContent() {
       <Navbar />
 
       {!user && !authLoading && (
-        <LoginRequiredModal 
-          pageName="Bookmarks" 
-          onCancel={() => router.push('/')} 
+        <LoginRequiredModal
+          pageName="Bookmarks"
+          onCancel={() => router.push('/')}
         />
       )}
 
@@ -87,7 +87,7 @@ function LibraryContent() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {bookmarks.map((bm) => {
               const coverUrl = bm.manga?.cover
-                ? `${getApiServerUrl()}/api/image?url=${encodeURIComponent(bm.manga.cover)}`
+                ? `/api/image?url=${encodeURIComponent(bm.manga.cover)}`
                 : '/placeholder-cover.jpg';
               const readUrl = `/read/${bm.chapterId}?mangaId=${bm.mangaId}&page=${bm.page || 0}`;
 

@@ -142,7 +142,7 @@ export default function MangaDetailClient({ id, initialManga, initialChapters })
     );
   }
 
-  const coverUrl = React.useMemo(() => {
+  /*const coverUrl = React.useMemo(() => {
     const rawCover = manga?.cover || manga?.image;
     if (!rawCover) return '/placeholder-cover.jpg';
 
@@ -155,6 +155,26 @@ export default function MangaDetailClient({ id, initialManga, initialChapters })
     }
     return rawCover;
   }, [manga?.cover, manga?.image]);
+  */
+
+  const coverUrl = React.useMemo(() => {
+    const rawCover = manga?.cover || manga?.image;
+    if (!rawCover) return '/placeholder-cover.jpg';
+    if (!rawCover.startsWith('http')) return rawCover;
+
+    // Already proxied or safe direct domains — use as-is
+    const safeDomains = [
+      'image.tmdb.org', 'imgur.com', 'blogspot.com',
+      'googleusercontent.com', 'placehold.co', 'wp.com',
+      'cloudinary.com', 'cdnjs.cloudflare.com',
+    ];
+    if (safeDomains.some(d => rawCover.includes(d))) return rawCover;
+    if (rawCover.includes('/api/image') || rawCover.includes('workers.dev')) return rawCover;
+
+    // Always use relative proxy path — works on every domain/hostname
+    return `/api/image?url=${encodeURIComponent(rawCover)}`;
+  }, [manga?.cover, manga?.image]);
+
 
   const readCount = progress.filter((p) => p.isRead).length;
   const lastRead = progress.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0];
