@@ -1,33 +1,47 @@
 'use client';
 import React from 'react';
 import { Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { setAccessToken } from '../../../lib/api';
+import { useSearchParams } from 'next/navigation';
 
+// Exchanges the one-time code issued by the backend for real httpOnly cookies.
+// The code arrives in ?code=<hex> — never a raw JWT.
 function CallbackContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
 
   React.useEffect(() => {
-    const token = searchParams.get('token');
-    if (token) {
-      setAccessToken(token);
-      
-      // Fetch user to determine role
-      import('../../../lib/api').then(({ authApi }) => {
-        authApi.me().then(({ data }) => {
-          const target = data.role === 'ADMIN' ? '/admin' : '/';
-          setTimeout(() => {
-            window.location.href = target;
-          }, 500);
-        }).catch(() => {
-          window.location.href = '/';
-        });
-      });
-    } else {
-      router.push('/auth/login?error=no_token');
+    const code = searchParams.get('code');
+
+    if (!code) {
+      // No code — something went wrong on the backend side
+      window.location.href = '/auth/login?error=no_code';
+      return;
     }
-  }, [searchParams, router]);
+
+    // Exchange the one-time code for httpOnly cookies
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/google/exchange`, {
+      method: 'POST',
+      credentials: 'include', // send & receive cookies
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    })
+      .then((r) => {
+        if (!r.ok) throw new Error('Exchange failed');
+        return r.json();
+      })
+      .then(() => {
+        // Cookies are now set — determine role via /me
+        return fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`, {
+          credentials: 'include',
+        }).then((r) => r.json());
+      })
+      .then((user) => {
+        const target = user.role === 'ADMIN' ? '/admin' : '/';
+        setTimeout(() => { window.location.href = target; }, 400);
+      })
+      .catch(() => {
+        window.location.href = '/auth/login?error=auth_failed';
+      });
+  }, [searchParams]);
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a', color: '#fff', fontFamily: 'system-ui' }}>
