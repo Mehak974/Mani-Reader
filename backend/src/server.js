@@ -47,24 +47,21 @@ const app = express();
 
 // ── Critical Gatekeepers ──────────────────────────────────────────────────────
 const ipBanMiddleware = require('./middleware/ipBan');
-app.use(ipBanMiddleware); // Temporarily disabled for debugging
+app.use(ipBanMiddleware);
 
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  const whitelist = ['https://manireader.online']; // Add more origins as needed
-  if (origin && whitelist.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  }
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Device-ID');
-  
-  if (req.method === 'OPTIONS') {
-    return res.status(204).end();
-  }
-  next();
-});
-// app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+// FIX #11: Use the battle-tested `cors` package instead of manual setHeader calls.
+// Manual implementation had edge-cases with non-matching origins and pre-flight handling.
+app.use(cors({
+  origin: ['https://manireader.online'],
+  credentials: true,
+  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Device-ID'],
+}));
+
+// FIX #3: Re-enable Helmet. It was commented out — all browser security headers were missing.
+// crossOriginResourcePolicy: cross-origin is required so the image proxy can serve images
+// to cross-origin pages without CORP blocking them.
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(morgan(config.nodeEnv === 'production' ? 'combined' : 'dev'));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -81,8 +78,10 @@ app.use((req, res, next) => {
   next();
 });
 
-// ── Debug Early Access ────────────────────────────────────────────────────────
-app.get('/api/debug-config', (req, res) => {
+// ── Debug (Admin-only) ────────────────────────────────────────────────────────
+// FIX #8: This route previously had no auth. It's now admin-only.
+const adminMiddleware = require('./middleware/admin');
+app.get('/api/debug-config', adminMiddleware, (req, res) => {
   const config = require('./config/env');
   res.json({
     imageProxyUrl: config.imageProxyUrl,
