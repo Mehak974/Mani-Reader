@@ -1,4 +1,5 @@
 import HomeClient from './HomeClient';
+import { Suspense } from 'react';
 
 export const metadata = {
   title: 'ManiReader — Discover Your Next Hidden Gem',
@@ -110,7 +111,9 @@ export default async function Home() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <HomeClient initialData={initialData} />
+      <Suspense fallback={<div>Loading...</div>}>
+        <HomeClient initialData={initialData} />
+      </Suspense>
     </>
   );
 }
