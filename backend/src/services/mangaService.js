@@ -20,6 +20,17 @@ const config = require('../config/env');
 function imageShield(url) {
   if (!url) return url;
   
+  let actualUrl = url;
+  if (url.includes('/api/image?url=')) {
+    try {
+      const parsed = new URL(url);
+      const decoded = parsed.searchParams.get('url');
+      if (decoded) actualUrl = decoded;
+    } catch (e) {
+      // fallback
+    }
+  }
+  
   // Safe domains that allow direct hotlinking without proxying
   const SAFE_DOMAINS = [
     'image.tmdb.org',
@@ -35,18 +46,18 @@ function imageShield(url) {
   ];
 
   try {
-    const parsed = new URL(url);
+    const parsed = new URL(actualUrl);
     const host = parsed.hostname;
     const isSafe = SAFE_DOMAINS.some(d => host === d || host.endsWith('.' + d));
     if (isSafe) {
-      return url; // Return direct link to save backend bandwidth and load instantly
+      return actualUrl; // Return direct link to save backend bandwidth and load instantly
     }
   } catch (e) {
     // fallback to default behavior if invalid URL format
   }
 
-  if (!config.imageProxyUrl || url.includes(config.imageProxyUrl)) return url;
-  return `${config.imageProxyUrl}?url=${encodeURIComponent(url)}`;
+  if (!config.imageProxyUrl || actualUrl.includes(config.imageProxyUrl)) return actualUrl;
+  return `${config.imageProxyUrl}?url=${encodeURIComponent(actualUrl)}`;
 }
 
 // Cache globalNsfw setting in-memory for 30s to prevent constant DB reads
