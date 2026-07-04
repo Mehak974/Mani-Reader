@@ -6,6 +6,7 @@ import { Inter, Outfit } from 'next/font/google';
 import ScrollToTop from '../components/ScrollToTop';
 import Script from 'next/script';
 import MaterialIconsLoader from '../components/MaterialIconsLoader';
+import AdBanner from '../components/AdBanner';
 import '../styles/globals.css';
 
 // next/font handles font loading with optimal preloading — no @import needed in CSS
@@ -119,6 +120,7 @@ export default function RootLayout({ children }) {
           <main id="main-content">
             {children}
           </main>
+          <AdBanner size="small" slot="8394012345" />
           <Footer />
           <ScrollToTop />
         </ClientProviders>
@@ -130,13 +132,11 @@ export default function RootLayout({ children }) {
           AdSense: lazyOnload = only loads after page is fully idle.
           This removes it from the critical path entirely, fixing TBT.
         */}
-        {process.env.NODE_ENV === 'production' && (
-          <Script
-            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4938022536946038"
-            crossOrigin="anonymous"
-            strategy="lazyOnload"
-          />
-        )}
+        <Script
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4938022536946038"
+          crossOrigin="anonymous"
+          strategy="lazyOnload"
+        />
       </body>
     </html>
   );

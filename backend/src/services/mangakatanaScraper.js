@@ -2,6 +2,7 @@
 
 const axios = require('axios');
 const cheerio = require('cheerio');
+const axiosRetry = require('axios-retry').default;
 
 const BASE_URL = 'https://mangakatana.com';
 
@@ -20,6 +21,14 @@ const client = axios.create({
   },
 });
 
+axiosRetry(client, {
+  retries: 3,
+  retryDelay: axiosRetry.exponentialDelay,
+  retryCondition: (error) => {
+    return axiosRetry.isNetworkOrIdempotentRequestError(error) || error.code === 'ECONNABORTED';
+  }
+});
+
 /**
  * Search manga on Mangakatana
  */
@@ -33,12 +42,11 @@ async function searchManga(query, page = 1) {
 
   try {
     const primaryQuery = cleanQuery(query);
-    const url = `/`;
+    const url = page > 1 ? `/page/${page}` : `/`;
     let response = await client.get(url, {
       params: {
         search: primaryQuery,
-        search_by: 'book_name', // ⚡ Corrected parameter
-        page: page
+        search_by: 'book_name'
       }
     });
 
@@ -99,11 +107,22 @@ async function searchManga(query, page = 1) {
       }
     }
 
-    // Extract total results
-    const totalTxt = $('.entry-title').text();
-    const totalMatch = totalTxt.match(/\(([^)]+)\)/);
-    const totalResults = totalMatch ? parseInt(totalMatch[1].replace(/,/g, '')) : 0;
-    const totalPages = Math.ceil(totalResults / 20) || 1;
+    // Extract total results & pages dynamically
+    let totalResults = 0;
+    let totalPages = 1;
+
+    // Scan all anchor tags for page indicators
+    $('a').each((i, el) => {
+      const href = $(el).attr('href') || '';
+      if (href.includes('page=') || href.includes('/page/')) {
+        const txt = parseInt($(el).text().trim());
+        if (!isNaN(txt) && txt > totalPages) {
+          totalPages = txt;
+        }
+      }
+    });
+
+    totalResults = totalPages * 20;
 
     $('#book_list .item').each((i, el) => {
       const titleEl = $(el).find('.title a');

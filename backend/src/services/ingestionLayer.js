@@ -27,43 +27,54 @@ const provider = config.consumet.primary || 'mangakatana';
 /**
  * GLOBAL CONTENT SHIELD 🛡️
  */
-const BLACKLIST_TAGS = [
-  '18+', 'adult', 'smut', 'erotica', 'sexual-violence', 'sexual violence', 'harem', 'yaoi', 'yuri',
-  'incest', 'gore', 'mature', 'ecchi', 'hentai', 'pornographic', 'loli', 'shota'
+const STRICT_BLACKLIST_TAGS = [
+  '18+', 'smut', 'erotica', 'sexual-violence', 'sexual violence', 'yaoi', 'yuri',
+  'incest', 'ecchi', 'hentai', 'pornographic', 'loli', 'shota'
 ];
+const BORDERLINE_TAGS = ['harem', 'adult', 'mature', 'josei', 'gore'];
 
 const BLACKLIST_KEYWORDS = ['sexy', 'sex', 'thot', 'nude', 'porn', 'hentai', 'uncensored', 'sexual', 'unfiltered', 'erotic', 'smut', 'harem'];
+
+function checkIsNSFW(genres = [], isAdult = false, isNsfwFlag = false) {
+  const genreList = genres.map(g => (typeof g === 'string' ? g : g.name || '').toLowerCase().trim());
+  
+  const hasStrictBlacklist = genreList.some(tag => 
+    STRICT_BLACKLIST_TAGS.some(bad => tag === bad || tag.includes(bad))
+  );
+  if (hasStrictBlacklist || isAdult || isNsfwFlag) {
+    return true;
+  }
+
+  const borderlineCount = genreList.filter(tag => 
+    BORDERLINE_TAGS.some(border => tag === border || tag.includes(border))
+  ).length;
+
+  return borderlineCount > 1;
+}
 
 function filterNSFW(mangaList, bypass = false) {
   if (!Array.isArray(mangaList)) return [];
   if (bypass) return mangaList; // 🚀 Unlock everything for explicit searches
 
   return mangaList.filter(m => {
-    if (m.nsfw) return false;
-    const genres = (m.genres || []).map(g => (typeof g === 'string' ? g : g.name || '').toLowerCase());
+    const genres = m.genres || [];
+    const isNsfw = m.nsfw || checkIsNSFW(genres, m.isAdult, m.nsfw);
+    if (isNsfw) return false;
+
     const title = (m.title || '').toLowerCase();
     const desc = (m.description || '').toLowerCase();
 
-    // Exact tag match against blacklist
-    const hasBadTag = genres.some(tag =>
-      BLACKLIST_TAGS.some(bad => tag === bad || tag.includes(bad) || bad.includes(tag))
-    );
     // Keyword in title
     const hasBadTitle = BLACKLIST_KEYWORDS.some(word => title.includes(word));
     // Keyword in description
     const hasBadDesc = BLACKLIST_KEYWORDS.some(word => desc.includes(word));
 
-    return !hasBadTag && !hasBadTitle && !hasBadDesc;
+    return !hasBadTitle && !hasBadDesc;
   });
 }
 
 function mapMangaFormat(m) {
-  const genres = (m.genres || []).map(g => (typeof g === 'string' ? g : g.name || '').toLowerCase());
-  const isNsfw = !!(
-    m.isAdult || 
-    m.nsfw || 
-    genres.some(tag => BLACKLIST_TAGS.some(bad => tag === bad || tag.includes(bad)))
-  );
+  const isNsfw = m.nsfw || checkIsNSFW(m.genres || [], m.isAdult, m.nsfw);
 
   return {
     id: m.id,
@@ -124,8 +135,9 @@ async function searchManga(query, page = 1) {
       const titleLower = formatted.title.toLowerCase();
       const queryLower = query.toLowerCase().trim();
       
-      const words = queryLower.split(/\s+/).filter(w => w.length > 2);
-      const isRelevant = words.length === 0 || words.some(w => titleLower.includes(w));
+      const matchTitle = titleLower.includes(queryLower);
+      const matchGenre = (formatted.genres || []).some(g => g.toLowerCase().includes(queryLower));
+      const isRelevant = matchTitle || matchGenre;
       
       if (isRelevant && !existingTitles.has(titleLower)) {
         existingTitles.add(titleLower);

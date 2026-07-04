@@ -17,12 +17,28 @@ export default function Navbar() {
   const [searchQuery, setSearchQuery] = React.useState('');
   const router = useRouter();
 
-  const handleSearch = (e) => {
-    if (e.key === 'Enter' && searchQuery.trim()) {
+  const triggerSearch = () => {
+    if (searchQuery.trim()) {
       router.push(`/browse?q=${encodeURIComponent(searchQuery.trim())}`);
-      setSearchQuery('');
     }
   };
+
+  const handleSearch = (e) => {
+    if (e.key === 'Enter') {
+      triggerSearch();
+    }
+  };
+
+  // ⚡ Live search: trigger search as the user types (with 300ms debounce)
+  React.useEffect(() => {
+    const q = searchQuery.trim();
+    if (q) {
+      const delayDebounce = setTimeout(() => {
+        router.push(`/browse?q=${encodeURIComponent(q)}`);
+      }, 300);
+      return () => clearTimeout(delayDebounce);
+    }
+  }, [searchQuery]);
 
   React.useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -94,7 +110,7 @@ export default function Navbar() {
                   transition: 'border-color 0.2s'
                 }} 
               />
-              <span className="material-icons" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: '1.2rem', color: 'var(--text-3)' }}>search</span>
+              <span className="material-icons" onClick={triggerSearch} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: '1.2rem', color: 'var(--text-3)', cursor: 'pointer', zIndex: 10 }}>search</span>
             </div>
 
             <div className="navbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -146,7 +162,7 @@ export default function Navbar() {
                     color: 'var(--text)', fontSize: '0.85rem', outline: 'none' 
                   }} 
                 />
-                <span className="material-icons" style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', fontSize: '1.1rem', color: 'var(--text-3)' }}>search</span>
+                <span className="material-icons" onClick={triggerSearch} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', fontSize: '1.1rem', color: 'var(--text-3)', cursor: 'pointer', zIndex: 10 }}>search</span>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>

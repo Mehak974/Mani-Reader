@@ -9,15 +9,32 @@ import React from 'react';
  */
 export default function AdBanner({ slot, format = 'auto', responsive = 'true', size = 'normal' }) {
   const publisherId = 'ca-pub-4938022536946038';
+  const adRef = React.useRef(null);
 
   React.useEffect(() => {
-    try {
-      if (typeof window !== 'undefined') {
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
+    const initAd = () => {
+      try {
+        if (typeof window !== 'undefined') {
+          // Check if there are any uninitialized adsbygoogle ins elements in the DOM that haven't received a push
+          const ads = document.querySelectorAll('ins.adsbygoogle');
+          const uninitializedAds = Array.from(ads).filter(
+            (el) => !el.hasAttribute('data-adsbygoogle-status') && !el.dataset.adPushed
+          );
+
+          if (uninitializedAds.length > 0) {
+            // Mark the element as pushed so subsequent checks ignore it
+            uninitializedAds[0].dataset.adPushed = 'true';
+            (window.adsbygoogle = window.adsbygoogle || []).push({});
+          }
+        }
+      } catch (e) {
+        // console.error('AdSense error:', e);
       }
-    } catch (e) {
-      // console.error('AdSense error:', e);
-    }
+    };
+
+    // Delay initialization slightly to let the DOM render completely
+    const timer = setTimeout(initAd, 200);
+    return () => clearTimeout(timer);
   }, []);
 
   const isSmall = size === 'small';
@@ -37,9 +54,11 @@ export default function AdBanner({ slot, format = 'auto', responsive = 'true', s
       overflow: 'hidden',
       maxWidth: isSmall ? '468px' : '1200px',
       position: 'relative',
-      padding: '0'
+      padding: '0',
+      pointerEvents: 'none' // ⚡ Make ads completely unclickable
     }}>
       <ins className="adsbygoogle"
+           ref={adRef}
            style={{ display: 'inline-block', width: isSmall ? '320px' : '100%', height: isSmall ? '32px' : 'auto' }}
            data-ad-client={publisherId}
            data-ad-slot={slot}

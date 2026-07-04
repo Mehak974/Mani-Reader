@@ -80,7 +80,8 @@ async function applyContentFilters(results, userId = null, isExplicitSearch = fa
     globalNsfw = true;
   }
 
-  let filtered = results.filter(m => !hiddenSet.has(m.id));
+  // Filter out any corrupted entries (e.g. title is 'Unknown Title', empty, or matches ID)
+  let filtered = results.filter(m => m && m.title && m.title !== 'Unknown Title' && m.title !== m.id && !hiddenSet.has(m.id));
 
   // 3. Apply NSFW filters
   // ⚡ Rule: If it's an explicit search, we allow everything. 
@@ -124,15 +125,30 @@ function mapManga(raw) {
     description: raw.description || null,
     status: raw.status || null,
     genres: Array.isArray(raw.genres) ? raw.genres : [],
-    nsfw: !!(
-      raw.isAdult || 
-      raw.nsfw || 
-      (Array.isArray(raw.genres) && raw.genres.some(g => {
-        const gl = (typeof g === 'string' ? g : '').toLowerCase();
-        return ['hentai', 'ecchi', 'smut', 'adult', '18+', 'harem', 'yaoi', 'yuri',
-          'loli', 'shota', 'erotica', 'pornographic', 'sexual-violence'].some(bad => gl === bad);
-      }))
-    ),
+    nsfw: !!(() => {
+      const STRICT_BLACKLIST = [
+        '18+', 'smut', 'erotica', 'sexual-violence', 'sexual violence', 'yaoi', 'yuri',
+        'incest', 'ecchi', 'hentai', 'pornographic', 'loli', 'shota'
+      ];
+      const BORDERLINE_TAGS = ['harem', 'adult', 'mature', 'josei', 'gore'];
+      
+      const genreList = (Array.isArray(raw.genres) ? raw.genres : []).map(g => 
+        (typeof g === 'string' ? g : '').toLowerCase().trim()
+      );
+      
+      const hasStrict = genreList.some(tag => 
+        STRICT_BLACKLIST.some(bad => tag === bad || tag.includes(bad))
+      );
+      if (hasStrict || raw.isAdult || raw.nsfw) {
+        return true;
+      }
+      
+      const borderlineCount = genreList.filter(tag => 
+        BORDERLINE_TAGS.some(border => tag === border || tag.includes(border))
+      ).length;
+      
+      return borderlineCount > 1;
+    })(),
     rating: raw.rating || null,
     lastChapter: raw.lastChapter || null,
     lastChapterId: raw.lastChapterId || null,
@@ -165,11 +181,64 @@ function mapRawChapter(raw, mangaId) {
 // ── Service Methods ───────────────────────────────────────────────────────────
 
 async function search(query, page = 1, userId = null) {
-  // ⚡ Bypass cache for explicit searches to ensure fresh multi-source results
-  const { data } = await ingestion.searchManga(query, page);
-  const results = data.results || data || [];
+  // 1. Scraper search
+  let scraperResults = [];
+  try {
+    const { data } = await ingestion.searchManga(query, page);
+    scraperResults = (data.results || data || []).map(mapManga);
+  } catch (err) {
+    console.warn('[MangaService] Scraper search failed:', err.message);
+  }
+
+  // 2. DB search: find matches within title, description, or genres
+  let dbResults = [];
+  try {
+    // Generate simple variations for genre matching
+    const genreQueries = [
+      query,
+      query.toLowerCase(),
+      query.toUpperCase(),
+      query.charAt(0).toUpperCase() + query.slice(1).toLowerCase()
+    ];
+    const limit = 50;
+    const skip = (page - 1) * limit;
+    dbResults = await prisma.manga.findMany({
+      where: {
+        OR: [
+          { title: { contains: query, mode: 'insensitive' } },
+          { description: { contains: query, mode: 'insensitive' } },
+          { genres: { hasSome: genreQueries } }
+        ],
+        isHidden: false
+      },
+      skip,
+      take: limit
+    });
+  } catch (dbErr) {
+    console.warn('[MangaService] DB search failed:', dbErr.message);
+  }
+
+  const mappedDb = dbResults.map(mapManga);
+
+  // 3. Merge & deduplicate (prefer DB records as they are populated with chapters)
+  const seenIds = new Set();
+  const merged = [];
   
-  return applyContentFilters(results, userId, true); // Explicit search
+  for (const m of mappedDb) {
+    if (!seenIds.has(m.id)) {
+      merged.push(m);
+      seenIds.add(m.id);
+    }
+  }
+  
+  for (const m of scraperResults) {
+    if (!seenIds.has(m.id)) {
+      merged.push(m);
+      seenIds.add(m.id);
+    }
+  }
+
+  return applyContentFilters(merged, userId, true); // Explicit search
 }
 
 async function getMangaInfo(mangaId, userId = null) {
@@ -289,6 +358,22 @@ async function refreshMangaInfoBackground(mangaId) {
   const { data } = await ingestion.getMangaInfo(mangaId);
   const mapped = mapManga(data);
 
+  const chaptersCacheKey = `chapters:${mangaId}`;
+  const rawChapters = data.chapters || [];
+  const mappedChapters = rawChapters.map((ch) => mapRawChapter(ch, mangaId));
+  const normalizedChapters = normalize(mappedChapters, mangaId);
+
+  let lastChapter = mapped.lastChapter || null;
+  let lastChapterId = mapped.lastChapterId || null;
+  if (normalizedChapters.length > 0) {
+    const latest = normalizedChapters[normalizedChapters.length - 1];
+    lastChapter = latest.title || `Chapter ${latest.number}`;
+    lastChapterId = latest.id;
+  }
+
+  mapped.lastChapter = lastChapter;
+  mapped.lastChapterId = lastChapterId;
+
   try {
     const dbData = {
       id: mapped.id,
@@ -299,7 +384,9 @@ async function refreshMangaInfoBackground(mangaId) {
       genres: mapped.genres,
       nsfw: mapped.nsfw,
       source: mapped.source,
-      cachedAt: new Date()
+      cachedAt: new Date(),
+      lastChapter,
+      lastChapterId
     };
 
     await prisma.manga.upsert({
@@ -310,11 +397,6 @@ async function refreshMangaInfoBackground(mangaId) {
   } catch (dbErr) {
     console.warn('[MangaService] Failed to upsert scraped manga into local database:', dbErr.message);
   }
-
-  const chaptersCacheKey = `chapters:${mangaId}`;
-  const rawChapters = data.chapters || [];
-  const mappedChapters = rawChapters.map((ch) => mapRawChapter(ch, mangaId));
-  const normalizedChapters = normalize(mappedChapters, mangaId);
   
   await cache.set(chaptersCacheKey, normalizedChapters, cache.ttl.chaptersTtl);
   await cache.set(cacheKey, mapped, cache.ttl.mangaTtl);
@@ -596,6 +678,10 @@ async function getPopular(page = 1, userId = null, genre = null) {
 async function getRecent(page = 1, userId = null) {
   const cacheKey = `recent:${page}`;
   const results = await cache.getOrSet(cacheKey, cache.ttl.searchTtl, async () => {
+    let list = [];
+    let currentPage = page;
+    let attempts = 0;
+
     if (page === 1) {
       try {
         const { getTrendingManga } = require('./anilistService');
@@ -658,35 +744,35 @@ async function getRecent(page = 1, userId = null) {
               matchedResults.push(matchedManga);
             }
           }
-
-          if (matchedResults.length > 0) {
-            // Backfill from direct scraper to ensure at least 30 results
-            if (matchedResults.length < 30) {
-              try {
-                const { data } = await ingestion.getRecent(page);
-                const scraperResults = (data.results || []).map(mapManga);
-                const matchedIds = new Set(matchedResults.map(m => m.id));
-                for (const m of scraperResults) {
-                  if (!matchedIds.has(m.id)) {
-                    matchedResults.push(m);
-                    matchedIds.add(m.id);
-                    if (matchedResults.length >= 30) break;
-                  }
-                }
-              } catch (backfillErr) {
-                console.warn('[MangaService] AniList trending backfill failed:', backfillErr.message);
-              }
-            }
-            return matchedResults;
-          }
+          list = matchedResults;
         }
       } catch (err) {
-        console.warn('[MangaService] AniList trending flow failed, falling back:', err.message);
+        console.warn('[MangaService] AniList trending flow failed:', err.message);
       }
     }
 
-    const { data } = await ingestion.getRecent(page);
-    return (data.results || []).map(mapManga);
+    const seenIds = new Set(list.map(m => m.id));
+    while (list.length < 30 && attempts < 5) {
+      try {
+        const { data } = await ingestion.getRecent(currentPage);
+        const scraperResults = (data.results || []).map(mapManga);
+        if (scraperResults.length === 0) break;
+
+        for (const m of scraperResults) {
+          if (!seenIds.has(m.id)) {
+            list.push(m);
+            seenIds.add(m.id);
+          }
+        }
+      } catch (err) {
+        console.warn('[MangaService] Ingestion getRecent failed:', err.message);
+        break;
+      }
+      currentPage++;
+      attempts++;
+    }
+
+    return list;
   });
   return applyContentFilters(results, userId, false);
 }
@@ -886,13 +972,55 @@ async function browse(filters = {}, userId = null) {
       totalData = res.data;
     }
 
-    const filtered = await applyContentFilters(res.data.results, userId, isExplicit);
+    const mapped = (res.data.results || []).map(mapManga);
+    const filtered = await applyContentFilters(mapped, userId, isExplicit);
     
     results = [...results, ...filtered];
     if (results.length >= targetCount) break;
     
     currentPage++;
-    attempts++;
+  }
+
+  // ⚡ Local DB search fallback if scraper returned nothing (e.g. single-character query like "t")
+  if (results.length === 0 && filters.keyword) {
+    try {
+      const keyword = filters.keyword.trim();
+      const genreQueries = [
+        keyword,
+        keyword.toLowerCase(),
+        keyword.toUpperCase(),
+        keyword.charAt(0).toUpperCase() + keyword.slice(1).toLowerCase()
+      ];
+      const dbCount = await prisma.manga.count({
+        where: {
+          OR: [
+            { title: { contains: keyword, mode: 'insensitive' } },
+            { description: { contains: keyword, mode: 'insensitive' } },
+            { genres: { hasSome: genreQueries } }
+          ],
+          isHidden: false
+        }
+      });
+      const skip = ((filters.page || 1) - 1) * targetCount;
+      const dbResults = await prisma.manga.findMany({
+        where: {
+          OR: [
+            { title: { contains: keyword, mode: 'insensitive' } },
+            { description: { contains: keyword, mode: 'insensitive' } },
+            { genres: { hasSome: genreQueries } }
+          ],
+          isHidden: false
+        },
+        skip,
+        take: targetCount
+      });
+      const mapped = dbResults.map(mapManga);
+      results = await applyContentFilters(mapped, userId, isExplicit);
+      totalData.totalResults = dbCount;
+      totalData.totalPages = Math.ceil(dbCount / targetCount) || 1;
+    } catch (dbErr) {
+      console.warn('[MangaService] Browse DB fallback failed:', dbErr.message);
+    }
   }
 
   const totalResults = totalData.totalResults || results.length;

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../lib/auth';
 import { progressApi, bookmarkApi, historyApi } from '../../lib/api';
+import AdBanner from '../AdBanner';
 
 // ── Vertical Reader ────────────────────────────────────────────────────────────
 export function VerticalReader({ pages, chapterId, mangaId, prevChapter, nextChapter, currentChapter, chapters }) {
@@ -202,22 +203,33 @@ export function VerticalReader({ pages, chapterId, mangaId, prevChapter, nextCha
       {/* Pages */}
       <div ref={containerRef} className="reader-vertical">
         {pages.map((url, i) => (
-          <div key={i} className="reader-page" data-index={i}>
-            <img
-              src={url}
-              alt={`Page ${i + 1}`}
-              loading={i < 5 ? 'eager' : 'lazy'}
-              onLoad={() => setLoaded((prev) => new Set([...prev, i]))}
-              style={{ opacity: loaded.has(i) ? 1 : 0, transition: 'opacity 0.6s ease' }}
-            />
-            {!loaded.has(i) && (
-              <div className="skeleton" style={{ width: '100%', height: 800 }} />
+          <React.Fragment key={i}>
+            <div className="reader-page" data-index={i}>
+              <img
+                src={url}
+                alt={`Page ${i + 1}`}
+                loading={i < 5 ? 'eager' : 'lazy'}
+                onLoad={() => setLoaded((prev) => new Set([...prev, i]))}
+                style={{ opacity: loaded.has(i) ? 1 : 0, transition: 'opacity 0.6s ease' }}
+              />
+              {!loaded.has(i) && (
+                <div className="skeleton" style={{ width: '100%', height: 800 }} />
+              )}
+            </div>
+            {/* Show an ad banner every 10 pages */}
+            {(i + 1) % 10 === 0 && i !== pages.length - 1 && (
+              <div style={{ width: '100%', maxWidth: '900px', margin: '20px 0' }} onClick={(e) => e.stopPropagation()}>
+                <AdBanner slot="8394012345" />
+              </div>
             )}
-          </div>
+          </React.Fragment>
         ))}
 
         {nextChapter && (
-          <div style={{ textAlign: 'center', padding: '80px 0', borderTop: '1px solid var(--border)' }}>
+          <div style={{ textAlign: 'center', padding: '80px 0', borderTop: '1px solid var(--border)', width: '100%' }}>
+            <div style={{ marginBottom: 40 }} onClick={(e) => e.stopPropagation()}>
+              <AdBanner slot="8394012345" />
+            </div>
             <p style={{ color: 'var(--text-3)', marginBottom: 20 }}>Finished Chapter {chNum}</p>
             <button
               className="btn btn-primary"

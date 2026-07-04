@@ -75,86 +75,21 @@ function BrowseContent({ defaultOrder = 0 }) {
   const [selectedOrder, setSelectedOrder] = React.useState(parseInt(searchParams.get('order')) !== null && !isNaN(parseInt(searchParams.get('order'))) ? parseInt(searchParams.get('order')) : defaultOrder);
   const [genreMode, setGenreMode] = React.useState(searchParams.get('include_mode') === 'or' ? 'or' : 'and');
 
-  const fetchResults = React.useCallback(async (p = 1) => {
-    setLoading(true);
-    try {
-      const include = Object.entries(genreState).filter(([, v]) => v === 'include').map(([k]) => k);
-      const exclude = Object.entries(genreState).filter(([, v]) => v === 'exclude').map(([k]) => k);
-
-      const qs = new URLSearchParams();
-      if (include.length > 0) qs.set('include', include.join(','));
-      if (exclude.length > 0) qs.set('exclude', exclude.join(','));
-      if (selectedStatus > 0) qs.set('status', selectedStatus);
-      if (selectedOrder > 0) qs.set('order', selectedOrder);
-      if (keyword) qs.set('keyword', keyword);
-      if (genreMode === 'or') qs.set('include_mode', 'or');
-      qs.set('page', p);
-
-      const { data } = await mangaApi.browseRaw(qs.toString());
-      const rawResults = data.results || [];
-
-      // 🛡️ Safe-Gate Shield: Hide restricted content unless specifically requested or searched
-      const BLACKLIST_SLUGS = [
-        '18+', 'adult', 'smut', 'erotica', 'sexual-violence', 'sexual violence', 'harem', 'yaoi', 'yuri',
-        'incest', 'gore', 'mature', 'ecchi', 'hentai', 'pornographic', 'loli', 'shota'
-      ];
-
-      const hasRestrictedTag = include.some(tag =>
-        BLACKLIST_SLUGS.includes(tag.toLowerCase()) ||
-        BLACKLIST_SLUGS.includes(tag.toLowerCase().replace(/\s+/g, '-'))
-      );
-      // 🚀 UNLOCK: Bypass filter if there's an explicit search keyword OR a restricted tag is included
-      // We also check for common 18+ keywords just in case
-      const adultKeywords = ['secret class', 'adult', 'smut', 'hentai', 'ecchi', '18+'];
-      const isAdultKeyword = keyword && adultKeywords.some(kw => keyword.toLowerCase().includes(kw));
-      const shouldBypassFilter = !!keyword || hasRestrictedTag || isAdultKeyword;
-
-      const filtered = shouldBypassFilter ? rawResults : rawResults.filter(m => {
-        const genres = m.genres || [];
-        const tagNames = genres.map(g => (typeof g === 'string' ? g : g.name || '').toLowerCase());
-        return !tagNames.some(tag => BLACKLIST_SLUGS.includes(tag)) && !m.nsfw;
-      });
-
-      setResults(filtered);
-
-      // ⚡ Only update totalPages if we have a search/filter, otherwise keep the 500 assumption
-      const hasFilters = keyword || Object.keys(genreState).length > 0 || selectedStatus > 0;
-
-      if (hasFilters) {
-        if (data.totalPages && data.totalPages > 1) {
-          setTotalPages(data.totalPages);
-        } else if (data.totalResults) {
-          setTotalPages(Math.ceil(data.totalResults / 20) || 1);
-        }
-      } else {
-        setTotalPages(500);
-      }
-
-      setTotalResults(data.totalResults || 0);
-      setPage(p);
-    } catch (err) {
-      // Suppress console error
-    } finally {
-      setLoading(false);
-    }
-  }, [genreState, selectedStatus, selectedOrder, keyword]);
-
-  // ⚡ Sync state with URL
+  // ⚡ Sync state with URL AND fetch results
   React.useEffect(() => {
     const p = parseInt(searchParams.get('page')) || 1;
     const q = searchParams.get('keyword') || searchParams.get('q') || '';
     const status = parseInt(searchParams.get('status')) || 0;
     const order = parseInt(searchParams.get('order')) || 0;
-    const inc = searchParams.get('include')?.split(',') || [];
-    const exc = searchParams.get('exclude')?.split(',') || [];
+    const inc = searchParams.get('include')?.split(',').filter(Boolean) || [];
+    const exc = searchParams.get('exclude')?.split(',').filter(Boolean) || [];
 
-    // Update local states if they differ from URL
+    // Sync state for UI controls
     if (p !== page) setPage(p);
     if (q !== keyword) { setKeyword(q); setInputKeyword(q); }
     if (status !== selectedStatus) setSelectedStatus(status);
     if (order !== selectedOrder) setSelectedOrder(order);
 
-    // Sync genre state
     const newGenreState = {};
     inc.forEach(s => s && (newGenreState[s] = 'include'));
     exc.forEach(s => s && (newGenreState[s] = 'exclude'));
@@ -162,7 +97,76 @@ function BrowseContent({ defaultOrder = 0 }) {
       setGenreState(newGenreState);
     }
 
-    fetchResults(p);
+    const fetchDirect = async () => {
+      setLoading(true);
+      try {
+        const qs = new URLSearchParams();
+        if (inc.length > 0) qs.set('include', inc.join(','));
+        if (exc.length > 0) qs.set('exclude', exc.join(','));
+        if (status > 0) qs.set('status', status);
+        if (order > 0) qs.set('order', order);
+        if (q) qs.set('keyword', q);
+        if (genreMode === 'or') qs.set('include_mode', 'or');
+        qs.set('page', p);
+
+        const { data } = await mangaApi.browseRaw(qs.toString());
+        const rawResults = data.results || [];
+
+        const STRICT_BLACKLIST_SLUGS = [
+          '18+', 'smut', 'erotica', 'sexual-violence', 'sexual violence', 'yaoi', 'yuri',
+          'incest', 'ecchi', 'hentai', 'pornographic', 'loli', 'shota'
+        ];
+        const BORDERLINE_TAGS = ['harem', 'adult', 'mature', 'josei', 'gore'];
+
+        const hasRestrictedTag = inc.some(tag =>
+          STRICT_BLACKLIST_SLUGS.includes(tag.toLowerCase()) ||
+          STRICT_BLACKLIST_SLUGS.includes(tag.toLowerCase().replace(/\s+/g, '-')) ||
+          BORDERLINE_TAGS.includes(tag.toLowerCase()) ||
+          BORDERLINE_TAGS.includes(tag.toLowerCase().replace(/\s+/g, '-'))
+        );
+        const adultKeywords = ['secret class', 'adult', 'smut', 'hentai', 'ecchi', '18+'];
+        const isAdultKeyword = q && adultKeywords.some(kw => q.toLowerCase().includes(kw));
+        const shouldBypassFilter = !!q || hasRestrictedTag || isAdultKeyword;
+
+        const filtered = shouldBypassFilter ? rawResults : rawResults.filter(m => {
+          if (m.nsfw) return false;
+          const genres = m.genres || [];
+          const tagNames = genres.map(g => (typeof g === 'string' ? g : g.name || '').toLowerCase().trim());
+          
+          const hasStrict = tagNames.some(tag => 
+            STRICT_BLACKLIST_SLUGS.some(bad => tag === bad || tag.includes(bad))
+          );
+          if (hasStrict) return false;
+
+          const borderlineCount = tagNames.filter(tag => 
+            BORDERLINE_TAGS.some(border => tag === border || tag.includes(border))
+          ).length;
+
+          return borderlineCount <= 1;
+        });
+
+        setResults(filtered);
+
+        const hasFilters = q || inc.length > 0 || exc.length > 0 || status > 0;
+        if (hasFilters) {
+          if (data.totalPages && data.totalPages > 1) {
+            setTotalPages(data.totalPages);
+          } else if (data.totalResults) {
+            setTotalPages(Math.ceil(data.totalResults / 20) || 1);
+          }
+        } else {
+          setTotalPages(500);
+        }
+
+        setTotalResults(data.totalResults || 0);
+      } catch (err) {
+        // console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDirect();
   }, [searchParams]);
 
   // Remove the old redundant effects that were calling fetchResults
@@ -490,10 +494,45 @@ function BrowseContent({ defaultOrder = 0 }) {
             )}
 
             {/* ── Main Content Area ── */}
-            <main>
-              <div className="manga-grid">
+            <main style={{ position: 'relative' }}>
+              {loading && (
+                <div style={{
+                  position: 'absolute', inset: 0,
+                  background: 'rgba(10, 10, 10, 0.4)',
+                  backdropFilter: 'blur(4px)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  zIndex: 20, minHeight: '300px', borderRadius: 18
+                }}>
+                  <div style={{ textAlign: 'center', color: 'var(--accent)' }}>
+                    <div className="loading-bolt" style={{ fontSize: '4rem', filter: 'drop-shadow(0 0 15px var(--accent))' }}>⚡</div>
+                    <div style={{ marginTop: 12, fontWeight: 700, letterSpacing: '0.1em', fontSize: '0.9rem' }}>DISCOVERING GEMS...</div>
+                  </div>
+                </div>
+              )}
+              <div className="manga-grid" style={{ opacity: loading ? 0.3 : 1, transition: 'opacity 0.2s' }}>
                 {results.map((m, i) => (
-                  <MangaCard key={`${m.id}-${i}`} manga={m} priority={i < 8} />
+                  <React.Fragment key={`${m.id}-${i}`}>
+                    <MangaCard manga={m} priority={i < 8} />
+                    {/* Insert in-feed ad card after every 8 items */}
+                    {(i + 1) % 8 === 0 && i !== results.length - 1 && (
+                      <div className="manga-card-wrapper ad-card" style={{ 
+                        position: 'relative', 
+                        height: '100%', 
+                        background: 'var(--surface)', 
+                        borderRadius: '16px',
+                        border: '1px solid var(--border)',
+                        overflow: 'hidden',
+                        aspectRatio: '2/3',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        padding: '12px'
+                      }}>
+                        <AdBanner size="small" slot="8394012348" />
+                      </div>
+                    )}
+                  </React.Fragment>
                 ))}
                 {loading && results.length === 0 && (
                   Array.from({ length: 15 }).map((_, i) => (
@@ -514,13 +553,6 @@ function BrowseContent({ defaultOrder = 0 }) {
               {totalPages > 1 && (
                 <div style={{ marginTop: 60, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
 
-                  {!getPageNumbers().includes(1) && (
-                    <>
-                      <button onClick={() => handlePageChange(1)} className="btn-page">1</button>
-                      {!getPageNumbers().includes(2) && <span style={{ color: 'var(--text-3)', margin: '0 4px' }}>...</span>}
-                    </>
-                  )}
-
                   <button onClick={() => handlePageChange(page - 1)} disabled={page === 1} className="btn-page" style={{ opacity: page === 1 ? 0.3 : 1 }}>
                     <span className="material-icons" style={{ fontSize: '1.2rem' }}>chevron_left</span>
                   </button>
@@ -539,12 +571,6 @@ function BrowseContent({ defaultOrder = 0 }) {
                     <span className="material-icons" style={{ fontSize: '1.2rem' }}>chevron_right</span>
                   </button>
 
-                  {!getPageNumbers().includes(totalPages) && (
-                    <>
-                      {!getPageNumbers().includes(totalPages - 1) && <span style={{ color: 'var(--text-3)', margin: '0 4px' }}>...</span>}
-                      <button onClick={() => handlePageChange(totalPages)} className="btn-page">{totalPages}</button>
-                    </>
-                  )}
                 </div>
               )}
             </main>
@@ -611,6 +637,14 @@ function BrowseContent({ defaultOrder = 0 }) {
             .genres-grid {
               grid-template-columns: repeat(2, 1fr);
             }
+          }
+          .loading-bolt {
+            animation: bolt-pulse 1.2s ease-in-out infinite;
+          }
+          @keyframes bolt-pulse {
+            0% { transform: scale(1); opacity: 0.6; filter: drop-shadow(0 0 5px var(--accent)); }
+            50% { transform: scale(1.2); opacity: 1; filter: drop-shadow(0 0 20px var(--accent)); }
+            100% { transform: scale(1); opacity: 0.6; filter: drop-shadow(0 0 5px var(--accent)); }
           }
         `}</style>
           </div>

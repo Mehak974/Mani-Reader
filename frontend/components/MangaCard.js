@@ -144,9 +144,9 @@ export default function MangaCard({ manga, showNsfw = false, priority = false })
         </div>
       </Link>
 
-      {manga.lastChapter && (
+      {manga.lastChapter && manga.lastChapterId && (
         <Link
-          href={`/manga/${manga.id}/${manga.lastChapterId}`}
+          href={`/read/${manga.lastChapterId}?mangaId=${manga.id}`}
           style={{
             position: 'absolute', bottom: '12px', left: '0',
             fontSize: '0.75rem', color: 'var(--accent)', fontWeight: 600,

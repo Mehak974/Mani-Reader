@@ -57,7 +57,15 @@ async function getOrSet(key, ttlSeconds, fetchFn) {
   const cached = await cache.get(key);
   if (cached !== null) return cached;
   const fresh = await fetchFn();
-  await cache.set(key, fresh, ttlSeconds);
+  
+  // Don't cache empty results (empty arrays, or objects with empty results arrays) to prevent caching transient scraper/network failures
+  const isEmpty = !fresh || 
+                  (Array.isArray(fresh) && fresh.length === 0) || 
+                  (typeof fresh === 'object' && fresh.results && Array.isArray(fresh.results) && fresh.results.length === 0);
+                  
+  if (!isEmpty) {
+    await cache.set(key, fresh, ttlSeconds);
+  }
   return fresh;
 }
 

@@ -126,7 +126,7 @@ export default function RecentlyAddedCard({ manga }) {
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {manga.lastChapterId ? (
                 <Link
-                  href={`/manga/${manga.id}/${manga.lastChapterId}`}
+                  href={`/read/${manga.lastChapterId}?mangaId=${manga.id}`}
                   style={{ color: 'inherit', textDecoration: 'none' }}
                   onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
                   onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
