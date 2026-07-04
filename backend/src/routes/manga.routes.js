@@ -89,8 +89,12 @@ router.get('/browse/filter', optionalAuth, async (req, res) => {
       includeMode: include_mode || 'and'
     };
     const data = await mangaService.browse(filters, req.user?.userId);
-    // ⚡ Edge Cache: 10 mins for browse filters
-    res.setHeader('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=59');
+    // ⚡ Edge Cache: 10 mins for browse filters only when no keyword is searched and we have results
+    if (!filters.keyword && data.results && data.results.length > 0) {
+      res.setHeader('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=59');
+    } else {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    }
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
