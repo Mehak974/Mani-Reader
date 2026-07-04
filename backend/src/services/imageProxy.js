@@ -162,14 +162,26 @@ async function proxyImage(imageUrl, res) {
       return res.send(Buffer.from(cached.data, 'base64'));
     }
 
-    const response = await axios.get(imageUrl, {
-      responseType: 'arraybuffer',
-      timeout: 15000,
-      headers: {
-        Referer: getReferer(imageUrl),
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      },
-    });
+    let response;
+    let attempts = 0;
+    const maxAttempts = 2;
+    while (attempts < maxAttempts) {
+      try {
+        response = await axios.get(imageUrl, {
+          responseType: 'arraybuffer',
+          timeout: 10000,
+          headers: {
+            Referer: getReferer(imageUrl),
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+          },
+        });
+        break;
+      } catch (err) {
+        attempts++;
+        if (attempts >= maxAttempts) throw err;
+        await new Promise(r => setTimeout(r, 500));
+      }
+    }
 
     const contentType = response.headers['content-type'] || 'image/jpeg';
     if (!contentType.startsWith('image/')) {
