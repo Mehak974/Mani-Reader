@@ -159,16 +159,7 @@ export default function HomeClient({ initialData = {} }) {
 
   return (
     <div className="page-wrapper home-page-wrapper" style={{ background: 'var(--bg)', minHeight: '100vh' }} suppressHydrationWarning>
-      {!mounted ? (
-        <div style={{ background: 'var(--bg)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="container" style={{ paddingTop: '100px' }}>
-            <div style={{ marginBottom: 40 }}><SkeletonCarousel count={6} /></div>
-            <div style={{ marginBottom: 40 }}><SkeletonCarousel count={6} /></div>
-          </div>
-        </div>
-      ) : (
-        <>
-          <Navbar />
+      <Navbar />
 
           <div className="container" style={{ marginTop: '90px' }}>
             <AdBanner size="small" slot="8394012345" /> {/* Use your real slot ID here */}
@@ -410,8 +401,6 @@ export default function HomeClient({ initialData = {} }) {
             opacity: 0.3;
           }
         `}</style>
-        </>
-      )}
     </div>
   );
 }
