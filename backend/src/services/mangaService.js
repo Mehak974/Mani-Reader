@@ -139,7 +139,8 @@ function mapManga(raw) {
       const hasStrict = genreList.some(tag => 
         STRICT_BLACKLIST.some(bad => tag === bad || tag.includes(bad))
       );
-      if (hasStrict || raw.isAdult || raw.nsfw) {
+      const hasGenres = genreList.length > 0;
+      if (hasStrict || raw.isAdult || (!hasGenres && raw.nsfw)) {
         return true;
       }
       
