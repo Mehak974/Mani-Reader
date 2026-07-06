@@ -4,6 +4,9 @@ import Link from 'next/link';
 import { useAuth } from '../lib/auth';
 import { getApiServerUrl } from '../lib/api';
 
+// Cloudflare Worker image proxy — edge-cached, fast, handles hotlink-protected domains
+const CF_IMAGE_PROXY = 'https://mani-image-proxy.mehakiqbal974.workers.dev';
+
 // Compute the proxy URL outside the component so it's stable across renders
 function getCoverUrl(manga) {
   const rawCover = manga?.image || manga?.cover || manga?.coverImage;
@@ -17,11 +20,16 @@ function getCoverUrl(manga) {
     'i0.wp.com', 'i1.wp.com', 'i2.wp.com', 'i3.wp.com',
   ];
   if (safeDomains.some(d => rawCover.includes(d))) return rawCover;
-  if (rawCover.includes('/api/image') || rawCover.includes('workers.dev')) return rawCover;
+  // Already proxied — extract the real URL and re-route through Worker
+  if (rawCover.includes('/api/image')) {
+    const match = rawCover.match(/[?&]url=([^&]+)/);
+    const target = match ? decodeURIComponent(match[1]) : null;
+    if (target) return `${CF_IMAGE_PROXY}?url=${encodeURIComponent(target)}`;
+  }
+  if (rawCover.includes('workers.dev')) return rawCover;
 
-  // Use absolute backend URL so the proxy works in production (Cloudflare/Vercel rewrites unreliable)
-  const serverUrl = getApiServerUrl(); // '' on localhost, 'https://api.manireader.online' in prod
-  return `${serverUrl}/api/image?url=${encodeURIComponent(rawCover)}`;
+  // Route all other external images through Cloudflare Worker
+  return `${CF_IMAGE_PROXY}?url=${encodeURIComponent(rawCover)}`;
 }
 
 export default function MangaCard({ manga, revealNsfw = false, setRevealNsfw = () => {}, priority = false }) {

@@ -4,20 +4,31 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { getApiServerUrl } from '../lib/api';
 
+// Cloudflare Worker image proxy — edge-cached, fast, handles hotlink-protected domains
+const CF_IMAGE_PROXY = 'https://mani-image-proxy.mehakiqbal974.workers.dev';
+
 export default function RecentlyAddedCard({ manga }) {
   const [isExpanded, setIsExpanded] = React.useState(false);
   const [isHovered, setIsHovered] = React.useState(false);
 
   if (!manga) return null;
 
-  const serverUrl = getApiServerUrl(); // e.g. 'https://api.manireader.online' in prod, '' locally
   const rawCover = manga.image || manga.cover;
   const safeDomains = ['image.tmdb.org', 'imgur.com', 'blogspot.com', 'googleusercontent.com', 'placehold.co', 'wp.com', 'cloudinary.com', 'i0.wp.com', 'i1.wp.com', 'i2.wp.com', 'i3.wp.com'];
-  const coverUrl = rawCover
-    ? (rawCover.startsWith('http') && !rawCover.includes('/api/image') && !rawCover.includes('workers.dev') && !safeDomains.some(d => rawCover.includes(d))
-      ? `${serverUrl}/api/image?url=${encodeURIComponent(rawCover)}`
-      : rawCover)
-    : '/placeholder-cover.jpg';
+
+  let targetUrl = rawCover;
+  // Unwrap any previously-wrapped backend proxy URL to get the original image URL
+  if (rawCover && rawCover.includes('/api/image')) {
+    const match = rawCover.match(/[?&]url=([^&]+)/);
+    if (match && match[1]) targetUrl = decodeURIComponent(match[1]);
+  }
+
+  const coverUrl = !targetUrl
+    ? '/placeholder-cover.jpg'
+    : (targetUrl.includes('workers.dev') || !targetUrl.startsWith('http') || safeDomains.some(d => targetUrl.includes(d)))
+      ? targetUrl
+      : `${CF_IMAGE_PROXY}?url=${encodeURIComponent(targetUrl)}`;
+
 
   const displayChapters = manga.latestChapters && manga.latestChapters.length > 0
     ? manga.latestChapters
