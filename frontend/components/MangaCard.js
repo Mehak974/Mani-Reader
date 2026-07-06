@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuth } from '../lib/auth';
+import { getApiServerUrl } from '../lib/api';
 
 // Compute the proxy URL outside the component so it's stable across renders
 function getCoverUrl(manga) {
@@ -18,8 +19,9 @@ function getCoverUrl(manga) {
   if (safeDomains.some(d => rawCover.includes(d))) return rawCover;
   if (rawCover.includes('/api/image') || rawCover.includes('workers.dev')) return rawCover;
 
-  // Relative proxy path — works on any hostname in production
-  return `/api/image?url=${encodeURIComponent(rawCover)}`;
+  // Use absolute backend URL so the proxy works in production (Cloudflare/Vercel rewrites unreliable)
+  const serverUrl = getApiServerUrl(); // '' on localhost, 'https://api.manireader.online' in prod
+  return `${serverUrl}/api/image?url=${encodeURIComponent(rawCover)}`;
 }
 
 export default function MangaCard({ manga, revealNsfw = false, setRevealNsfw = () => {}, priority = false }) {

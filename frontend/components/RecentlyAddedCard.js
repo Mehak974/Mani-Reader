@@ -10,14 +10,12 @@ export default function RecentlyAddedCard({ manga }) {
 
   if (!manga) return null;
 
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || '/api';
-
+  const serverUrl = getApiServerUrl(); // e.g. 'https://api.manireader.online' in prod, '' locally
   const rawCover = manga.image || manga.cover;
-  // 🏎️ Smart Proxy: Use relative /api/image path — works on any hostname in production
   const safeDomains = ['image.tmdb.org', 'imgur.com', 'blogspot.com', 'googleusercontent.com', 'placehold.co', 'wp.com', 'cloudinary.com', 'i0.wp.com', 'i1.wp.com', 'i2.wp.com', 'i3.wp.com'];
   const coverUrl = rawCover
     ? (rawCover.startsWith('http') && !rawCover.includes('/api/image') && !rawCover.includes('workers.dev') && !safeDomains.some(d => rawCover.includes(d))
-      ? `/api/image?url=${encodeURIComponent(rawCover)}`
+      ? `${serverUrl}/api/image?url=${encodeURIComponent(rawCover)}`
       : rawCover)
     : '/placeholder-cover.jpg';
 
