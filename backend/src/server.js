@@ -153,6 +153,13 @@ app.listen(config.port, '0.0.0.0', () => {
   console.log(`   [ManiReader] Debug Config Route is ACTIVE`);
   console.log(`   Consumet API: ${config.consumet.url}`);
   console.log(`   Environment: ${config.nodeEnv}\n`);
+
+  try {
+    const { startPopularMangaSync } = require('./services/mangaService');
+    startPopularMangaSync();
+  } catch (err) {
+    console.error('[Server] Failed to initialize popular manga scheduler:', err.message);
+  }
 });
 
 module.exports = app;

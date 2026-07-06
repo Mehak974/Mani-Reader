@@ -5,6 +5,7 @@ import Navbar from '../../../components/Navbar';
 import MangaCard from '../../../components/MangaCard';
 import ChapterList from '../../../components/ChapterList';
 import AdBanner from '../../../components/AdBanner';
+import MangaLoader from '../../../components/MangaLoader';
 import { mangaApi, libraryApi, progressApi, bookmarkApi, getApiServerUrl } from '../../../lib/api';
 
 export default function MangaDetailClient({ id, initialManga, initialChapters }) {
@@ -166,15 +167,8 @@ export default function MangaDetailClient({ id, initialManga, initialChapters })
 
   if (loading) return (
     <div className="page-wrapper"><Navbar />
-      <div className="container section">
-        <div style={{ display: 'grid', gridTemplateColumns: '240px 1fr', gap: 40 }}>
-          <div className="skeleton" style={{ height: 340, borderRadius: 18 }} />
-          <div>
-            <div className="skeleton skeleton-text" style={{ height: 36, width: '70%', marginBottom: 16 }} />
-            <div className="skeleton skeleton-text" style={{ width: '90%' }} />
-            <div className="skeleton skeleton-text" style={{ width: '80%' }} />
-          </div>
-        </div>
+      <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+        <MangaLoader size="large" />
       </div>
     </div>
   );

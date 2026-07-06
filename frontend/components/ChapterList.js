@@ -21,6 +21,34 @@ export default function ChapterList({ chapters = [], mangaId, progress = [] }) {
     setTimeout(() => setToast(null), 3000);
   };
 
+  const handleScrollToBottom = () => {
+    window.scrollTo({
+      top: document.documentElement.scrollHeight,
+      behavior: 'smooth'
+    });
+  };
+
+  const handleScrollToLastRead = () => {
+    const sortedProgress = [...progress].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    const lastRead = sortedProgress[0];
+    if (lastRead) {
+      const el = document.getElementById(`chapter-item-${lastRead.chapterId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.style.outline = '2px solid var(--accent)';
+        el.style.outlineOffset = '4px';
+        el.style.borderRadius = '14px';
+        setTimeout(() => {
+          el.style.outline = 'none';
+        }, 3000);
+      } else {
+        showToast('Last read chapter is not in the list', 'error');
+      }
+    } else {
+      showToast('No progress found for this manga', 'info');
+    }
+  };
+
   const displayed = filter
     ? chapters.filter((ch) => 
         String(ch.number).includes(filter) || 
@@ -66,8 +94,21 @@ export default function ChapterList({ chapters = [], mangaId, progress = [] }) {
 
   return (
     <div>
-      {/* Controls Header */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+      {/* Controls Header - Sticky */}
+      <div style={{
+        position: 'sticky',
+        top: '0px',
+        zIndex: 100,
+        background: 'var(--bg)',
+        paddingTop: '12px',
+        paddingBottom: '12px',
+        borderBottom: '1px solid var(--border)',
+        marginBottom: '20px',
+        display: 'flex',
+        gap: 12,
+        flexWrap: 'wrap',
+        alignItems: 'center'
+      }}>
         <div className="search-wrapper" style={{ flex: 1, minWidth: 200, marginBottom: 0 }}>
           <input
             type="text"
@@ -79,6 +120,27 @@ export default function ChapterList({ chapters = [], mangaId, progress = [] }) {
           <span className="search-icon">🔍</span>
         </div>
 
+        {/* Scroll Navigation Buttons */}
+        <button 
+          className="btn btn-ghost" 
+          onClick={handleScrollToLastRead} 
+          title="Scroll to last read chapter"
+          style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 6 }}
+        >
+          <span className="material-icons" style={{ fontSize: '1.2rem' }}>auto_stories</span>
+          <span className="desktop-only" style={{ fontSize: '0.8rem', fontWeight: 600 }}>Last Read</span>
+        </button>
+
+        <button 
+          className="btn btn-ghost" 
+          onClick={handleScrollToBottom} 
+          title="Scroll to bottom"
+          style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 6 }}
+        >
+          <span className="material-icons" style={{ fontSize: '1.2rem' }}>arrow_downward</span>
+          <span className="desktop-only" style={{ fontSize: '0.8rem', fontWeight: 600 }}>Bottom</span>
+        </button>
+
         {/* Refresh Button */}
         <button 
           className="btn btn-ghost" 
@@ -88,8 +150,6 @@ export default function ChapterList({ chapters = [], mangaId, progress = [] }) {
         >
           <span className="material-icons" style={{ fontSize: '1.2rem' }}>refresh</span>
         </button>
-
-
       </div>
 
       <div style={{ fontSize: '0.8rem', color: 'var(--text-3)', marginBottom: 12, display: 'flex', justifyContent: 'space-between' }}>
@@ -120,7 +180,7 @@ export default function ChapterList({ chapters = [], mangaId, progress = [] }) {
           }
 
           return (
-            <div key={ch.id} className="chapter-list-item-wrapper" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div key={ch.id} id={`chapter-item-${ch.id}`} className="chapter-list-item-wrapper" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               {selectionMode && (
                 <input 
                   type="checkbox" 

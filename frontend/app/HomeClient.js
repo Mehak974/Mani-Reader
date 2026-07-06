@@ -8,23 +8,18 @@ import MangaCard from '../components/MangaCard';
 import { mangaApi } from '../lib/api';
 import RecentlyAddedCard from '../components/RecentlyAddedCard';
 import AdBanner from '../components/AdBanner';
+import MangaLoader from '../components/MangaLoader';
 
-function SkeletonCarousel({ count = 12 }) {
+function SkeletonCarousel() {
   return (
-    <div className="manga-carousel">
-      {Array.from({ length: count }).map((_, i) => (
-        <div key={i}>
-          <div className="skeleton skeleton-card" />
-          <div className="skeleton skeleton-text w-3/4" style={{ marginTop: 8 }} />
-          <div className="skeleton skeleton-text w-1/2" />
-        </div>
-      ))}
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '320px', width: '100%' }}>
+      <MangaLoader size="medium" />
     </div>
   );
 }
 
 export default function HomeClient({ initialData = {} }) {
-  const { user, loading: authLoading } = useAuth() || {};
+  const { user, loading: authLoading, revealNsfw, setRevealNsfw } = useAuth() || {};
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -36,12 +31,47 @@ export default function HomeClient({ initialData = {} }) {
 
   const [recent, setRecent] = React.useState(initialData.recent || []);
   const [loading, setLoading] = React.useState(!initialData.recent);
-  const [popularUpdates, setPopularUpdates] = React.useState(initialData.fantasy || []);
-  const [popularAction, setPopularAction] = React.useState(initialData.action || []);
-  const [popularRomance, setPopularRomance] = React.useState(initialData.romance || []);
-  const [updatesLoading, setUpdatesLoading] = React.useState(!initialData.fantasy);
-  const [actionLoading, setActionLoading] = React.useState(!initialData.action);
-  const [romanceLoading, setRomanceLoading] = React.useState(!initialData.romance);
+  
+  // Tabbed popular sections state
+  const [activeTab, setActiveTab] = React.useState('action');
+  const [popularData, setPopularData] = React.useState({
+    action: initialData.action || [],
+    fantasy: initialData.fantasy || [],
+    romance: initialData.romance || []
+  });
+  const [tabLoading, setTabLoading] = React.useState({
+    action: !initialData.action || initialData.action.length === 0,
+    fantasy: !initialData.fantasy || initialData.fantasy.length === 0,
+    romance: !initialData.romance || initialData.romance.length === 0
+  });
+
+  const carouselRef = React.useRef(null);
+
+  const scrollLeft = () => {
+    if (carouselRef.current) {
+      const currentScroll = carouselRef.current.scrollLeft;
+      const cardWidth = 200; // 180px flex-basis + 20px gap
+      if (currentScroll <= 10) {
+        const midPoint = carouselRef.current.scrollWidth / 2;
+        carouselRef.current.scrollLeft = midPoint;
+      }
+      carouselRef.current.scrollBy({ left: -cardWidth * 2, behavior: 'smooth' });
+    }
+  };
+
+  const scrollRight = () => {
+    if (carouselRef.current) {
+      const currentScroll = carouselRef.current.scrollLeft;
+      const cardWidth = 200;
+      const midPoint = carouselRef.current.scrollWidth / 2;
+      const maxScroll = carouselRef.current.scrollWidth - carouselRef.current.clientWidth;
+      if (currentScroll >= midPoint - 10) {
+        carouselRef.current.scrollLeft = currentScroll - midPoint;
+      }
+      carouselRef.current.scrollBy({ left: cardWidth * 2, behavior: 'smooth' });
+    }
+  };
+
   const [recentPage, setRecentPage] = React.useState(1);
   const [totalPages, setTotalPages] = React.useState(initialData.recentTotalPages || 1);
   const [mounted, setMounted] = React.useState(false);
@@ -64,61 +94,25 @@ export default function HomeClient({ initialData = {} }) {
     }
   }, [searchParams, mounted]);
 
+  // Fetch popular data on active tab change (if not loaded yet)
   React.useEffect(() => {
-    // Skip initial load if data was already provided by SSR/ISR
-    if (initialData.fantasy?.length > 0 || initialData.action?.length > 0 || initialData.romance?.length > 0) {
-      setUpdatesLoading(false);
-      setActionLoading(false);
-      setRomanceLoading(false);
+    if (popularData[activeTab] && popularData[activeTab].length > 0) {
+      setTabLoading(prev => ({ ...prev, [activeTab]: false }));
       return;
     }
 
-    // 1. Parallel Fetching (Fallback if SSR did not complete)
-    setUpdatesLoading(true);
-    setActionLoading(true);
-    setRomanceLoading(true);
-
-    Promise.all([
-      mangaApi.popular(1, 'fantasy', { params: { _t: Date.now() } }),
-      mangaApi.popular(1, 'action', { params: { _t: Date.now() } }),
-      mangaApi.popular(2, 'action', { params: { _t: Date.now() } }),
-      mangaApi.popular(1, 'romance', { params: { _t: Date.now() } }),
-      mangaApi.popular(2, 'romance', { params: { _t: Date.now() } })
-    ]).then(([fantasyRes, action1, action2, romance1, romance2]) => {
-      const processGenre = (responses, limit) => {
-        const resArray = Array.isArray(responses) ? responses : [responses];
-        const seen = new Set();
-        const results = [];
-        for (const res of resArray) {
-          const raw = res?.data?.results || res?.data || res?.results || (Array.isArray(res) ? res : []);
-          // Simple client filter fallback without requiring heavy regex blacklists in client bundle
-          const filtered = raw.filter(m => !m.nsfw);
-          for (const m of filtered) {
-            if (!seen.has(m.id)) {
-              seen.add(m.id);
-              results.push(m);
-              if (results.length >= limit) break;
-            }
-          }
-          if (results.length >= limit) break;
-        }
-        return results;
-      };
-
-      setPopularUpdates(processGenre(fantasyRes, 16));
-      const actionResults = processGenre([action1, action2], 16);
-      setPopularAction(actionResults.length > 0 ? actionResults : popularUpdates.slice(0, 16));
-      setPopularRomance(processGenre([romance1, romance2], 16));
-    })
-      .catch(err => {
-        // Suppress console error
+    setTabLoading(prev => ({ ...prev, [activeTab]: true }));
+    mangaApi.popular(1, activeTab, { params: { _t: Date.now() } })
+      .then((res) => {
+        const raw = res?.data || res || [];
+        const results = raw.filter(m => !m.nsfw).slice(0, 15);
+        setPopularData(prev => ({ ...prev, [activeTab]: results }));
       })
+      .catch(() => {})
       .finally(() => {
-        setUpdatesLoading(false);
-        setActionLoading(false);
-        setRomanceLoading(false);
+        setTabLoading(prev => ({ ...prev, [activeTab]: false }));
       });
-  }, []);
+  }, [activeTab]);
 
   React.useEffect(() => {
     // If it's page 1 and we have initial recent updates, skip initial fetch
@@ -165,77 +159,185 @@ export default function HomeClient({ initialData = {} }) {
             <AdBanner size="small" slot="8394012345" /> {/* Use your real slot ID here */}
           </div>
 
-          <section id="fantasy" className="section">
+          <section className="section" style={{ paddingBottom: '20px' }}>
             <div className="container">
-              <div className="section-header" suppressHydrationWarning>
-                <h2 className="section-title">✨ Popular <span>Fantasy</span></h2>
-                <a href="/browse?include=fantasy&order=5" className="btn btn-ghost btn-sm">View All →</a>
+              {/* Premium Tabbed Navigation */}
+              <div className="tab-container" style={{ 
+                display: 'flex', 
+                gap: '8px', 
+                marginBottom: '28px', 
+                borderBottom: '1px solid var(--border)', 
+                paddingBottom: '0',
+                overflowX: 'auto',
+                scrollbarWidth: 'none'
+              }}>
+                {[
+                  { id: 'action', label: '⚔️ Popular Action', urlSlug: 'action' },
+                  { id: 'fantasy', label: '✨ Popular Fantasy', urlSlug: 'fantasy' },
+                  { id: 'romance', label: '💖 Popular Romance', urlSlug: 'romance' }
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: activeTab === tab.id ? 'var(--accent)' : 'var(--text-3)',
+                      fontWeight: '600',
+                      fontSize: '1.15rem',
+                      cursor: 'pointer',
+                      padding: '12px 20px',
+                      position: 'relative',
+                      whiteSpace: 'nowrap',
+                      transition: 'color 0.2s ease',
+                      outline: 'none'
+                    }}
+                  >
+                    {tab.label}
+                    {activeTab === tab.id && (
+                      <div style={{ 
+                        position: 'absolute', 
+                        bottom: '0', 
+                        left: '12px', 
+                        right: '12px', 
+                        height: '3px', 
+                        background: 'var(--accent)', 
+                        borderRadius: '2px 2px 0 0'
+                      }} />
+                    )}
+                  </button>
+                ))}
+                
+                {/* Dynamically adjust the "View All" link based on active tab */}
+                <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', paddingRight: '12px' }}>
+                  <a href={`/browse?include=${activeTab}&order=5`} className="btn btn-ghost btn-sm" style={{ whiteSpace: 'nowrap' }}>
+                    View All {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} →
+                  </a>
+                </div>
               </div>
 
-              {updatesLoading ? <SkeletonCarousel count={12} /> : (
-                <div style={{ display: 'flex', gap: '20px', overflowX: 'auto', paddingBottom: '20px', scrollSnapType: 'x mandatory' }}>
-                  {popularUpdates.length > 0 ? popularUpdates.map((m, index) => (
-                    <div key={m.id} style={{ flex: '0 0 180px', scrollSnapAlign: 'start' }}>
-                      <MangaCard manga={m} priority={index < 4} />
+              <div style={{ minHeight: '380px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                {tabLoading[activeTab] ? (
+                  <SkeletonCarousel count={6} />
+                ) : (
+                  popularData[activeTab] && popularData[activeTab].length > 0 ? (
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                      <style>{`
+                        .hide-scrollbar::-webkit-scrollbar {
+                          display: none !important;
+                        }
+                        @keyframes card-fade-in {
+                          from { opacity: 0; transform: translateY(20px) scale(0.97); }
+                          to { opacity: 1; transform: translateY(0) scale(1); }
+                        }
+                        .stagger-card {
+                          opacity: 0;
+                          animation: card-fade-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                        }
+                      `}</style>
+                      
+                      {/* Left Navigation Arrow */}
+                      <button 
+                        onClick={scrollLeft}
+                        className="carousel-arrow left"
+                        style={{
+                          position: 'absolute',
+                          left: '-20px',
+                          zIndex: 10,
+                          background: 'rgba(20, 20, 20, 0.85)',
+                          border: '1px solid var(--border)',
+                          borderRadius: '50%',
+                          width: '40px',
+                          height: '40px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'var(--text-1)',
+                          cursor: 'pointer',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                          transition: 'all 0.2s ease',
+                          backdropFilter: 'blur(4px)',
+                          outline: 'none'
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--accent)'; e.currentTarget.style.color = '#fff'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(20, 20, 20, 0.85)'; e.currentTarget.style.color = 'var(--text-1)'; }}
+                      >
+                        <span className="material-icons" style={{ fontSize: '1.4rem', fontWeight: 'bold' }}>chevron_left</span>
+                      </button>
+
+                      {/* Scrollable Carousel */}
+                      <div 
+                        ref={carouselRef}
+                        className="hide-scrollbar"
+                        style={{ 
+                          display: 'flex', 
+                          gap: '20px', 
+                          overflowX: 'auto', 
+                          paddingBottom: '10px', 
+                          scrollSnapType: 'x mandatory',
+                          scrollbarWidth: 'none',
+                          msOverflowStyle: 'none',
+                          width: '100%',
+                          scrollBehavior: 'smooth'
+                        }}
+                      >
+                        {[...popularData[activeTab], ...popularData[activeTab]].map((m, index) => (
+                          <div 
+                            key={`${m.id}-${index}`} 
+                            className="stagger-card"
+                            style={{ 
+                              flex: '0 0 180px', 
+                              scrollSnapAlign: 'start',
+                              animationDelay: `${(index % 15) * 60}ms`
+                            }}
+                          >
+                            <MangaCard 
+                              manga={m} 
+                              revealNsfw={revealNsfw} 
+                              setRevealNsfw={setRevealNsfw} 
+                              priority={index < 4} 
+                            />
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Right Navigation Arrow */}
+                      <button 
+                        onClick={scrollRight}
+                        className="carousel-arrow right"
+                        style={{
+                          position: 'absolute',
+                          right: '-20px',
+                          zIndex: 10,
+                          background: 'rgba(20, 20, 20, 0.85)',
+                          border: '1px solid var(--border)',
+                          borderRadius: '50%',
+                          width: '40px',
+                          height: '40px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'var(--text-1)',
+                          cursor: 'pointer',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                          transition: 'all 0.2s ease',
+                          backdropFilter: 'blur(4px)',
+                          outline: 'none'
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--accent)'; e.currentTarget.style.color = '#fff'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(20, 20, 20, 0.85)'; e.currentTarget.style.color = 'var(--text-1)'; }}
+                      >
+                        <span className="material-icons" style={{ fontSize: '1.4rem', fontWeight: 'bold' }}>chevron_right</span>
+                      </button>
                     </div>
-                  )) : (
-                    <div style={{ padding: '40px', textAlign: 'center', width: '100%', color: 'var(--text-3)' }}>
+                  ) : (
+                    <div style={{ padding: '60px 40px', textAlign: 'center', width: '100%', color: 'var(--text-3)', background: 'var(--bg-2)', borderRadius: '16px' }}>
                       No popular manga found at the moment.
                     </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </section>
-
-          {/* ⚔️ Action Section — only show if there are results */}
-          <section className="section" style={{ paddingTop: 0 }}>
-            <div className="container">
-              <div className="section-header">
-                <h2 className="section-title">⚔️ Popular <span>Action</span></h2>
-                <a href="/browse?include=action&order=5" className="btn btn-ghost btn-sm">More →</a>
+                  )
+                )}
               </div>
-              {actionLoading ? <SkeletonCarousel count={6} /> : (
-                popularAction.length > 0 ? (
-                  <div style={{ display: 'flex', gap: '20px', overflowX: 'auto', paddingBottom: '20px', scrollSnapType: 'x mandatory' }}>
-                    {popularAction.map((m) => (
-                      <div key={m.id} style={{ flex: '0 0 180px', scrollSnapAlign: 'start' }}>
-                        <MangaCard manga={m} />
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div style={{ padding: '40px', textAlign: 'center', width: '100%', color: 'var(--text-3)' }}>
-                    No popular action manga found at the moment.
-                  </div>
-                )
-              )}
-            </div>
-          </section>
-
-
-          {/* 💖 Romance Section — only show if there are results */}
-          <section className="section" style={{ paddingTop: 0 }}>
-            <div className="container">
-              <div className="section-header">
-                <h2 className="section-title">💖 Popular <span>Romance</span></h2>
-                <a href="/browse?include=romance&order=5" className="btn btn-ghost btn-sm">More →</a>
-              </div>
-              {romanceLoading ? <SkeletonCarousel count={6} /> : (
-                popularRomance.length > 0 ? (
-                  <div style={{ display: 'flex', gap: '20px', overflowX: 'auto', paddingBottom: '20px', scrollSnapType: 'x mandatory' }}>
-                    {popularRomance.map((m) => (
-                      <div key={m.id} style={{ flex: '0 0 180px', scrollSnapAlign: 'start' }}>
-                        <MangaCard manga={m} />
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div style={{ padding: '40px', textAlign: 'center', width: '100%', color: 'var(--text-3)' }}>
-                    No popular romance manga found at the moment.
-                  </div>
-                )
-              )}
             </div>
           </section>
 
@@ -247,16 +349,22 @@ export default function HomeClient({ initialData = {} }) {
               </div>
 
               {loading ? (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px', minHeight: '580px' }}>
                   {[...Array(9)].map((_, i) => (
-                    <div key={i} style={{ height: '160px', background: 'var(--bg-2)', borderRadius: '16px', animation: 'pulse 1.5s infinite' }} />
+                    <div key={i} style={{ height: '174px', background: 'var(--bg-2)', borderRadius: '16px', animation: 'pulse 1.5s infinite' }} />
                   ))}
                 </div>
               ) : (
                 <>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px' }}>
-                    {recent.length > 0 ? recent.map((m) => (
-                      <RecentlyAddedCard key={m.id} manga={m} />
+                    {recent.length > 0 ? recent.map((m, index) => (
+                      <div 
+                        key={m.id} 
+                        className="stagger-card" 
+                        style={{ animationDelay: `${(index % 12) * 50}ms` }}
+                      >
+                        <RecentlyAddedCard manga={m} />
+                      </div>
                     )) : (
                       <div style={{ gridColumn: '1/-1', padding: '60px', textAlign: 'center', color: 'var(--text-3)' }}>
                         No recently added manga found on this page.

@@ -3,6 +3,11 @@ const axios = require('axios');
 
 const BASE_API_URL = 'https://api.mangadex.org';
 
+const normalizeStatus = (s) => {
+  if (!s) return 'Unknown';
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+};
+
 async function searchManga(query, page = 1) {
   try {
     const limit = 20;
@@ -24,19 +29,24 @@ async function searchManga(query, page = 1) {
 
     const results = res.data.data.map(m => {
       const attributes = m.attributes;
-      const title = attributes.title.en || attributes.title[Object.keys(attributes.title)[0]] || 'Unknown';
+      const title = attributes.title ? (attributes.title.en || attributes.title[Object.keys(attributes.title)[0]] || 'Unknown') : 'Unknown';
       
       // Fix: coverArt relationship fileName is inside attributes if included
       const coverArt = m.relationships.find(r => r.type === 'cover_art');
       const fileName = coverArt?.attributes?.fileName || '';
       
+      let description = '';
+      if (attributes.description) {
+        description = attributes.description.en || attributes.description[Object.keys(attributes.description)[0]] || '';
+      }
+      
       return {
         id: `mangadex:${m.id}`,
         title: title,
         image: fileName ? `https://uploads.mangadex.org/covers/${m.id}/${fileName}.256.jpg` : '',
-        description: attributes.description?.en || '',
-        status: attributes.status,
-        genres: attributes.tags.map(t => t.attributes.name.en),
+        description: description,
+        status: normalizeStatus(attributes.status),
+        genres: attributes.tags ? attributes.tags.map(t => t.attributes?.name?.en).filter(Boolean) : [],
         nsfw: ['erotica', 'pornographic'].includes(attributes.contentRating),
         source: 'mangadex'
       };
@@ -63,7 +73,7 @@ async function getMangaInfo(id) {
 
     const m = res.data.data;
     const attr = m.attributes;
-    const title = attr.title.en || attr.title[Object.keys(attr.title)[0]];
+    const title = attr.title ? (attr.title.en || attr.title[Object.keys(attr.title)[0]] || 'Unknown') : 'Unknown';
     const coverArt = m.relationships.find(r => r.type === 'cover_art');
     const fileName = coverArt?.attributes?.fileName || '';
 
@@ -77,20 +87,29 @@ async function getMangaInfo(id) {
       }
     });
 
-    const chapters = chapRes.data.data.map(ch => ({
-      id: `mangadex:${ch.id}`,
-      title: ch.attributes.title ? `Ch. ${ch.attributes.chapter}: ${ch.attributes.title}` : `Chapter ${ch.attributes.chapter}`,
-      chapterNumber: ch.attributes.chapter,
-      source: 'mangadex'
-    }));
+    const chapters = chapRes.data.data.map(ch => {
+      const chAttr = ch.attributes;
+      const chapterNum = chAttr.chapter || '0';
+      return {
+        id: `mangadex:${ch.id}`,
+        title: chAttr.title ? `Ch. ${chapterNum}: ${chAttr.title}` : `Chapter ${chapterNum}`,
+        chapterNumber: chapterNum,
+        source: 'mangadex'
+      };
+    });
+
+    let description = '';
+    if (attr.description) {
+      description = attr.description.en || attr.description[Object.keys(attr.description)[0]] || '';
+    }
 
     return {
       id: `mangadex:${m.id}`,
       title,
-      description: attr.description.en || '',
+      description,
       image: fileName ? `https://uploads.mangadex.org/covers/${m.id}/${fileName}` : '',
-      status: attr.status,
-      genres: attr.tags.map(t => t.attributes.name.en),
+      status: normalizeStatus(attr.status),
+      genres: attr.tags ? attr.tags.map(t => t.attributes?.name?.en).filter(Boolean) : [],
       nsfw: ['erotica', 'pornographic'].includes(attr.contentRating),
       chapters,
       source: 'mangadex'

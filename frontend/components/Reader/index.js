@@ -62,7 +62,7 @@ export function VerticalReader({ pages, chapterId, mangaId, prevChapter, nextCha
 
   return (
     <div className="reader-wrapper" onClick={(e) => {
-      if (e.target.closest('button') || e.target.closest('a')) return;
+      if (e.target.closest('button') || e.target.closest('a') || e.target.closest('.reader-topbar') || e.target.closest('.reader-progress-bar') || e.target.closest('select')) return;
       setShowControls(!showControls);
     }}>
       <style jsx>{`
@@ -112,6 +112,27 @@ export function VerticalReader({ pages, chapterId, mangaId, prevChapter, nextCha
           display: block;
           image-rendering: -webkit-optimize-contrast;
         }
+        .reader-select {
+          background: rgba(20, 20, 20, 0.8);
+          color: var(--text);
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          padding: 6px 12px;
+          font-size: 0.95rem;
+          font-weight: 700;
+          outline: none;
+          cursor: pointer;
+          font-family: inherit;
+          max-width: 130px;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          overflow: hidden;
+        }
+        @media (min-width: 768px) {
+          .reader-select {
+            max-width: 320px;
+          }
+        }
       `}</style>
 
       {/* Top bar */}
@@ -133,18 +154,7 @@ export function VerticalReader({ pages, chapterId, mangaId, prevChapter, nextCha
               value={chapterId}
               onChange={(e) => router.push(`/read/${e.target.value}?mangaId=${mangaId}`)}
               onClick={(e) => e.stopPropagation()}
-              style={{
-                background: 'rgba(20, 20, 20, 0.8)',
-                color: 'var(--text)',
-                border: '1px solid var(--border)',
-                borderRadius: '8px',
-                padding: '6px 12px',
-                fontSize: '0.95rem',
-                fontWeight: '700',
-                outline: 'none',
-                cursor: 'pointer',
-                fontFamily: 'inherit'
-              }}
+              className="reader-select"
             >
               {chapters.map((ch) => (
                 <option key={ch.id} value={ch.id}>
@@ -313,6 +323,27 @@ export function PagedReader({ pages, chapterId, mangaId, prevChapter, nextChapte
           transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
           transform: ${showControls ? 'translateY(0)' : 'translateY(100%)'};
         }
+        .reader-select {
+          background: rgba(20, 20, 20, 0.8);
+          color: var(--text);
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          padding: 6px 12px;
+          font-size: 0.95rem;
+          font-weight: 700;
+          outline: none;
+          cursor: pointer;
+          font-family: inherit;
+          max-width: 130px;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          overflow: hidden;
+        }
+        @media (min-width: 768px) {
+          .reader-select {
+            max-width: 320px;
+          }
+        }
       `}</style>
 
       <div className="reader-topbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '65px', padding: '0 20px' }}>
@@ -329,18 +360,7 @@ export function PagedReader({ pages, chapterId, mangaId, prevChapter, nextChapte
               value={chapterId}
               onChange={(e) => router.push(`/read/${e.target.value}?mangaId=${mangaId}`)}
               onClick={(e) => e.stopPropagation()}
-              style={{
-                background: 'rgba(20, 20, 20, 0.8)',
-                color: 'var(--text)',
-                border: '1px solid var(--border)',
-                borderRadius: '8px',
-                padding: '6px 12px',
-                fontSize: '0.95rem',
-                fontWeight: '700',
-                outline: 'none',
-                cursor: 'pointer',
-                fontFamily: 'inherit'
-              }}
+              className="reader-select"
             >
               {chapters.map((ch) => (
                 <option key={ch.id} value={ch.id}>

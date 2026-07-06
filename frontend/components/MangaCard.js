@@ -1,16 +1,11 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
-import { useAuth } from '../lib/auth';
 
-// Compute the proxy URL outside the component so it's stable across renders
 function getCoverUrl(manga) {
   const rawCover = manga?.image || manga?.cover;
   if (!rawCover) return '/placeholder-cover.jpg';
   if (!rawCover.startsWith('http')) return rawCover;
 
-  // Known hotlink-friendly CDNs — serve directly, no proxy needed
   const safeDomains = [
     'image.tmdb.org', 'imgur.com', 'blogspot.com', 'googleusercontent.com',
     'placehold.co', 'wp.com', 'cloudinary.com',
@@ -19,30 +14,14 @@ function getCoverUrl(manga) {
   if (safeDomains.some(d => rawCover.includes(d))) return rawCover;
   if (rawCover.includes('/api/image') || rawCover.includes('workers.dev')) return rawCover;
 
-  // Relative proxy path — works on any hostname in production
   return `/api/image?url=${encodeURIComponent(rawCover)}`;
 }
 
-export default function MangaCard({ manga, showNsfw = false, priority = false }) {
-  const { revealNsfw, setRevealNsfw } = useAuth() || {};
+export default function MangaCard({ manga, revealNsfw = false, setRevealNsfw = () => {}, priority = false }) {
   if (!manga) return null;
 
   const isBlurred = manga.nsfw && !revealNsfw;
   const coverUrl = getCoverUrl(manga);
-
-  // imgSrc initializes with the correct URL immediately — no blank-screen mount dependency
-  const [imgSrc, setImgSrc] = useState(coverUrl);
-
-  // Sync if manga prop changes (e.g. list updates)
-  useEffect(() => {
-    setImgSrc(getCoverUrl(manga));
-  }, [manga?.id, manga?.image, manga?.cover]);
-
-  const handleError = useCallback(() => {
-    if (imgSrc !== '/placeholder-cover.jpg') {
-      setImgSrc('/placeholder-cover.jpg');
-    }
-  }, [imgSrc]);
 
   return (
     <div className="manga-card-wrapper" style={{ position: 'relative', height: '100%' }}>
@@ -67,17 +46,13 @@ export default function MangaCard({ manga, showNsfw = false, priority = false })
         onMouseLeave={() => clearTimeout(window.mangaTimeout)}
       >
         <div className="manga-card-cover" style={{ position: 'relative', width: '100%', aspectRatio: '2/3', overflow: 'hidden', borderRadius: '16px' }}>
-          <Image
-            src={imgSrc}
+          <img
+            src={coverUrl}
             alt={manga.title}
-            fill
-            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 20vw"
-            priority={priority}
-            quality={50}
+            loading={priority ? "eager" : "lazy"}
             className={`manga-cover-img ${isBlurred ? 'blur-nsfw' : ''}`}
-            style={{ objectFit: 'cover', transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)' }}
-            unoptimized={imgSrc.includes('/api/image')}
-            onError={handleError}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)' }}
+            onError={(e) => { e.target.src = '/placeholder-cover.jpg'; }}
           />
           <div className="manga-card-overlay" />
 

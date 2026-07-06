@@ -12,7 +12,149 @@ const { normalize } = require('./normalization');
 const cache = require('./cacheLayer');
 const config = require('../config/env');
 
+// ── Manual Popular Lists (Seed Data) ──────────────────────────────────────────
+const RESOLVED_POPULAR_IDS = {
+  action: [
+    "mgeko:solo-leveling-mg1",
+    "tower-of-god.465",
+    "the-beginning-after-the-end.16210",
+    "omniscient-readers-viewpoint.24674",
+    "the-god-of-high-school.199",
+    "noblesse.387",
+    "mangadex:72b69c70-213a-4159-a799-0f96cab4a307",
+    "eleceed.115",
+    "mangadex:9eb78304-0436-484d-9a79-a925b45e2731",
+    "the-boxer.24895",
+    "mangadex:7cc37898-6669-407f-b7a6-f23a2859bc0b",
+    "bastard.7599",
+    "mercenary-enrollment.25375",
+    "nano-machine.25205",
+    "return-of-the-mount-hua-sect.25843",
+    "the-greatest-estate-developer.25916",
+    "mangadex:9ed16bc9-f570-4e71-8dda-aebc098b683b",
+    "mangadex:773c2211-750b-4fff-bd64-c914986e4637",
+    "a-returners-magic-should-be-special.21724"
+  ],
+  fantasy: [
+    "mgeko:solo-leveling-mg1",
+    "the-beginning-after-the-end.16210",
+    "omniscient-readers-viewpoint.24674",
+    "tower-of-god.465",
+    "the-god-of-high-school.199",
+    "nano-machine.25205",
+    "return-of-the-mount-hua-sect.25843",
+    "sss-class-suicide-hunter.25513",
+    "the-greatest-estate-developer.25916",
+    "legend-of-the-northern-blade.24729",
+    "murim-login.24856",
+    "mangadex:773c2211-750b-4fff-bd64-c914986e4637",
+    "mangadex:1ffca916-3ad7-46d2-9591-a9b39e639971",
+    "leveling-with-the-gods.25898",
+    "a-returners-magic-should-be-special.21724",
+    "apotheosis.19829",
+    "tales-of-demons-and-gods.461",
+    "battle-through-the-heavens-return-of-the-beasts.22991",
+    "mangadex:523ac7ed-0b24-4598-b440-814d8bdcf540"
+  ],
+  romance: [
+    "mangadex:51a0cd0c-3254-47f0-a7fd-4b9bb178f813",
+    "who-made-me-a-princess.19972",
+    "cheese-in-the-trap.1",
+    "seasons-of-blossom.25844",
+    "mangadex:40da1219-1860-4d7f-b823-d3511ac67cac",
+    "see-you-in-my-19th-life.25835",
+    "mangadex:220282a9-a2ff-4a6b-9bed-f4a9da24c661",
+    "mangadex:80fc5001-aabb-4054-94ba-931a716f226e",
+    "whats-wrong-with-secretary-kim.25796",
+    "my-reason-to-die.26681",
+    "mangadex:068348af-37d7-45df-827a-e6f4ebbc4a80",
+    "romance-101.26104",
+    "mangadex:03eee952-1a7c-406b-8998-a85b238999d9",
+    "mangadex:c44b5b1d-60cf-4faf-be2c-0a807200358f",
+    "mangadex:e1847df1-db22-4279-95e2-9dbbbd1bbfbc",
+    "mangadex:c9a891f6-9f4b-487d-8b62-7abb0e3f59c8",
+    "mangadex:b4ecb445-9a26-4f9d-bf16-df96bda62de0",
+    "the-broken-ring-this-marriage-will-fail-anyway.27691",
+    "mangadex:db231da5-78e6-4422-b1b1-24e64e57159b"
+  ]
+};
+
+function startPopularMangaSync() {
+  console.log('[Scheduler] Initializing 24-hour popular manga sync job...');
+  
+  const allIds = Array.from(new Set([
+    ...RESOLVED_POPULAR_IDS.action,
+    ...RESOLVED_POPULAR_IDS.fantasy,
+    ...RESOLVED_POPULAR_IDS.romance
+  ]));
+
+  const runSync = async () => {
+    console.log(`[Scheduler] Starting 24-hour refresh for ${allIds.length} popular manga...`);
+    for (const id of allIds) {
+      try {
+        await refreshMangaInfoBackground(id);
+        // Wait 1 second between updates to prevent rate limits
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      } catch (err) {
+        console.error(`[Scheduler] Failed to refresh popular manga ${id}:`, err.message);
+      }
+    }
+    console.log('[Scheduler] 24-hour popular manga sync completed.');
+  };
+
+  // Run initial sync after 30 seconds to let the server boot up fully
+  setTimeout(runSync, 30000);
+
+  // Run every 24 hours
+  setInterval(runSync, 24 * 60 * 60 * 1000);
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
+const { fetchMangaMetadata } = require('./anilistService');
+
+function cleanHtml(html) {
+  if (!html) return html;
+  return html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/?[^>]+(>|$)/g, '')
+    .trim();
+}
+
+async function enrichMangaWithAniList(manga) {
+  if (!manga || !manga.title) return manga;
+
+  try {
+    const aniData = await fetchMangaMetadata(manga.title);
+    if (aniData) {
+      if (aniData.description) {
+        manga.description = cleanHtml(aniData.description);
+      }
+      if (aniData.genres && aniData.genres.length > 0) {
+        manga.genres = aniData.genres;
+      }
+      if (aniData.coverImage && (aniData.coverImage.extraLarge || aniData.coverImage.large)) {
+        manga.cover = imageShield(aniData.coverImage.extraLarge || aniData.coverImage.large);
+      }
+      if (aniData.averageScore) {
+        manga.rating = (aniData.averageScore / 10).toFixed(1);
+      }
+      if (aniData.status) {
+        const statusMap = {
+          'FINISHED': 'Completed',
+          'RELEASING': 'Ongoing',
+          'NOT_YET_RELEASED': 'Not Yet Released',
+          'CANCELLED': 'Cancelled',
+          'HIATUS': 'Hiatus'
+        };
+        manga.status = statusMap[aniData.status] || manga.status || 'Unknown';
+      }
+    }
+  } catch (err) {
+    console.warn(`[MangaService] AniList enrichment failed for "${manga.title}":`, err.message);
+  }
+
+  return manga;
+}
 
 /**
  * 🛡️ Bandwidth Shield: Transforms any image URL to use the Cloudflare Worker proxy
@@ -42,7 +184,8 @@ function imageShield(url) {
     'i0.wp.com',
     'i1.wp.com',
     'i2.wp.com',
-    'i3.wp.com'
+    'i3.wp.com',
+    'uploads.mangadex.org'
   ];
 
   try {
@@ -197,7 +340,8 @@ async function search(query, page = 1, userId = null) {
   let scraperResults = [];
   try {
     const { data } = await ingestion.searchManga(query, page);
-    scraperResults = (data.results || data || []).map(mapManga);
+    const mapped = (data.results || data || []).map(mapManga);
+    scraperResults = await Promise.all(mapped.map(m => enrichMangaWithAniList(m)));
   } catch (err) {
     console.warn('[MangaService] Scraper search failed:', err.message);
   }
@@ -221,7 +365,8 @@ async function search(query, page = 1, userId = null) {
           { description: { contains: query, mode: 'insensitive' } },
           { genres: { hasSome: genreQueries } }
         ],
-        isHidden: false
+        isHidden: false,
+        NOT: { id: { startsWith: 'atsumoe:' } }
       },
       skip,
       take: limit
@@ -232,28 +377,97 @@ async function search(query, page = 1, userId = null) {
 
   const mappedDb = dbResults.map(mapManga);
 
-  // 3. Merge & deduplicate (prefer DB records as they are populated with chapters)
+  // 3. Merge & deduplicate (prefer DB/MangaKatana records over MangaDex)
   const seenIds = new Set();
+  const seenTitles = new Set();
   const merged = [];
-  
+
+  const cleanTitleKey = (t) => t ? t.toLowerCase().replace(/[^a-z0-9]/g, '') : '';
+
   for (const m of mappedDb) {
-    if (!seenIds.has(m.id)) {
+    const titleKey = cleanTitleKey(m.title);
+    if (!seenIds.has(m.id) && (!titleKey || !seenTitles.has(titleKey))) {
       merged.push(m);
       seenIds.add(m.id);
-    }
-  }
-  
-  for (const m of scraperResults) {
-    if (!seenIds.has(m.id)) {
-      merged.push(m);
-      seenIds.add(m.id);
+      if (titleKey) seenTitles.add(titleKey);
     }
   }
 
-  return applyContentFilters(merged, userId, true); // Explicit search
+  // Sort scraperResults to ensure mangakatana is preferred over mangadex
+  const sortedScraperResults = [...scraperResults].sort((a, b) => {
+    if (a.source === 'mangakatana' && b.source !== 'mangakatana') return -1;
+    if (a.source !== 'mangakatana' && b.source === 'mangakatana') return 1;
+    return 0;
+  });
+
+  for (const m of sortedScraperResults) {
+    const titleKey = cleanTitleKey(m.title);
+    if (!seenIds.has(m.id) && (!titleKey || !seenTitles.has(titleKey))) {
+      merged.push(m);
+      seenIds.add(m.id);
+      if (titleKey) seenTitles.add(titleKey);
+    }
+  }
+
+  const enrichedMerged = await Promise.all(merged.map(async (m) => {
+    if (!m.description || !m.genres || m.genres.length === 0) {
+      return enrichMangaWithAniList(m);
+    }
+    return m;
+  }));
+
+  return applyContentFilters(enrichedMerged, userId, true); // Explicit search
+}
+
+async function resolveMangaIdByTitle(title) {
+  try {
+    const cleanTitle = title.toLowerCase().replace(/[^a-z0-9]/g, '');
+    
+    // 1. Check local DB for non-atsumoe matches first
+    const dbMatches = await prisma.manga.findMany({
+      where: {
+        title: { contains: title, mode: 'insensitive' },
+        NOT: { id: { startsWith: 'atsumoe:' } }
+      }
+    });
+
+    if (dbMatches.length > 0) {
+      const bestDbMatch = dbMatches.find(m => m.title.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanTitle) 
+        || dbMatches[0];
+      return bestDbMatch.id;
+    }
+
+    // 2. Fallback to searching MangaKatana via ingestion
+    const searchRes = await ingestion.searchManga(title);
+    const results = searchRes?.data?.results || searchRes?.results || [];
+
+    if (results.length > 0) {
+      const bestMatch = results.find(m => m.title.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanTitle) 
+        || results[0];
+      return bestMatch.id;
+    }
+  } catch (err) {
+    console.error(`[MangaService] Failed to resolve manga title "${title}":`, err.message);
+  }
+  return null;
 }
 
 async function getMangaInfo(mangaId, userId = null) {
+  if (mangaId && mangaId.startsWith('atsumoe:')) {
+    try {
+      const dbManga = await prisma.manga.findUnique({ where: { id: mangaId } });
+      if (dbManga && dbManga.title) {
+        const resolvedId = await resolveMangaIdByTitle(dbManga.title);
+        if (resolvedId) {
+          console.log(`[MangaService] Resolved ID ${mangaId} -> ${resolvedId}`);
+          return getMangaInfo(resolvedId, userId);
+        }
+      }
+    } catch (err) {
+      console.warn(`[MangaService] Error resolving atsumoe ID ${mangaId}:`, err.message);
+    }
+  }
+
   const cacheKey = `manga:${mangaId}`;
 
   // 1. Check in-memory/Redis cache first
@@ -368,7 +582,8 @@ async function getMangaInfo(mangaId, userId = null) {
 async function refreshMangaInfoBackground(mangaId) {
   const cacheKey = `manga:${mangaId}`;
   const { data } = await ingestion.getMangaInfo(mangaId);
-  const mapped = mapManga(data);
+  let mapped = mapManga(data);
+  mapped = await enrichMangaWithAniList(mapped);
 
   const chaptersCacheKey = `chapters:${mangaId}`;
   const rawChapters = data.chapters || [];
@@ -450,6 +665,20 @@ async function saveChaptersToDbBackground(mangaId, chapters) {
 }
 
 async function getChapters(mangaId, userId = null) {
+  if (mangaId && mangaId.startsWith('atsumoe:')) {
+    try {
+      const dbManga = await prisma.manga.findUnique({ where: { id: mangaId } });
+      if (dbManga && dbManga.title) {
+        const resolvedId = await resolveMangaIdByTitle(dbManga.title);
+        if (resolvedId) {
+          return getChapters(resolvedId, userId);
+        }
+      }
+    } catch (err) {
+      console.warn(`[MangaService] Error resolving chapters atsumoe ID ${mangaId}:`, err.message);
+    }
+  }
+
   const cacheKey = `chapters:${mangaId}`;
 
   // 1. Check in-memory cache first
@@ -527,127 +756,24 @@ async function getChapterPages(chapterId, mangaId) {
 
 async function getPopular(page = 1, userId = null, genre = null) {
   const cacheKey = `popular_v2:${page}:${genre || 'all'}`;
-  const results = await cache.getOrSet(cacheKey, cache.ttl.searchTtl, async () => {
-    if (page === 1 && genre) {
-      try {
-        const { getPopularMangaByGenre } = require('./anilistService');
-        const anilistManga = await getPopularMangaByGenre(genre, 10);
-        
-        if (anilistManga && anilistManga.length > 0) {
-          const matchedResults = [];
-          let ingestedCount = 0;
-          
-          for (const item of anilistManga) {
-            let matchedManga = null;
-            
-            // 1. DB Lookup (Case-Insensitive)
-            for (const t of item.titles) {
-              const dbManga = await prisma.manga.findFirst({
-                where: {
-                  title: {
-                    equals: t,
-                    mode: 'insensitive'
-                  }
-                }
-              });
-              if (dbManga) {
-                matchedManga = mapManga(dbManga);
-                break;
-              }
-            }
-
-            // 2. Search & Ingest on MangaKatana (max 2 per request to prevent rate limits)
-            if (!matchedManga && ingestedCount < 2) {
-              try {
-                if (ingestedCount > 0) {
-                  await new Promise(resolve => setTimeout(resolve, 1000));
-                }
-
-                const searchRes = await ingestion.searchManga(item.titles[0]);
-                const searchList = searchRes?.data?.results || searchRes?.results || [];
-                
-                if (searchList.length > 0) {
-                  const cleanCandidateTitles = item.titles.map(t => t.toLowerCase().replace(/[^a-z0-9]/g, ''));
-                  const bestMatch = searchList.find(s => {
-                    const cleanS = s.title.toLowerCase().replace(/[^a-z0-9]/g, '');
-                    return cleanCandidateTitles.some(c => cleanS === c || cleanS.includes(c) || c.includes(cleanS));
-                  });
-
-                  if (bestMatch) {
-                    const fullInfo = await getMangaInfo(bestMatch.id);
-                    if (fullInfo) {
-                      matchedManga = fullInfo;
-                      ingestedCount++;
-                    }
-                  }
-                }
-              } catch (searchErr) {
-                console.warn(`[MangaService] Failed to resolve AniList title "${item.titles[0]}" on MangaKatana:`, searchErr.message);
-              }
-            }
-
-            if (matchedManga) {
-              matchedResults.push(matchedManga);
-            }
-          }
-
-          if (matchedResults.length > 0) {
-            if (matchedResults.length < 18) {
-              try {
-                const { data: scraperData } = await ingestion.getPopular(page, genre);
-                const scraperResults = (scraperData.results || []).map(mapManga);
-                const matchedIds = new Set(matchedResults.map(m => m.id));
-                for (const m of scraperResults) {
-                  if (!matchedIds.has(m.id)) {
-                    matchedResults.push(m);
-                    matchedIds.add(m.id);
-                    if (matchedResults.length >= 18) break;
-                  }
-                }
-              } catch (backfillErr) {
-                console.warn('[MangaService] AniList popular backfill failed:', backfillErr.message);
-              }
-            }
-            return matchedResults;
-          }
-        }
-      } catch (err) {
-        console.warn(`[MangaService] AniList popular retrieval failed for ${genre}, falling back:`, err.message);
-      }
-    }
-
-    const { data } = await ingestion.getPopular(page, genre);
-    let mapped = (data.results || []).map(mapManga);
-
-    // ⚡ Enhancement: If genres are missing (common on homepage), try to recover from DB
-    const missingGenres = mapped.filter(m => !m.genres || m.genres.length === 0);
-    if (missingGenres.length > 0) {
-      try {
-        const dbManga = await prisma.manga.findMany({
-          where: { id: { in: missingGenres.map(m => m.id) } },
-          select: { id: true, genres: true }
-        });
-        const genreMap = new Map(dbManga.map(m => [m.id, m.genres]));
-        mapped.forEach(m => {
-          if ((!m.genres || m.genres.length === 0) && genreMap.has(m.id)) {
-            m.genres = genreMap.get(m.id);
-          }
-        });
-      } catch (dbErr) {
-        console.warn('[MangaService] DB Connection failed during genre recovery, skipping database metadata enrichment:', dbErr.message);
-      }
-    }
-
-    // ⚡ Genre filter: when a genre is specified, keep only manga that include it
-    if (genre) {
-      const lower = genre.toLowerCase();
-      mapped = mapped.filter(m => m.genres && m.genres.some(g => {
-        const name = typeof g === 'string' ? g : (g.name || g.title || '');
-        return name.toLowerCase() === lower;
-      }));
-    }
-
-    return mapped;
+  return await cache.getOrSet(cacheKey, cache.ttl.searchTtl, async () => {
+    const key = genre ? genre.toLowerCase() : 'action';
+    const ids = RESOLVED_POPULAR_IDS[key];
+    if (!ids || ids.length === 0) return [];
+    
+    // Support pagination (e.g. 15 items per page)
+    const limit = 15;
+    const offset = (page - 1) * limit;
+    const pageIds = ids.slice(offset, offset + limit);
+    if (pageIds.length === 0) return [];
+    
+    // Fetch from database
+    const dbMangaList = await prisma.manga.findMany({
+      where: { id: { in: pageIds } }
+    });
+    
+    const mangaMap = new Map(dbMangaList.map(m => [m.id, mapManga(m)]));
+    return pageIds.map(id => mangaMap.get(id)).filter(Boolean);
   });
 
   // ⚡ Trending Injection: If fetching page 1 of a genre, inject trending manga that match this genre
@@ -694,76 +820,7 @@ async function getRecent(page = 1, userId = null) {
     let currentPage = page;
     let attempts = 0;
 
-    if (page === 1) {
-      try {
-        const { getTrendingManga } = require('./anilistService');
-        const anilistManga = await getTrendingManga(20);
-        
-        if (anilistManga && anilistManga.length > 0) {
-          const matchedResults = [];
-          let ingestedCount = 0;
-          
-          for (const item of anilistManga) {
-            let matchedManga = null;
-            
-            // 1. DB Lookup (Case-Insensitive)
-            for (const t of item.titles) {
-              const dbManga = await prisma.manga.findFirst({
-                where: {
-                  title: {
-                    equals: t,
-                    mode: 'insensitive'
-                  }
-                }
-              });
-              if (dbManga) {
-                matchedManga = mapManga(dbManga);
-                break;
-              }
-            }
-
-            // 2. Search & Ingest on MangaKatana (max 2 per request to prevent rate limits)
-            if (!matchedManga && ingestedCount < 2) {
-              try {
-                if (ingestedCount > 0) {
-                  await new Promise(resolve => setTimeout(resolve, 1000));
-                }
-
-                const searchRes = await ingestion.searchManga(item.titles[0]);
-                const searchList = searchRes?.data?.results || searchRes?.results || [];
-                
-                if (searchList.length > 0) {
-                  const cleanCandidateTitles = item.titles.map(t => t.toLowerCase().replace(/[^a-z0-9]/g, ''));
-                  const bestMatch = searchList.find(s => {
-                    const cleanS = s.title.toLowerCase().replace(/[^a-z0-9]/g, '');
-                    return cleanCandidateTitles.some(c => cleanS === c || cleanS.includes(c) || c.includes(cleanS));
-                  });
-
-                  if (bestMatch) {
-                    const fullInfo = await getMangaInfo(bestMatch.id);
-                    if (fullInfo) {
-                      matchedManga = fullInfo;
-                      ingestedCount++;
-                    }
-                  }
-                }
-              } catch (searchErr) {
-                console.warn(`[MangaService] Failed to resolve AniList trending title "${item.titles[0]}" on MangaKatana:`, searchErr.message);
-              }
-            }
-
-            if (matchedManga) {
-              matchedResults.push(matchedManga);
-            }
-          }
-          list = matchedResults;
-        }
-      } catch (err) {
-        console.warn('[MangaService] AniList trending flow failed:', err.message);
-      }
-    }
-
-    const seenIds = new Set(list.map(m => m.id));
+    const seenIds = new Set();
     while (list.length < 30 && attempts < 5) {
       try {
         const { data } = await ingestion.getRecent(currentPage);
@@ -867,7 +924,8 @@ async function browse(filters = {}, userId = null) {
                 title: {
                   equals: t,
                   mode: 'insensitive'
-                }
+                },
+                NOT: { id: { startsWith: 'atsumoe:' } }
               }
             });
             if (dbManga) {
@@ -883,26 +941,29 @@ async function browse(filters = {}, userId = null) {
                 await new Promise(resolve => setTimeout(resolve, 1000));
               }
 
-              const searchRes = await ingestion.searchManga(item.titles[0]);
-              const searchList = searchRes?.data?.results || searchRes?.results || [];
-              
-              if (searchList.length > 0) {
-                const cleanCandidateTitles = item.titles.map(t => t.toLowerCase().replace(/[^a-z0-9]/g, ''));
-                const bestMatch = searchList.find(s => {
-                  const cleanS = s.title.toLowerCase().replace(/[^a-z0-9]/g, '');
-                  return cleanCandidateTitles.some(c => cleanS === c || cleanS.includes(c) || c.includes(cleanS));
-                });
+              for (const title of item.titles) {
+                const searchRes = await ingestion.searchManga(title);
+                const searchList = searchRes?.data?.results || searchRes?.results || [];
+                
+                if (searchList.length > 0) {
+                  const cleanCandidateTitles = item.titles.map(t => t.toLowerCase().replace(/[^a-z0-9]/g, ''));
+                  const bestMatch = searchList.find(s => {
+                    const cleanS = s.title.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    return cleanCandidateTitles.some(c => cleanS === c || cleanS.includes(c) || c.includes(cleanS));
+                  });
 
-                if (bestMatch) {
-                  const fullInfo = await getMangaInfo(bestMatch.id);
-                  if (fullInfo) {
-                    matchedManga = fullInfo;
-                    ingestedCount++;
+                  if (bestMatch) {
+                    const fullInfo = await getMangaInfo(bestMatch.id);
+                    if (fullInfo) {
+                      matchedManga = fullInfo;
+                      ingestedCount++;
+                      break;
+                    }
                   }
                 }
               }
             } catch (searchErr) {
-              console.warn(`[MangaService] Browse resolution failed for AniList title "${item.titles[0]}":`, searchErr.message);
+              console.warn(`[MangaService] Browse resolution failed for titles [${item.titles.join(', ')}]:`, searchErr.message);
             }
           }
 
@@ -1010,7 +1071,8 @@ async function browse(filters = {}, userId = null) {
             { description: { contains: keyword, mode: 'insensitive' } },
             { genres: { hasSome: genreQueries } }
           ],
-          isHidden: false
+          isHidden: false,
+          NOT: { id: { startsWith: 'atsumoe:' } }
         }
       });
       const skip = ((filters.page || 1) - 1) * targetCount;
@@ -1021,7 +1083,8 @@ async function browse(filters = {}, userId = null) {
             { description: { contains: keyword, mode: 'insensitive' } },
             { genres: { hasSome: genreQueries } }
           ],
-          isHidden: false
+          isHidden: false,
+          NOT: { id: { startsWith: 'atsumoe:' } }
         },
         skip,
         take: targetCount
@@ -1085,7 +1148,8 @@ async function getRelated(mangaId, userId = null) {
       id: { not: mangaId },
       isHidden: false,
       nsfw: userId ? undefined : false, // Strictly hide NSFW from guests at DB level
-      genres: { hasSome: manga.genres }
+      genres: { hasSome: manga.genres },
+      NOT: { id: { startsWith: 'atsumoe:' } }
     },
     take: 12,
     orderBy: { readCount: 'desc' }
@@ -1104,4 +1168,4 @@ async function trackSearch(keyword) {
   }).catch(() => { });
 }
 
-module.exports = { search, getMangaInfo, getChapters, getChapterPages, getPopular, getRecent, getPopularByScore, browse, rateManga, getRelated, trackSearch };
+module.exports = { search, getMangaInfo, getChapters, getChapterPages, getPopular, getRecent, getPopularByScore, browse, rateManga, getRelated, trackSearch, startPopularMangaSync };

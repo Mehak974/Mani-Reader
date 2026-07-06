@@ -125,6 +125,7 @@ async function syncLatestChapter(manga) {
 async function searchManga(query, page = 1) {
   let results = [];
   const existingTitles = new Set();
+  let searchSource = 'mangakatana';
 
   try {
     const katRes = await mangakatana.searchManga(query, page);
@@ -151,19 +152,62 @@ async function searchManga(query, page = 1) {
       }
     });
 
+    if (results.length > 0) {
+      results.sort((a, b) => (b.searchScore || 0) - (a.searchScore || 0));
+      return {
+        data: {
+          results,
+          totalResults: katRes.totalResults || results.length,
+          totalPages: katRes.totalPages || 1,
+          currentPage: page,
+          hasNextPage: katRes.hasNextPage || false
+        }
+      };
+    }
+  } catch (err) {
+    console.error('[Ingestion] Katana search failed:', err.message);
+  }
+
+  // Fallback to MangaDex if MangaKatana results are empty / not available
+  try {
+    console.log(`[Ingestion] MangaKatana returned no results. Querying MangaDex fallback for "${query}"`);
+    const dexRes = await mangadex.searchManga(query, page);
+    const list = filterNSFW(dexRes.results || [], true);
+
+    list.forEach(m => {
+      const formatted = mapMangaFormat(m);
+      const titleLower = formatted.title.toLowerCase();
+      const queryLower = query.toLowerCase().trim();
+      
+      const matchTitle = titleLower.includes(queryLower);
+      const matchGenre = (formatted.genres || []).some(g => g.toLowerCase().includes(queryLower));
+      const isRelevant = matchTitle || matchGenre;
+      
+      if (isRelevant && !existingTitles.has(titleLower)) {
+        existingTitles.add(titleLower);
+        
+        let score = 0;
+        if (titleLower === queryLower) score += 100;
+        else if (titleLower.startsWith(queryLower)) score += 50;
+        else if (titleLower.includes(queryLower)) score += 20;
+
+        results.push({ ...formatted, source: 'mangadex', searchScore: score });
+      }
+    });
+
     results.sort((a, b) => (b.searchScore || 0) - (a.searchScore || 0));
 
     return {
       data: {
         results,
-        totalResults: katRes.totalResults || results.length,
-        totalPages: katRes.totalPages || 1,
+        totalResults: dexRes.totalResults || results.length,
+        totalPages: dexRes.totalPages || 1,
         currentPage: page,
-        hasNextPage: katRes.hasNextPage || false
+        hasNextPage: dexRes.hasNextPage || false
       }
     };
   } catch (err) {
-    console.error('[Ingestion] Katana search failed:', err.message);
+    console.error('[Ingestion] MangaDex search failed:', err.message);
     return { data: { results: [], totalResults: 0, totalPages: 1 } };
   }
 }
