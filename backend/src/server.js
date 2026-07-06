@@ -11,6 +11,33 @@
  *  - No business logic here
  */
 
+
+// Validate required environment variables
+function validateEnv() {
+  const required = ['NODE_ENV'];
+  const missing = required.filter(key => !process.env[key]);
+
+  if (missing.length > 0) {
+    console.warn('[Server] Missing environment variables:', missing);
+    console.warn('[Server] Using defaults...');
+  }
+
+  // Warn if in production without proper config
+  if (process.env.NODE_ENV === 'production') {
+    console.log('[Server] Running in PRODUCTION mode');
+    console.log('[Server] API URL:', process.env.NEXT_PUBLIC_API_URL || 'not set');
+  }
+
+  // Log for debugging
+  console.log('[Server] Environment Configuration:');
+  console.log('  NODE_ENV:', process.env.NODE_ENV);
+  console.log('  PORT:', process.env.PORT || 5000);
+  console.log('  Image Proxy:', 'Enabled');
+}
+
+// Call before server starts
+validateEnv();
+
 require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
 const express = require('express');
 const cors = require('cors');
@@ -98,7 +125,7 @@ app.use(async (req, res, next) => {
       req.user = jwt.verify(token, jwtConfig.secret);
     }
   } catch { /* ignore invalid tokens for tracking */ }
-  
+
   activityMiddleware(req, res, next);
 });
 
