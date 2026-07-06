@@ -124,6 +124,25 @@ router.get('/browse/filter', optionalAuth, async (req, res) => {
   }
 });
 
+// GET /api/manga/browse/popular-completed — MUST be before /:id wildcard
+router.get('/browse/popular-completed', optionalAuth, async (req, res) => {
+  try {
+    const list = await prisma.popularCompletedManga.findMany({
+      orderBy: { createdAt: 'desc' }
+    });
+    res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=300');
+    res.json(list.map(m => ({
+      id: m.slug,
+      title: m.title,
+      image: m.imageUrl,
+      mangaDetailLink: `/manga/${m.slug}`,
+      lastChapter: m.chapters
+    })));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/manga/:id
 router.get('/:id', optionalAuth, async (req, res) => {
   try {
@@ -155,25 +174,6 @@ router.post('/:id/rate', authMiddleware, async (req, res) => {
     if (!score || score < 1 || score > 5) return res.status(400).json({ error: 'Score must be between 1 and 5' });
     const result = await mangaService.rateManga(req.user.userId, req.params.id, score);
     res.json(result);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-// GET /api/manga/browse/popular-completed
-router.get('/browse/popular-completed', optionalAuth, async (req, res) => {
-  try {
-    const list = await prisma.popularCompletedManga.findMany({
-      orderBy: { createdAt: 'desc' }
-    });
-    res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=300');
-    // Map to format similar to other manga cards
-    res.json(list.map(m => ({
-      id: m.slug,
-      title: m.title,
-      image: m.imageUrl,
-      mangaDetailLink: `/manga/${m.slug}`,
-      lastChapter: m.chapters
-    })));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
