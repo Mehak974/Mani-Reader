@@ -5,7 +5,7 @@ import { useAuth } from '../lib/auth';
 
 import Navbar from '../components/Navbar';
 import MangaCard from '../components/MangaCard';
-import { mangaApi } from '../lib/api';
+import { mangaApi, getApiServerUrl } from '../lib/api';
 import RecentlyAddedCard from '../components/RecentlyAddedCard';
 import AdBanner from '../components/AdBanner';
 import EffectiveCpmAd from '../components/EffectiveCpmAd';
@@ -86,7 +86,8 @@ export default function HomeClient({ initialData = {} }) {
       return;
     }
     setPopularLoading(true);
-    fetch('/api/manga/browse/popular-completed')
+    const serverUrl = getApiServerUrl();
+    fetch(`${serverUrl}/api/manga/browse/popular-completed`)
       .then(r => r.json())
       .then(data => {
         const list = Array.isArray(data) ? data.filter(m => !m.nsfw) : [];

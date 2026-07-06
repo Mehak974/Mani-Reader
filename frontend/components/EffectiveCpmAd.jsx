@@ -2,40 +2,27 @@
 import React from 'react';
 
 /**
- * Auto-Reloading Native Effective CPM Ad Component
+ * Premium Google AdSense Display Ad Component (Responsive)
  */
 export default function EffectiveCpmAd() {
-  const containerRef = React.useRef(null);
-  const [refreshKey, setRefreshKey] = React.useState(0);
-
-  // Auto reload ad every 10 seconds
   React.useEffect(() => {
-    const interval = setInterval(() => {
-      setRefreshKey(prev => prev + 1);
-    }, 10000);
-    return () => clearInterval(interval);
+    try {
+      if (typeof window !== 'undefined') {
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      }
+    } catch (err) {
+      console.error('AdSense error:', err);
+    }
   }, []);
 
-  React.useEffect(() => {
-    if (!containerRef.current) return;
-    
-    // Clear previous ad
-    containerRef.current.innerHTML = '';
-    
-    // Create new inner container with the exact ID required by the script
-    const adTarget = document.createElement('div');
-    adTarget.id = 'container-479ed332b46a46628f69d5a88da45cb8';
-    containerRef.current.appendChild(adTarget);
-
-    const script = document.createElement('script');
-    script.async = true;
-    script.setAttribute('data-cfasync', 'false');
-    script.src = 'https://wraththreat.com/479ed332b46a46628f69d5a88da45cb8/invoke.js';
-    containerRef.current.appendChild(script);
-
-  }, [refreshKey]);
-
   return (
-    <div style={{ margin: '16px auto', textAlign: 'center', minHeight: '85px' }} ref={containerRef} />
+    <div style={{ margin: '16px auto', textAlign: 'center', minHeight: '90px', width: '100%', overflow: 'hidden' }}>
+      <ins className="adsbygoogle"
+           style={{ display: 'block' }}
+           data-ad-client="ca-pub-4938022536946038"
+           data-ad-slot="9876543210" /* Replace with your AdSense slot ID if desired */
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+    </div>
   );
 }
