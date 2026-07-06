@@ -33,9 +33,9 @@ export default function HomeClient({ initialData = {} }) {
   const [recent, setRecent] = React.useState(initialData.recent || []);
   const [loading, setLoading] = React.useState(!initialData.recent);
   
-  // Popular Fantasy section state (from DB)
-  const [popularFantasy, setPopularFantasy] = React.useState(initialData.fantasy || []);
-  const [popularLoading, setPopularLoading] = React.useState(!initialData.fantasy || initialData.fantasy.length === 0);
+  // Popular Completed section state (from DB)
+  const [popularCompleted, setPopularCompleted] = React.useState(initialData.completed || []);
+  const [popularLoading, setPopularLoading] = React.useState(!initialData.completed || initialData.completed.length === 0);
 
   const carouselRef = React.useRef(null);
 
@@ -79,24 +79,18 @@ export default function HomeClient({ initialData = {} }) {
     }
   }, [searchParams, mounted]);
 
-  // Fetch popular fantasy from DB table
+  // Fetch popular completed from DB table
   React.useEffect(() => {
-    if (popularFantasy.length > 0) {
+    if (popularCompleted.length > 0) {
       setPopularLoading(false);
       return;
     }
     setPopularLoading(true);
-    fetch('/api/manga/browse/popular-fantasy')
+    fetch('/api/manga/browse/popular-completed')
       .then(r => r.json())
       .then(data => {
         const list = Array.isArray(data) ? data.filter(m => !m.nsfw) : [];
-        // Fallback: if DB table is empty, use the legacy getPopular API
-        if (list.length === 0) {
-          return fetch('/api/manga/browse/popular?genre=fantasy')
-            .then(r => r.json())
-            .then(d => setPopularFantasy(Array.isArray(d) ? d.slice(0, 15) : []));
-        }
-        setPopularFantasy(list);
+        setPopularCompleted(list);
       })
       .catch(() => {})
       .finally(() => setPopularLoading(false));
@@ -149,10 +143,10 @@ export default function HomeClient({ initialData = {} }) {
 
           <section className="section" style={{ paddingTop: '20px', paddingBottom: '12px' }}>
             <div className="container">
-              {/* Popular Fantasy Header */}
+              {/* Popular Completed Header */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                <h2 className="section-title" style={{ margin: 0 }}>✨ <span>Popular</span> Fantasy</h2>
-                <a href="/browse?include=fantasy&order=5" className="btn btn-ghost btn-sm" style={{ whiteSpace: 'nowrap' }}>
+                <h2 className="section-title" style={{ margin: 0 }}>🏆 <span>Popular</span> Completed</h2>
+                <a href="/browse?status=completed&order=5" className="btn btn-ghost btn-sm" style={{ whiteSpace: 'nowrap' }}>
                   View All →
                 </a>
               </div>
@@ -161,7 +155,7 @@ export default function HomeClient({ initialData = {} }) {
                 {popularLoading ? (
                   <SkeletonCarousel count={6} />
                 ) : (
-                  popularFantasy && popularFantasy.length > 0 ? (
+                  popularCompleted && popularCompleted.length > 0 ? (
                     <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                       <style>{`
                         .hide-scrollbar::-webkit-scrollbar { display: none !important; }
@@ -211,7 +205,7 @@ export default function HomeClient({ initialData = {} }) {
                         className="hide-scrollbar popular-carousel"
                         style={{ display: 'flex', overflowX: 'auto', paddingBottom: '10px', scrollSnapType: 'x mandatory', scrollbarWidth: 'none', msOverflowStyle: 'none', width: '100%', scrollBehavior: 'smooth' }}
                       >
-                        {popularFantasy.map((m, index) => {
+                        {popularCompleted.map((m, index) => {
                           const elements = [];
                           if (index === 3) {
                             elements.push(

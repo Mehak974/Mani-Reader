@@ -555,5 +555,59 @@ router.get('/guest-users', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+// GET /api/admin/popular-completed
+router.get('/popular-completed', async (req, res) => {
+  try {
+    const items = await prisma.popularCompletedManga.findMany({
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(items);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/admin/popular-completed
+router.post('/popular-completed', async (req, res) => {
+  try {
+    const { title, imageUrl, slug, chapters } = req.body;
+    const item = await prisma.popularCompletedManga.create({
+      data: { title, imageUrl, slug, chapters }
+    });
+    
+    await prisma.auditLog.create({
+      data: {
+        adminId: req.user.userId,
+        action: 'ADD_POPULAR_COMPLETED',
+        target: title
+      }
+    });
+    
+    res.json(item);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /api/admin/popular-completed/:id
+router.delete('/popular-completed/:id', async (req, res) => {
+  try {
+    await prisma.popularCompletedManga.delete({
+      where: { id: req.params.id }
+    });
+    
+    await prisma.auditLog.create({
+      data: {
+        adminId: req.user.userId,
+        action: 'DELETE_POPULAR_COMPLETED',
+        target: req.params.id
+      }
+    });
+    
+    res.json({ message: 'Deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 module.exports = router;

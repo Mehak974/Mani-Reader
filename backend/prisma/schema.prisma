@@ -368,3 +368,14 @@ model PopularManga {
   @@map("popular_manga")
 }
 
+model PopularCompletedManga {
+  id        String   @id @default(uuid())
+  title     String
+  imageUrl  String
+  slug      String
+  chapters  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("popular_completed_manga")
+}

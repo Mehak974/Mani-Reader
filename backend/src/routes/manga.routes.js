@@ -159,5 +159,24 @@ router.post('/:id/rate', authMiddleware, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+// GET /api/manga/browse/popular-completed
+router.get('/browse/popular-completed', optionalAuth, async (req, res) => {
+  try {
+    const list = await prisma.popularCompletedManga.findMany({
+      orderBy: { createdAt: 'desc' }
+    });
+    res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=300');
+    // Map to format similar to other manga cards
+    res.json(list.map(m => ({
+      id: m.slug,
+      title: m.title,
+      image: m.imageUrl,
+      mangaDetailLink: `/manga/${m.slug}`,
+      lastChapter: m.chapters
+    })));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 module.exports = router;
