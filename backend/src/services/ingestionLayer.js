@@ -86,6 +86,7 @@ function mapMangaFormat(m) {
     genres: m.genres || [],
     lastChapter: m.lastChapter,
     lastChapterId: m.lastChapterId,
+    latestChapters: m.latestChapters || [],
     updateDate: m.updateDate || null,
     source: m.source || provider,
   };

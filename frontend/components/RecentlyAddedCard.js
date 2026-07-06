@@ -21,9 +21,9 @@ export default function RecentlyAddedCard({ manga }) {
       : rawCover)
     : '/placeholder-cover.jpg';
 
-  const description = manga.description || 'No description available.';
-  const isLong = description.length > 180;
-  const truncated = isLong ? description.slice(0, 180) + '...' : description;
+  const displayChapters = manga.latestChapters && manga.latestChapters.length > 0
+    ? manga.latestChapters
+    : (manga.lastChapterId ? [{ title: manga.lastChapter || 'Read Now', id: manga.lastChapterId, time: manga.updateDate || 'Just now' }] : []);
 
   return (
     <div
@@ -73,75 +73,57 @@ export default function RecentlyAddedCard({ manga }) {
         </div>
       </Link>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, justifyContent: 'flex-start' }}>
         <Link href={`/manga/${manga.id}`}>
           <h3 style={{
-            fontSize: '1.1rem',
+            fontSize: '1.05rem',
             fontWeight: 700,
-            marginBottom: '8px',
-            color: 'var(--text)',
+            marginBottom: '10px',
+            color: 'var(--accent)', // Purple accent color
             overflow: 'hidden',
             textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap'
-          }}>
+            whiteSpace: 'nowrap',
+            transition: 'color 0.2s ease'
+          }}
+          onMouseEnter={(e) => e.target.style.color = '#fff'}
+          onMouseLeave={(e) => e.target.style.color = 'var(--accent)'}
+          >
             {manga.title}
           </h3>
         </Link>
 
-        <div
-          suppressHydrationWarning
-          style={{
-            fontSize: '0.85rem',
-            color: 'var(--text-2)',
-            lineHeight: '1.5',
-            marginBottom: '12px',
-            position: 'relative'
-          }}>
-          {isExpanded ? description : truncated}
-          {isLong && (
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                setIsExpanded(!isExpanded);
-              }}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--accent)',
-                fontSize: '0.8rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                marginLeft: '6px',
-                padding: 0
-              }}
-            >
-              {isExpanded ? 'Read Less' : 'Read More'}
-            </button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+          {displayChapters.map((ch, idx) => (
+            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}>
+              <Link 
+                href={`/read/${ch.id}?mangaId=${manga.id}`} 
+                style={{ 
+                  color: 'var(--text-2)', 
+                  textDecoration: 'none', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '6px',
+                  fontWeight: 500,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  maxWidth: '70%',
+                  transition: 'color 0.2s ease'
+                }}
+                onMouseEnter={(e) => e.target.style.color = 'var(--accent)'}
+                onMouseLeave={(e) => e.target.style.color = 'var(--text-2)'}
+              >
+                <span style={{ color: 'var(--accent)', fontWeight: 'bold' }}>»</span>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ch.title || `Chapter ${ch.number || ''}`}</span>
+              </Link>
+              <span style={{ color: 'var(--text-3)', fontSize: '0.78rem', fontStyle: 'normal', whiteSpace: 'nowrap' }}>
+                {ch.time || 'Just now'}
+              </span>
+            </div>
+          ))}
+          {displayChapters.length === 0 && (
+            <span style={{ color: 'var(--text-3)', fontSize: '0.8rem', fontStyle: 'italic' }}>No chapters yet</span>
           )}
-        </div>
-
-        <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--accent)', fontWeight: 600, fontSize: '0.9rem' }}>
-            <span className="material-icons" style={{ fontSize: '1rem' }}>auto_stories</span>
-            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {manga.lastChapterId ? (
-                <Link
-                  href={`/read/${manga.lastChapterId}?mangaId=${manga.id}`}
-                  style={{ color: 'inherit', textDecoration: 'none' }}
-                  onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
-                  onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
-                >
-                  {manga.lastChapter || 'Read Now'}
-                </Link>
-              ) : (
-                manga.lastChapter || 'No chapters yet'
-              )}
-            </span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-3)', fontSize: '0.8rem' }}>
-            <span className="material-icons" style={{ fontSize: '1rem' }}>schedule</span>
-            {manga.updateDate || 'Just now'}
-          </div>
         </div>
       </div>
     </div>

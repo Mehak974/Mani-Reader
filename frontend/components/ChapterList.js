@@ -220,9 +220,6 @@ export default function ChapterList({ chapters = [], mangaId, progress = [] }) {
                 }}>
                   {ch.title || `Chapter ${ch.number}`}
                 </span>
-                <span style={{ opacity: 0.6, fontSize: '0.75rem', fontWeight: 500 }}>
-                  {ch.sources?.[0] || 'Source'}
-                </span>
               </Link>
 
               <div className="chapter-actions" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>

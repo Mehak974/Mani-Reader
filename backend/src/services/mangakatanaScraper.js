@@ -361,11 +361,39 @@ async function getRecent(page = 1) {
       const updateDate = $(el).find('.date').text().replace(/First Chapter/i, '').trim();
       const genres = $(el).find('.genres a').map((i, g) => $(g).text().trim()).get();
       
-      let lastChapterEl = $(el).find('.chapters .chapter a').first();
-      if (lastChapterEl.length === 0) lastChapterEl = $(el).find('.last_chap a').first();
-      
-      const lastChapter = lastChapterEl.text().trim();
-      const lastChapterId = lastChapterEl.attr('href')?.replace(/\/$/, '').split('/').pop();
+      const latestChapters = [];
+      $(el).find('.chapters .chapter').slice(0, 3).each((idx, chDiv) => {
+        const chLink = $(chDiv).find('a');
+        const text = chLink.text().trim();
+        const href = chLink.attr('href') || '';
+        const chId = href.replace(/\/$/, '').split('/').pop();
+        const timeText = $(chDiv).find('span').text().trim();
+        if (text) {
+          latestChapters.push({
+            title: text,
+            id: chId,
+            time: timeText
+          });
+        }
+      });
+      if (latestChapters.length === 0) {
+        $(el).find('.last_chap a').slice(0, 3).each((idx, chEl) => {
+          const text = $(chEl).text().trim();
+          const href = $(chEl).attr('href') || '';
+          const chId = href.replace(/\/$/, '').split('/').pop();
+          const timeText = $(chEl).siblings('span').text().trim() || '';
+          if (text) {
+            latestChapters.push({
+              title: text,
+              id: chId,
+              time: timeText
+            });
+          }
+        });
+      }
+
+      const lastChapter = latestChapters[0]?.title || '';
+      const lastChapterId = latestChapters[0]?.id || '';
       
       results.push({
         id,
@@ -377,6 +405,7 @@ async function getRecent(page = 1) {
         updateDate,
         lastChapter,
         lastChapterId,
+        latestChapters,
         source: 'mangakatana'
       });
     });

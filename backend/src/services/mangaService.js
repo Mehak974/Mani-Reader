@@ -92,6 +92,17 @@ function startPopularMangaSync() {
     console.log(`[Scheduler] Starting 24-hour refresh for ${allIds.length} popular manga...`);
     for (const id of allIds) {
       try {
+        // Skip updates if status is Completed to save API bandwith/limits
+        const dbManga = await prisma.manga.findUnique({
+          where: { id },
+          select: { status: true }
+        });
+        
+        if (dbManga && dbManga.status && dbManga.status.toLowerCase().trim() === 'completed') {
+          console.log(`[Scheduler] Skipping completed manga: ${id}`);
+          continue;
+        }
+
         await refreshMangaInfoBackground(id);
         // Wait 1 second between updates to prevent rate limits
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -268,6 +279,19 @@ async function applyContentFiltersToBrowseResult(data, userId, isExplicit = fals
   return { ...data, results: filtered };
 }
 
+function getRawCoverUrl(url) {
+  if (!url) return null;
+  if (url.includes('/api/image?url=')) {
+    try {
+      const decodeMatch = url.match(/[?&]url=([^&]+)/);
+      if (decodeMatch && decodeMatch[1]) {
+        return decodeURIComponent(decodeMatch[1]);
+      }
+    } catch (e) {}
+  }
+  return url;
+}
+
 /**
  * Map raw Consumet manga result → our internal Manga shape.
  */
@@ -275,7 +299,7 @@ function mapManga(raw) {
   return {
     id: raw.id,
     title: raw.title || 'Unknown Title',
-    cover: imageShield(raw.image || raw.cover || null),
+    cover: getRawCoverUrl(raw.image || raw.cover || null),
     description: raw.description || null,
     status: raw.status || null,
     genres: Array.isArray(raw.genres) ? raw.genres : [],
@@ -307,6 +331,7 @@ function mapManga(raw) {
     rating: raw.rating || null,
     lastChapter: raw.lastChapter || null,
     lastChapterId: raw.lastChapterId || null,
+    latestChapters: raw.latestChapters || [],
     updateDate: raw.updateDate || null,
     source: raw.source || 'mangadex',
     popularity: raw.popularity ? {
@@ -768,11 +793,53 @@ async function getPopular(page = 1, userId = null, genre = null) {
     if (pageIds.length === 0) return [];
     
     // Fetch from database
-    const dbMangaList = await prisma.manga.findMany({
-      where: { id: { in: pageIds } }
+    let dbMangaList = await prisma.manga.findMany({
+      where: { id: { in: pageIds } },
+      include: {
+        chapters: {
+          orderBy: { number: 'desc' },
+          take: 1
+        }
+      }
     });
+
+    const foundIds = new Set(dbMangaList.map(m => m.id));
+    const missingIds = pageIds.filter(id => !foundIds.has(id));
+    const needsSyncIds = dbMangaList.filter(m => !m.lastChapter || !m.lastChapterId).map(m => m.id);
+    const allSyncIds = Array.from(new Set([...missingIds, ...needsSyncIds]));
+
+    if (allSyncIds.length > 0) {
+      console.log(`[MangaService] Inline syncing ${allSyncIds.length} popular manga to ensure chapters are fetched...`);
+      await Promise.all(allSyncIds.map(async (id) => {
+        try {
+          await refreshMangaInfoBackground(id);
+        } catch (err) {
+          console.error(`[MangaService] Inline sync failed for popular manga ${id}:`, err.message);
+        }
+      }));
+
+      // Re-fetch
+      dbMangaList = await prisma.manga.findMany({
+        where: { id: { in: pageIds } },
+        include: {
+          chapters: {
+            orderBy: { number: 'desc' },
+            take: 1
+          }
+        }
+      });
+    }
     
-    const mangaMap = new Map(dbMangaList.map(m => [m.id, mapManga(m)]));
+    const mangaMap = new Map(dbMangaList.map(m => {
+      const mapped = mapManga(m);
+      if ((!mapped.lastChapter || !mapped.lastChapterId) && m.chapters && m.chapters.length > 0) {
+        const latest = m.chapters[0];
+        mapped.lastChapter = latest.title || `Chapter ${latest.number}`;
+        mapped.lastChapterId = latest.id;
+      }
+      return [m.id, mapped];
+    }));
+    
     return pageIds.map(id => mangaMap.get(id)).filter(Boolean);
   });
 

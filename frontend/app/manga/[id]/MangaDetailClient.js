@@ -22,6 +22,7 @@ export default function MangaDetailClient({ id, initialManga, initialChapters })
   const [toast, setToast] = React.useState(null);
   const [libModal, setLibModal] = React.useState(false);
   const [mounted, setMounted] = React.useState(false);
+  const [descExpanded, setDescExpanded] = React.useState(false);
 
   React.useEffect(() => {
     setMounted(true);
@@ -189,8 +190,8 @@ export default function MangaDetailClient({ id, initialManga, initialChapters })
             .manga-detail-container {
               display: grid;
               grid-template-columns: 260px 1fr;
-              gap: 40px;
-              padding: 40px 0;
+              gap: 24px;
+              padding: 20px 0;
             }
             .manga-header-row {
               display: contents;
@@ -234,14 +235,14 @@ export default function MangaDetailClient({ id, initialManga, initialChapters })
             @media (max-width: 768px) {
               .manga-detail-container {
                 grid-template-columns: 1fr;
-                gap: 24px;
-                padding: 16px 0;
+                gap: 16px;
+                padding: 8px 0;
               }
               
               .manga-header-row {
                 display: flex !important;
                 flex-direction: column;
-                gap: 20px;
+                gap: 12px;
                 text-align: center;
                 align-items: center;
               }
@@ -352,7 +353,40 @@ export default function MangaDetailClient({ id, initialManga, initialChapters })
 
               {/* Description & Tags sit in meta for Web, but we can also use grid order */}
               <div className="description-line">
-                {manga?.description && <p style={{ fontSize: '1rem', opacity: 0.9, lineHeight: 1.6 }}>{manga.description}</p>}
+                {manga?.description && (
+                  <div>
+                    <p style={{ fontSize: '1rem', opacity: 0.9, lineHeight: 1.6 }}>
+                      {descExpanded || manga.description.length <= 250
+                        ? manga.description
+                        : `${manga.description.slice(0, 250)}...`}
+                      {manga.description.length > 250 && (
+                        <button
+                          onClick={() => setDescExpanded(!descExpanded)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: 'var(--accent)',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            marginLeft: '8px',
+                            padding: 0,
+                            fontSize: '0.95rem',
+                            textDecoration: 'underline',
+                            display: 'inline'
+                          }}
+                        >
+                          {descExpanded ? 'Read Less' : 'Read More'}
+                        </button>
+                      )}
+                    </p>
+                  </div>
+                )}
+                {manga?.source && (
+                  <div style={{ color: 'var(--text-3)', fontSize: '0.85rem', marginTop: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span className="material-icons" style={{ fontSize: '1.1rem' }}>source</span>
+                    <span>Source: <strong style={{ textTransform: 'capitalize', color: 'var(--text-2)' }}>{manga.source}</strong></span>
+                  </div>
+                )}
               </div>
 
               <div className="tags-line">

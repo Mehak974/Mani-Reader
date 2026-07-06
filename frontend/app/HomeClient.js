@@ -49,25 +49,18 @@ export default function HomeClient({ initialData = {} }) {
 
   const scrollLeft = () => {
     if (carouselRef.current) {
-      const currentScroll = carouselRef.current.scrollLeft;
-      const cardWidth = 200; // 180px flex-basis + 20px gap
-      if (currentScroll <= 10) {
-        const midPoint = carouselRef.current.scrollWidth / 2;
-        carouselRef.current.scrollLeft = midPoint;
-      }
+      const firstCard = carouselRef.current.querySelector('.popular-card');
+      const gapVal = parseFloat(window.getComputedStyle(carouselRef.current).gap || '20');
+      const cardWidth = firstCard ? firstCard.getBoundingClientRect().width + gapVal : 200;
       carouselRef.current.scrollBy({ left: -cardWidth * 2, behavior: 'smooth' });
     }
   };
 
   const scrollRight = () => {
     if (carouselRef.current) {
-      const currentScroll = carouselRef.current.scrollLeft;
-      const cardWidth = 200;
-      const midPoint = carouselRef.current.scrollWidth / 2;
-      const maxScroll = carouselRef.current.scrollWidth - carouselRef.current.clientWidth;
-      if (currentScroll >= midPoint - 10) {
-        carouselRef.current.scrollLeft = currentScroll - midPoint;
-      }
+      const firstCard = carouselRef.current.querySelector('.popular-card');
+      const gapVal = parseFloat(window.getComputedStyle(carouselRef.current).gap || '20');
+      const cardWidth = firstCard ? firstCard.getBoundingClientRect().width + gapVal : 200;
       carouselRef.current.scrollBy({ left: cardWidth * 2, behavior: 'smooth' });
     }
   };
@@ -155,17 +148,17 @@ export default function HomeClient({ initialData = {} }) {
     <div className="page-wrapper home-page-wrapper" style={{ background: 'var(--bg)', minHeight: '100vh' }} suppressHydrationWarning>
       <Navbar />
 
-          <div className="container" style={{ marginTop: '90px' }}>
+          <div className="container" style={{ marginTop: '75px' }}>
             <AdBanner size="small" slot="8394012345" /> {/* Use your real slot ID here */}
           </div>
 
-          <section className="section" style={{ paddingBottom: '20px' }}>
+          <section className="section" style={{ paddingTop: '20px', paddingBottom: '12px' }}>
             <div className="container">
               {/* Premium Tabbed Navigation */}
               <div className="tab-container" style={{ 
                 display: 'flex', 
                 gap: '8px', 
-                marginBottom: '28px', 
+                marginBottom: '16px', 
                 borderBottom: '1px solid var(--border)', 
                 paddingBottom: '0',
                 overflowX: 'auto',
@@ -185,9 +178,7 @@ export default function HomeClient({ initialData = {} }) {
                       border: 'none',
                       color: activeTab === tab.id ? 'var(--accent)' : 'var(--text-3)',
                       fontWeight: '600',
-                      fontSize: '1.15rem',
                       cursor: 'pointer',
-                      padding: '12px 20px',
                       position: 'relative',
                       whiteSpace: 'nowrap',
                       transition: 'color 0.2s ease',
@@ -217,7 +208,7 @@ export default function HomeClient({ initialData = {} }) {
                 </div>
               </div>
 
-              <div style={{ minHeight: '380px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <div className="popular-container" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 {tabLoading[activeTab] ? (
                   <SkeletonCarousel count={6} />
                 ) : (
@@ -234,6 +225,47 @@ export default function HomeClient({ initialData = {} }) {
                         .stagger-card {
                           opacity: 0;
                           animation: card-fade-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                        }
+                        .popular-carousel {
+                          gap: 20px;
+                        }
+                        .popular-card {
+                          flex: 0 0 180px;
+                        }
+                        .popular-container {
+                          min-height: 380px;
+                        }
+                        .tab-btn {
+                          font-size: 1.05rem;
+                          padding: 10px 16px;
+                        }
+                        .popular-card .manga-card-title {
+                          font-size: 0.85rem !important;
+                        }
+                        .popular-card .manga-card-body {
+                          padding: 12px 10px 32px 10px !important;
+                        }
+                        @media (max-width: 768px) {
+                          .popular-carousel {
+                            gap: 12px;
+                          }
+                          .popular-card {
+                            flex: 0 0 130px;
+                          }
+                          .popular-container {
+                            min-height: 290px;
+                          }
+                          .tab-btn {
+                            font-size: 0.85rem;
+                            padding: 6px 10px;
+                          }
+                          .popular-card .manga-card-body {
+                            min-height: 55px !important;
+                            padding: 8px 6px 26px 6px !important;
+                          }
+                          .popular-card .manga-card-title {
+                            font-size: 0.72rem !important;
+                          }
                         }
                       `}</style>
                       
@@ -269,10 +301,9 @@ export default function HomeClient({ initialData = {} }) {
                       {/* Scrollable Carousel */}
                       <div 
                         ref={carouselRef}
-                        className="hide-scrollbar"
+                        className="hide-scrollbar popular-carousel"
                         style={{ 
                           display: 'flex', 
-                          gap: '20px', 
                           overflowX: 'auto', 
                           paddingBottom: '10px', 
                           scrollSnapType: 'x mandatory',
@@ -282,12 +313,11 @@ export default function HomeClient({ initialData = {} }) {
                           scrollBehavior: 'smooth'
                         }}
                       >
-                        {[...popularData[activeTab], ...popularData[activeTab]].map((m, index) => (
+                        {popularData[activeTab].map((m, index) => (
                           <div 
                             key={`${m.id}-${index}`} 
-                            className="stagger-card"
+                            className="stagger-card popular-card"
                             style={{ 
-                              flex: '0 0 180px', 
                               scrollSnapAlign: 'start',
                               animationDelay: `${(index % 15) * 60}ms`
                             }}
@@ -342,7 +372,7 @@ export default function HomeClient({ initialData = {} }) {
           </section>
 
 
-          <section id="recent-updates" className="section" style={{ background: 'var(--surface)', margin: '40px 0' }}>
+          <section id="recent-updates" className="section" style={{ background: 'var(--surface)', margin: '20px 0', paddingTop: '24px', paddingBottom: '24px' }}>
             <div className="container">
               <div className="section-header" style={{ marginBottom: '32px' }} suppressHydrationWarning>
                 <h2 className="section-title">✨ <span>Recently</span> Added</h2>
