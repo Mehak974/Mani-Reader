@@ -1,6 +1,7 @@
 'use strict';
 const router = require('express').Router();
 const mangaService = require('../services/mangaService');
+const prisma = require('../lib/prisma');
 const { searchLimiter } = require('../middleware/rateLimiter');
 const authMiddleware = require('../middleware/auth');
 
@@ -49,6 +50,28 @@ router.get('/browse/popular', optionalAuth, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// GET /api/manga/browse/popular-fantasy — from the DB table (lightweight, just metadata)
+router.get('/browse/popular-fantasy', optionalAuth, async (req, res) => {
+  try {
+    const list = await prisma.popularManga.findMany({
+      orderBy: { updatedAt: 'desc' },
+      take: 20
+    });
+    res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=300');
+    res.json(list.map(m => ({
+      id: m.id,
+      title: m.title,
+      image: m.imageUrl,
+      mangaDetailLink: m.mangaDetailLink,
+      lastChapter: m.latestChapter,
+      lastChapterId: m.latestChapterId
+    })));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 // GET /api/manga/most-read
 router.get('/most-read', optionalAuth, async (req, res) => {

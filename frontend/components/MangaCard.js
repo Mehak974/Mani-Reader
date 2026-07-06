@@ -1,30 +1,50 @@
 'use client';
-import React from 'react';
-import Image from 'next/image';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useAuth } from '../lib/auth';
 
-// ✅ Default fallback image
-const DEFAULT_COVER = '/default-cover.png';
+// Compute the proxy URL outside the component so it's stable across renders
+function getCoverUrl(manga) {
+  const rawCover = manga?.image || manga?.cover || manga?.coverImage;
+  if (!rawCover) return '/placeholder-cover.jpg';
+  if (!rawCover.startsWith('http')) return rawCover;
 
-export default function MangaCard({ manga }) {
-  const [imageSrc, setImageSrc] = React.useState(
-    manga?.coverImage || manga?.image || DEFAULT_COVER  // ✅ FIXED
-  );
+  // Known hotlink-friendly CDNs — serve directly, no proxy needed
+  const safeDomains = [
+    'image.tmdb.org', 'imgur.com', 'blogspot.com', 'googleusercontent.com',
+    'placehold.co', 'wp.com', 'cloudinary.com',
+    'i0.wp.com', 'i1.wp.com', 'i2.wp.com', 'i3.wp.com',
+  ];
+  if (safeDomains.some(d => rawCover.includes(d))) return rawCover;
+  if (rawCover.includes('/api/image') || rawCover.includes('workers.dev')) return rawCover;
 
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [hasError, setHasError] = React.useState(false);
+  // Relative proxy path — works on any hostname in production
+  return `/api/image?url=${encodeURIComponent(rawCover)}`;
+}
 
-  const handleImageLoad = () => {
-    setIsLoading(false);
-    setHasError(false);
-  };
+export default function MangaCard({ manga, revealNsfw = false, setRevealNsfw = () => {}, priority = false }) {
+  const auth = useAuth();
+  const currentRevealNsfw = auth ? auth.revealNsfw : revealNsfw;
+  const currentSetRevealNsfw = auth ? auth.setRevealNsfw : setRevealNsfw;
 
-  const handleImageError = () => {
-    console.warn(`Image failed to load: ${imageSrc}`);
-    setImageSrc(DEFAULT_COVER);  // ✅ Fallback to default
-    setHasError(true);
-    setIsLoading(false);
-  };
+  if (!manga) return null;
+
+  const isBlurred = manga.nsfw && !currentRevealNsfw;
+  const coverUrl = getCoverUrl(manga);
+
+  const [imgSrc, setImgSrc] = useState(coverUrl);
+
+  // Sync if manga prop changes (e.g. list updates)
+  useEffect(() => {
+    setImgSrc(getCoverUrl(manga));
+  }, [manga?.id, manga?.image, manga?.cover, manga?.coverImage]);
+
+  const handleError = useCallback(() => {
+    if (imgSrc !== '/placeholder-cover.jpg') {
+      setImgSrc('/placeholder-cover.jpg');
+    }
+  }, [imgSrc]);
+
   return (
     <div className="manga-card-wrapper" style={{ position: 'relative', height: '100%' }}>
       <Link
@@ -34,7 +54,7 @@ export default function MangaCard({ manga }) {
         onClick={(e) => {
           if (isBlurred) {
             e.preventDefault();
-            setRevealNsfw(true);
+            currentSetRevealNsfw(true);
           }
         }}
         onMouseEnter={() => {
@@ -49,12 +69,12 @@ export default function MangaCard({ manga }) {
       >
         <div className="manga-card-cover" style={{ position: 'relative', width: '100%', aspectRatio: '2/3', overflow: 'hidden', borderRadius: '16px' }}>
           <img
-            src={coverUrl}
+            src={imgSrc}
             alt={manga.title}
             loading={priority ? "eager" : "lazy"}
             className={`manga-cover-img ${isBlurred ? 'blur-nsfw' : ''}`}
             style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)' }}
-            onError={(e) => { e.target.src = '/placeholder-cover.jpg'; }}
+            onError={handleError}
           />
           <div className="manga-card-overlay" />
 
@@ -69,7 +89,7 @@ export default function MangaCard({ manga }) {
                 Content is 18+ contain nudity want to reveal?
               </div>
               <button
-                onClick={(e) => { e.stopPropagation(); e.preventDefault(); setRevealNsfw(true); }}
+                onClick={(e) => { e.stopPropagation(); e.preventDefault(); currentSetRevealNsfw(true); }}
                 className="reveal-btn"
                 style={{
                   background: 'var(--accent)', color: '#fff', border: 'none',

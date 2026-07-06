@@ -82,39 +82,45 @@ const RESOLVED_POPULAR_IDS = {
 function startPopularMangaSync() {
   console.log('[Scheduler] Initializing 24-hour popular manga sync job...');
   
-  const allIds = Array.from(new Set([
-    ...RESOLVED_POPULAR_IDS.action,
-    ...RESOLVED_POPULAR_IDS.fantasy,
-    ...RESOLVED_POPULAR_IDS.romance
-  ]));
+  const ids = RESOLVED_POPULAR_IDS.fantasy;
 
   const runSync = async () => {
-    console.log(`[Scheduler] Starting 24-hour refresh for ${allIds.length} popular manga...`);
-    for (const id of allIds) {
+    console.log(`[Scheduler] Starting 24-hour refresh for ${ids.length} popular fantasy manga...`);
+    for (const id of ids) {
       try {
-        // Skip updates if status is Completed to save API bandwith/limits
-        const dbManga = await prisma.manga.findUnique({
-          where: { id },
-          select: { status: true }
-        });
-        
-        if (dbManga && dbManga.status && dbManga.status.toLowerCase().trim() === 'completed') {
-          console.log(`[Scheduler] Skipping completed manga: ${id}`);
-          continue;
+        const mapped = await refreshMangaInfoBackground(id);
+        if (mapped) {
+          await prisma.popularManga.upsert({
+            where: { id: mapped.id },
+            update: {
+              title: mapped.title,
+              imageUrl: mapped.cover || mapped.image || '',
+              mangaDetailLink: `/manga/${mapped.id}`,
+              latestChapter: mapped.lastChapter || 'Read Now',
+              latestChapterId: mapped.lastChapterId || mapped.id,
+              updatedAt: new Date()
+            },
+            create: {
+              id: mapped.id,
+              title: mapped.title,
+              imageUrl: mapped.cover || mapped.image || '',
+              mangaDetailLink: `/manga/${mapped.id}`,
+              latestChapter: mapped.lastChapter || 'Read Now',
+              latestChapterId: mapped.lastChapterId || mapped.id
+            }
+          });
+          console.log(`[Scheduler] Synced popular fantasy manga metadata: ${mapped.title}`);
         }
-
-        await refreshMangaInfoBackground(id);
-        // Wait 1 second between updates to prevent rate limits
         await new Promise(resolve => setTimeout(resolve, 1000));
       } catch (err) {
-        console.error(`[Scheduler] Failed to refresh popular manga ${id}:`, err.message);
+        console.error(`[Scheduler] Failed to refresh popular fantasy manga ${id}:`, err.message);
       }
     }
-    console.log('[Scheduler] 24-hour popular manga sync completed.');
+    console.log('[Scheduler] 24-hour popular fantasy manga sync completed.');
   };
 
-  // Run initial sync after 30 seconds to let the server boot up fully
-  setTimeout(runSync, 30000);
+  // Run initial sync after 10 seconds
+  setTimeout(runSync, 10000);
 
   // Run every 24 hours
   setInterval(runSync, 24 * 60 * 60 * 1000);

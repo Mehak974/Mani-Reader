@@ -355,3 +355,16 @@ model RefreshToken {
 
   @@map("refresh_tokens")
 }
+
+model PopularManga {
+  id              String   @id @default(uuid())
+  title           String
+  imageUrl        String
+  mangaDetailLink String   // Just the URL slug or link
+  latestChapter   String?
+  latestChapterId String?  // Add this field!
+  updatedAt       DateTime @updatedAt
+
+  @@map("popular_manga")
+}
+

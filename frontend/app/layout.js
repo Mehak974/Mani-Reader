@@ -120,7 +120,7 @@ export default function RootLayout({ children }) {
           <main id="main-content">
             {children}
           </main>
-          <AdBanner size="small" slot="8394012345" />
+          <AdBanner />
           <Footer />
           <ScrollToTop />
         </ClientProviders>

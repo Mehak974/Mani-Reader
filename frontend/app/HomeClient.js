@@ -8,6 +8,7 @@ import MangaCard from '../components/MangaCard';
 import { mangaApi } from '../lib/api';
 import RecentlyAddedCard from '../components/RecentlyAddedCard';
 import AdBanner from '../components/AdBanner';
+import EffectiveCpmAd from '../components/EffectiveCpmAd';
 import MangaLoader from '../components/MangaLoader';
 
 function SkeletonCarousel() {
@@ -32,18 +33,9 @@ export default function HomeClient({ initialData = {} }) {
   const [recent, setRecent] = React.useState(initialData.recent || []);
   const [loading, setLoading] = React.useState(!initialData.recent);
   
-  // Tabbed popular sections state
-  const [activeTab, setActiveTab] = React.useState('action');
-  const [popularData, setPopularData] = React.useState({
-    action: initialData.action || [],
-    fantasy: initialData.fantasy || [],
-    romance: initialData.romance || []
-  });
-  const [tabLoading, setTabLoading] = React.useState({
-    action: !initialData.action || initialData.action.length === 0,
-    fantasy: !initialData.fantasy || initialData.fantasy.length === 0,
-    romance: !initialData.romance || initialData.romance.length === 0
-  });
+  // Popular Fantasy section state (from DB)
+  const [popularFantasy, setPopularFantasy] = React.useState(initialData.fantasy || []);
+  const [popularLoading, setPopularLoading] = React.useState(!initialData.fantasy || initialData.fantasy.length === 0);
 
   const carouselRef = React.useRef(null);
 
@@ -87,25 +79,28 @@ export default function HomeClient({ initialData = {} }) {
     }
   }, [searchParams, mounted]);
 
-  // Fetch popular data on active tab change (if not loaded yet)
+  // Fetch popular fantasy from DB table
   React.useEffect(() => {
-    if (popularData[activeTab] && popularData[activeTab].length > 0) {
-      setTabLoading(prev => ({ ...prev, [activeTab]: false }));
+    if (popularFantasy.length > 0) {
+      setPopularLoading(false);
       return;
     }
-
-    setTabLoading(prev => ({ ...prev, [activeTab]: true }));
-    mangaApi.popular(1, activeTab, { params: { _t: Date.now() } })
-      .then((res) => {
-        const raw = res?.data || res || [];
-        const results = raw.filter(m => !m.nsfw).slice(0, 15);
-        setPopularData(prev => ({ ...prev, [activeTab]: results }));
+    setPopularLoading(true);
+    fetch('/api/manga/browse/popular-fantasy')
+      .then(r => r.json())
+      .then(data => {
+        const list = Array.isArray(data) ? data.filter(m => !m.nsfw) : [];
+        // Fallback: if DB table is empty, use the legacy getPopular API
+        if (list.length === 0) {
+          return fetch('/api/manga/browse/popular?genre=fantasy')
+            .then(r => r.json())
+            .then(d => setPopularFantasy(Array.isArray(d) ? d.slice(0, 15) : []));
+        }
+        setPopularFantasy(list);
       })
       .catch(() => {})
-      .finally(() => {
-        setTabLoading(prev => ({ ...prev, [activeTab]: false }));
-      });
-  }, [activeTab]);
+      .finally(() => setPopularLoading(false));
+  }, []);
 
   React.useEffect(() => {
     // If it's page 1 and we have initial recent updates, skip initial fetch
@@ -148,215 +143,103 @@ export default function HomeClient({ initialData = {} }) {
     <div className="page-wrapper home-page-wrapper" style={{ background: 'var(--bg)', minHeight: '100vh' }} suppressHydrationWarning>
       <Navbar />
 
-          <div className="container" style={{ marginTop: '75px' }}>
-            <AdBanner size="small" slot="8394012345" /> {/* Use your real slot ID here */}
-          </div>
+      <div className="container" style={{ marginTop: '75px' }}>
+        <AdBanner size="small" />
+      </div>
 
           <section className="section" style={{ paddingTop: '20px', paddingBottom: '12px' }}>
             <div className="container">
-              {/* Premium Tabbed Navigation */}
-              <div className="tab-container" style={{ 
-                display: 'flex', 
-                gap: '8px', 
-                marginBottom: '16px', 
-                borderBottom: '1px solid var(--border)', 
-                paddingBottom: '0',
-                overflowX: 'auto',
-                scrollbarWidth: 'none'
-              }}>
-                {[
-                  { id: 'action', label: '⚔️ Popular Action', urlSlug: 'action' },
-                  { id: 'fantasy', label: '✨ Popular Fantasy', urlSlug: 'fantasy' },
-                  { id: 'romance', label: '💖 Popular Romance', urlSlug: 'romance' }
-                ].map(tab => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: activeTab === tab.id ? 'var(--accent)' : 'var(--text-3)',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      position: 'relative',
-                      whiteSpace: 'nowrap',
-                      transition: 'color 0.2s ease',
-                      outline: 'none'
-                    }}
-                  >
-                    {tab.label}
-                    {activeTab === tab.id && (
-                      <div style={{ 
-                        position: 'absolute', 
-                        bottom: '0', 
-                        left: '12px', 
-                        right: '12px', 
-                        height: '3px', 
-                        background: 'var(--accent)', 
-                        borderRadius: '2px 2px 0 0'
-                      }} />
-                    )}
-                  </button>
-                ))}
-                
-                {/* Dynamically adjust the "View All" link based on active tab */}
-                <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', paddingRight: '12px' }}>
-                  <a href={`/browse?include=${activeTab}&order=5`} className="btn btn-ghost btn-sm" style={{ whiteSpace: 'nowrap' }}>
-                    View All {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} →
-                  </a>
-                </div>
+              {/* Popular Fantasy Header */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                <h2 className="section-title" style={{ margin: 0 }}>✨ <span>Popular</span> Fantasy</h2>
+                <a href="/browse?include=fantasy&order=5" className="btn btn-ghost btn-sm" style={{ whiteSpace: 'nowrap' }}>
+                  View All →
+                </a>
               </div>
 
               <div className="popular-container" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                {tabLoading[activeTab] ? (
+                {popularLoading ? (
                   <SkeletonCarousel count={6} />
                 ) : (
-                  popularData[activeTab] && popularData[activeTab].length > 0 ? (
+                  popularFantasy && popularFantasy.length > 0 ? (
                     <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                       <style>{`
-                        .hide-scrollbar::-webkit-scrollbar {
-                          display: none !important;
-                        }
+                        .hide-scrollbar::-webkit-scrollbar { display: none !important; }
                         @keyframes card-fade-in {
                           from { opacity: 0; transform: translateY(20px) scale(0.97); }
-                          to { opacity: 1; transform: translateY(0) scale(1); }
+                          to   { opacity: 1; transform: translateY(0) scale(1); }
                         }
-                        .stagger-card {
-                          opacity: 0;
-                          animation: card-fade-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                        .stagger-card { opacity: 0; animation: card-fade-in 0.55s cubic-bezier(0.16,1,0.3,1) forwards; }
+                        .popular-carousel { gap: 20px; }
+                        .popular-card { flex: 0 0 180px; }
+                        .popular-container { min-height: 380px; }
+                        .popular-card .manga-card-title { font-size: 0.85rem !important; }
+                        .popular-card .manga-card-body { padding: 12px 10px 32px 10px !important; }
+                        @media (max-width: 768px) {
+                          .popular-carousel { gap: 12px; }
+                          .popular-card { flex: 0 0 130px; }
+                          .popular-container { min-height: 290px; }
+                          .popular-card .manga-card-body { min-height: 55px !important; padding: 8px 6px 26px 6px !important; }
+                          .popular-card .manga-card-title { font-size: 0.72rem !important; }
                         }
-                        .popular-carousel {
-                          gap: 20px;
-                        }
-                        .popular-card {
-                          flex: 0 0 180px;
-                        }
-                        .popular-container {
-                          min-height: 380px;
-                        }
-                        .tab-btn {
-                          font-size: 1.05rem;
-                          padding: 10px 16px;
-                        }
-                        .popular-card .manga-card-title {
-                          font-size: 0.85rem !important;
-                        }
-                        .popular-card .manga-card-body {
-                          padding: 12px 10px 32px 10px !important;
+                        .popular-native-ad {
+                          flex: 0 0 140px;
+                          display: flex;
+                          align-items: center;
+                          justify-content: center;
+                          min-height: 220px;
                         }
                         @media (max-width: 768px) {
-                          .popular-carousel {
-                            gap: 12px;
-                          }
-                          .popular-card {
-                            flex: 0 0 130px;
-                          }
-                          .popular-container {
-                            min-height: 290px;
-                          }
-                          .tab-btn {
-                            font-size: 0.85rem;
-                            padding: 6px 10px;
-                          }
-                          .popular-card .manga-card-body {
-                            min-height: 55px !important;
-                            padding: 8px 6px 26px 6px !important;
-                          }
-                          .popular-card .manga-card-title {
-                            font-size: 0.72rem !important;
-                          }
+                          .popular-native-ad { flex: 0 0 100px; min-height: 180px; }
                         }
                       `}</style>
-                      
-                      {/* Left Navigation Arrow */}
-                      <button 
+
+                      {/* Left Arrow */}
+                      <button
                         onClick={scrollLeft}
                         className="carousel-arrow left"
-                        style={{
-                          position: 'absolute',
-                          left: '-20px',
-                          zIndex: 10,
-                          background: 'rgba(20, 20, 20, 0.85)',
-                          border: '1px solid var(--border)',
-                          borderRadius: '50%',
-                          width: '40px',
-                          height: '40px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: 'var(--text-1)',
-                          cursor: 'pointer',
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
-                          transition: 'all 0.2s ease',
-                          backdropFilter: 'blur(4px)',
-                          outline: 'none'
-                        }}
+                        style={{ position: 'absolute', left: '-20px', zIndex: 10, background: 'rgba(20,20,20,0.85)', border: '1px solid var(--border)', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-1)', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.5)', transition: 'all 0.2s ease', backdropFilter: 'blur(4px)', outline: 'none' }}
                         onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--accent)'; e.currentTarget.style.color = '#fff'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(20, 20, 20, 0.85)'; e.currentTarget.style.color = 'var(--text-1)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(20,20,20,0.85)'; e.currentTarget.style.color = 'var(--text-1)'; }}
                       >
                         <span className="material-icons" style={{ fontSize: '1.4rem', fontWeight: 'bold' }}>chevron_left</span>
                       </button>
 
-                      {/* Scrollable Carousel */}
-                      <div 
+                      {/* Scrollable Carousel with native ads every 5 cards */}
+                      <div
                         ref={carouselRef}
                         className="hide-scrollbar popular-carousel"
-                        style={{ 
-                          display: 'flex', 
-                          overflowX: 'auto', 
-                          paddingBottom: '10px', 
-                          scrollSnapType: 'x mandatory',
-                          scrollbarWidth: 'none',
-                          msOverflowStyle: 'none',
-                          width: '100%',
-                          scrollBehavior: 'smooth'
-                        }}
+                        style={{ display: 'flex', overflowX: 'auto', paddingBottom: '10px', scrollSnapType: 'x mandatory', scrollbarWidth: 'none', msOverflowStyle: 'none', width: '100%', scrollBehavior: 'smooth' }}
                       >
-                        {popularData[activeTab].map((m, index) => (
-                          <div 
-                            key={`${m.id}-${index}`} 
-                            className="stagger-card popular-card"
-                            style={{ 
-                              scrollSnapAlign: 'start',
-                              animationDelay: `${(index % 15) * 60}ms`
-                            }}
-                          >
-                            <MangaCard 
-                              manga={m} 
-                              revealNsfw={revealNsfw} 
-                              setRevealNsfw={setRevealNsfw} 
-                              priority={index < 4} 
-                            />
-                          </div>
-                        ))}
+                        {popularFantasy.map((m, index) => {
+                          const elements = [];
+                          if (index === 3) {
+                            elements.push(
+                              <div key="inline-native-ad" className="stagger-card popular-card" style={{ scrollSnapAlign: 'start', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-2)', borderRadius: '16px', border: '1px solid var(--border)', height: '100%', minHeight: '240px', padding: '10px' }}>
+                                <EffectiveCpmAd />
+                              </div>
+                            );
+                          }
+                          elements.push(
+                            <div
+                              key={`${m.id}-${index}`}
+                              className="stagger-card popular-card"
+                              style={{ scrollSnapAlign: 'start', animationDelay: `${(index % 15) * 60}ms` }}
+                            >
+                              <MangaCard manga={m} revealNsfw={revealNsfw} setRevealNsfw={setRevealNsfw} priority={index < 4} />
+                            </div>
+                          );
+                          return elements;
+                        })}
                       </div>
 
-                      {/* Right Navigation Arrow */}
-                      <button 
+                      {/* Right Arrow */}
+                      <button
                         onClick={scrollRight}
                         className="carousel-arrow right"
-                        style={{
-                          position: 'absolute',
-                          right: '-20px',
-                          zIndex: 10,
-                          background: 'rgba(20, 20, 20, 0.85)',
-                          border: '1px solid var(--border)',
-                          borderRadius: '50%',
-                          width: '40px',
-                          height: '40px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: 'var(--text-1)',
-                          cursor: 'pointer',
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
-                          transition: 'all 0.2s ease',
-                          backdropFilter: 'blur(4px)',
-                          outline: 'none'
-                        }}
+                        style={{ position: 'absolute', right: '-20px', zIndex: 10, background: 'rgba(20,20,20,0.85)', border: '1px solid var(--border)', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-1)', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.5)', transition: 'all 0.2s ease', backdropFilter: 'blur(4px)', outline: 'none' }}
                         onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--accent)'; e.currentTarget.style.color = '#fff'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(20, 20, 20, 0.85)'; e.currentTarget.style.color = 'var(--text-1)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(20,20,20,0.85)'; e.currentTarget.style.color = 'var(--text-1)'; }}
                       >
                         <span className="material-icons" style={{ fontSize: '1.4rem', fontWeight: 'bold' }}>chevron_right</span>
                       </button>
@@ -387,15 +270,26 @@ export default function HomeClient({ initialData = {} }) {
               ) : (
                 <>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px' }}>
-                    {recent.length > 0 ? recent.map((m, index) => (
-                      <div 
-                        key={m.id} 
-                        className="stagger-card" 
-                        style={{ animationDelay: `${(index % 12) * 50}ms` }}
-                      >
-                        <RecentlyAddedCard manga={m} />
-                      </div>
-                    )) : (
+                    {recent.length > 0 ? recent.map((m, index) => {
+                      const items = [];
+                      if (index === 4) {
+                        items.push(
+                          <div key="grid-native-ad" className="recent-added-card stagger-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'var(--surface-2)', borderRadius: '16px', border: '1px solid var(--border)', minHeight: '120px' }}>
+                            <EffectiveCpmAd />
+                          </div>
+                        );
+                      }
+                      items.push(
+                        <div 
+                          key={m.id} 
+                          className="stagger-card" 
+                          style={{ animationDelay: `${(index % 12) * 50}ms` }}
+                        >
+                          <RecentlyAddedCard manga={m} />
+                        </div>
+                      );
+                      return items;
+                    }) : (
                       <div style={{ gridColumn: '1/-1', padding: '60px', textAlign: 'center', color: 'var(--text-3)' }}>
                         No recently added manga found on this page.
                       </div>
@@ -437,9 +331,7 @@ export default function HomeClient({ initialData = {} }) {
             </div>
           </section>
 
-          <div className="container">
-            <AdBanner size="small" slot="8394012346" /> {/* Use your real slot ID here */}
-          </div>
+
 
           <section className="section">
             <div className="container">
@@ -539,6 +431,14 @@ export default function HomeClient({ initialData = {} }) {
             opacity: 0.3;
           }
         `}</style>
+
+          {/* Bottom Native Ad Zone — 1 slot */}
+          <div style={{ background: 'var(--surface)', padding: '20px 0', marginTop: '16px', borderTop: '1px solid var(--border)' }}>
+            <div className="container" style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' }}>
+              <EffectiveCpmAd />
+            </div>
+          </div>
+
     </div>
   );
 }
