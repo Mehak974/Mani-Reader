@@ -1,28 +1,30 @@
 'use client';
+import React from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 
-function getCoverUrl(manga) {
-  const rawCover = manga?.image || manga?.cover;
-  if (!rawCover) return '/placeholder-cover.jpg';
-  if (!rawCover.startsWith('http')) return rawCover;
+// ✅ Default fallback image
+const DEFAULT_COVER = '/default-cover.png';
 
-  const safeDomains = [
-    'image.tmdb.org', 'imgur.com', 'blogspot.com', 'googleusercontent.com',
-    'placehold.co', 'wp.com', 'cloudinary.com',
-    'i0.wp.com', 'i1.wp.com', 'i2.wp.com', 'i3.wp.com',
-  ];
-  if (safeDomains.some(d => rawCover.includes(d))) return rawCover;
-  if (rawCover.includes('/api/image') || rawCover.includes('workers.dev')) return rawCover;
+export default function MangaCard({ manga }) {
+  const [imageSrc, setImageSrc] = React.useState(
+    manga?.coverImage || manga?.image || DEFAULT_COVER  // ✅ FIXED
+  );
 
-  return `/api/image?url=${encodeURIComponent(rawCover)}`;
-}
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [hasError, setHasError] = React.useState(false);
 
-export default function MangaCard({ manga, revealNsfw = false, setRevealNsfw = () => {}, priority = false }) {
-  if (!manga) return null;
+  const handleImageLoad = () => {
+    setIsLoading(false);
+    setHasError(false);
+  };
 
-  const isBlurred = manga.nsfw && !revealNsfw;
-  const coverUrl = getCoverUrl(manga);
-
+  const handleImageError = () => {
+    console.warn(`Image failed to load: ${imageSrc}`);
+    setImageSrc(DEFAULT_COVER);  // ✅ Fallback to default
+    setHasError(true);
+    setIsLoading(false);
+  };
   return (
     <div className="manga-card-wrapper" style={{ position: 'relative', height: '100%' }}>
       <Link

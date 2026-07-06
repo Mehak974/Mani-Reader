@@ -35,7 +35,7 @@ export default function Navbar() {
     if (q) {
       const delayDebounce = setTimeout(() => {
         router.push(`/browse?q=${encodeURIComponent(q)}`);
-      }, 300);
+      }, 600);
       return () => clearTimeout(delayDebounce);
     }
   }, [searchQuery]);
@@ -77,11 +77,11 @@ export default function Navbar() {
             </button>
 
             <Link href="/" className="navbar-logo">
-              <Image 
-                src="/logo.png" 
-                alt="Mani Reader" 
-                width={180} 
-                height={40} 
+              <Image
+                src="/logo.png"
+                alt="Mani Reader"
+                width={180}
+                height={40}
                 className="logo-desktop"
                 priority
               />
@@ -97,18 +97,18 @@ export default function Navbar() {
 
             {/* Desktop Search */}
             <div className="desktop-search-wrap" style={{ position: 'relative', marginRight: '16px', width: '220px' }}>
-              <input 
-                type="text" 
-                placeholder="Search..." 
+              <input
+                type="text"
+                placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={handleSearch}
-                style={{ 
-                  width: '100%', padding: '8px 12px 8px 36px', borderRadius: 20, 
-                  background: 'var(--surface-2)', border: '1px solid var(--border)', 
+                style={{
+                  width: '100%', padding: '8px 12px 8px 36px', borderRadius: 20,
+                  background: 'var(--surface-2)', border: '1px solid var(--border)',
                   color: 'var(--text)', fontSize: '0.85rem', outline: 'none',
                   transition: 'border-color 0.2s'
-                }} 
+                }}
               />
               <span className="material-icons" onClick={triggerSearch} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: '1.2rem', color: 'var(--text-3)', cursor: 'pointer', zIndex: 10 }}>search</span>
             </div>
@@ -140,27 +140,27 @@ export default function Navbar() {
               </button>
 
               <Link href="/" style={{ flexShrink: 0 }}>
-                <Image 
-                  src="/icon.png" 
-                  alt="Mani Reader" 
-                  width={40} 
-                  height={40} 
-                  style={{ borderRadius: 8, objectFit: 'cover' }} 
+                <Image
+                  src="/icon.png"
+                  alt="Mani Reader"
+                  width={40}
+                  height={40}
+                  style={{ borderRadius: 8, objectFit: 'cover' }}
                 />
               </Link>
-              
+
               <div style={{ flex: 1, position: 'relative' }}>
-                <input 
-                  type="text" 
-                  placeholder="Search..." 
+                <input
+                  type="text"
+                  placeholder="Search..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={handleSearch}
-                  style={{ 
-                    width: '100%', padding: '8px 12px 8px 32px', borderRadius: 20, 
-                    background: 'var(--surface-2)', border: '1px solid var(--border)', 
-                    color: 'var(--text)', fontSize: '0.85rem', outline: 'none' 
-                  }} 
+                  style={{
+                    width: '100%', padding: '8px 12px 8px 32px', borderRadius: 20,
+                    background: 'var(--surface-2)', border: '1px solid var(--border)',
+                    color: 'var(--text)', fontSize: '0.85rem', outline: 'none'
+                  }}
                 />
                 <span className="material-icons" onClick={triggerSearch} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', fontSize: '1.1rem', color: 'var(--text-3)', cursor: 'pointer', zIndex: 10 }}>search</span>
               </div>
@@ -177,7 +177,7 @@ export default function Navbar() {
                 </div>
               </div>
             </div>
-            
+
             {/* Line 2: Horizontal Menu */}
             <div style={{ display: 'flex', overflowX: 'auto', gap: 12, paddingBottom: 4, scrollbarWidth: 'none', whiteSpace: 'nowrap' }}>
               {links.map(({ href, label }) => (

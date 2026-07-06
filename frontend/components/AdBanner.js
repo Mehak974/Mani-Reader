@@ -15,10 +15,10 @@ export default function AdBanner({ slot, format = 'auto', responsive = 'true', s
     const initAd = () => {
       try {
         if (typeof window !== 'undefined') {
-          // Check if there are any uninitialized adsbygoogle ins elements in the DOM that haven't received a push
+          // Check if there are any uninitialized adsbygoogle ins elements in the DOM
           const ads = document.querySelectorAll('ins.adsbygoogle');
           const uninitializedAds = Array.from(ads).filter(
-            (el) => !el.hasAttribute('data-adsbygoogle-status') && !el.dataset.adPushed
+            (el) => !el.hasAttribute('data-adsbygoogle-status')
           );
 
           if (uninitializedAds.length > 0) {
@@ -40,9 +40,9 @@ export default function AdBanner({ slot, format = 'auto', responsive = 'true', s
   const isSmall = size === 'small';
 
   return (
-    <div className="ad-container" style={{ 
-      margin: isSmall ? '8px auto' : '32px auto', 
-      textAlign: 'center', 
+    <div className="ad-container" style={{
+      margin: isSmall ? '8px auto' : '32px auto',
+      textAlign: 'center',
       minHeight: isSmall ? '30px' : '100px',
       background: isSmall ? 'transparent' : 'rgba(255, 255, 255, 0.01)',
       borderRadius: isSmall ? '0' : '16px',
@@ -58,19 +58,19 @@ export default function AdBanner({ slot, format = 'auto', responsive = 'true', s
       pointerEvents: 'none' // ⚡ Make ads completely unclickable
     }}>
       <ins className="adsbygoogle"
-           ref={adRef}
-           style={{ display: 'inline-block', width: isSmall ? '320px' : '100%', height: isSmall ? '32px' : 'auto' }}
-           data-ad-client={publisherId}
-           data-ad-slot={slot}
-           data-ad-format={isSmall ? null : format}
-           data-full-width-responsive={isSmall ? 'false' : responsive}></ins>
-      
-      <div style={{ 
-        position: 'absolute', 
-        top: isSmall ? 2 : 6, 
-        right: isSmall ? 6 : 12, 
-        fontSize: isSmall ? '0.5rem' : '0.6rem', 
-        color: 'var(--text-3)', 
+        ref={adRef}
+        style={{ display: 'inline-block', width: isSmall ? '320px' : '100%', height: isSmall ? '32px' : 'auto' }}
+        data-ad-client={publisherId}
+        data-ad-slot={slot}
+        data-ad-format={isSmall ? null : format}
+        data-full-width-responsive={isSmall ? 'false' : responsive}></ins>
+
+      <div style={{
+        position: 'absolute',
+        top: isSmall ? 2 : 6,
+        right: isSmall ? 6 : 12,
+        fontSize: isSmall ? '0.5rem' : '0.6rem',
+        color: 'var(--text-3)',
         opacity: isSmall ? 0.2 : 0.4,
         textTransform: 'uppercase',
         pointerEvents: 'none',
