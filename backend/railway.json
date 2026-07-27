@@ -1,9 +1,0 @@
-{
-  "build": {
-    "builder": "NIXPACKS",
-    "buildCommand": "npm install"
-  },
-  "deploy": {
-    "startCommand": "npx prisma migrate deploy && npm start"
-  }
-}
