@@ -1,2 +1,2 @@
 [deploy]
-preDeployCommand = "cd backend && npx prisma migrate deploy"
+#preDeployCommand = "cd backend && npx prisma migrate deploy"
