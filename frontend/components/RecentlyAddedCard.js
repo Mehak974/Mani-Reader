@@ -67,8 +67,8 @@ export default function RecentlyAddedCard({ manga }) {
         style={{ flexShrink: 0 }}
         onMouseEnter={() => {
           window.recentTimeout = setTimeout(() => {
-            fetch(`${apiBase}/manga/${manga.id}`).catch(() => { });
-            fetch(`${apiBase}/chapters/${manga.id}`).catch(() => { });
+            fetch(`${apiBase}/manga/${slug}`).catch(() => { });
+            fetch(`${apiBase}/chapters/${slug}`).catch(() => { });
           }, 150);
         }}
         onMouseLeave={() => clearTimeout(window.recentTimeout)}

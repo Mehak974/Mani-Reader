@@ -70,8 +70,8 @@ export default function MangaCard({ manga, revealNsfw = false, setRevealNsfw = (
         onMouseEnter={() => {
           if (!isBlurred) {
             window.mangaTimeout = setTimeout(() => {
-              fetch(`/api/manga/${manga.id}`).catch(() => { });
-              fetch(`/api/chapters/${manga.id}`).catch(() => { });
+              fetch(`/api/manga/${slug}`).catch(() => { });
+              fetch(`/api/chapters/${slug}`).catch(() => { });
             }, 150);
           }
         }}
