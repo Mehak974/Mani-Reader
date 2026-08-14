@@ -65,7 +65,12 @@ export default function Navbar() {
     <>
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <nav className={`navbar ${scrolled ? 'scrolled' : ''}`}>
+      <nav className={`navbar ${scrolled ? 'scrolled' : ''}`} style={{
+        background: scrolled ? 'rgba(7, 7, 10, 0.85)' : 'transparent',
+        backdropFilter: scrolled ? 'blur(20px) saturate(180%)' : 'none',
+        borderBottom: scrolled ? '1px solid var(--border)' : '1px solid transparent',
+        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+      }}>
         <div className="navbar-inner" style={{ position: 'relative' }}>
           {/* Desktop Layout */}
           <div className="desktop-nav-content" style={{ display: 'flex', width: '100%', alignItems: 'center' }}>
@@ -96,33 +101,43 @@ export default function Navbar() {
             </div>
 
             {/* Desktop Search */}
-            <div className="desktop-search-wrap" style={{ position: 'relative', marginRight: '16px', width: '220px' }}>
+            <div className="desktop-search-wrap" style={{ position: 'relative', marginRight: '16px', width: '240px' }}>
               <input
                 type="text"
-                placeholder="Search..."
+                placeholder="Search manga..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={handleSearch}
                 style={{
-                  width: '100%', padding: '8px 12px 8px 36px', borderRadius: 20,
-                  background: 'var(--surface-2)', border: '1px solid var(--border)',
-                  color: 'var(--text)', fontSize: '0.85rem', outline: 'none',
-                  transition: 'border-color 0.2s'
+                  width: '100%', padding: '10px 14px 10px 40px', borderRadius: 24,
+                  background: 'rgba(16, 16, 24, 0.8)', border: '1px solid var(--border)',
+                  color: 'var(--text)', fontSize: '0.9rem', outline: 'none',
+                  transition: 'all 0.3s', backdropFilter: 'blur(12px)'
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = 'var(--accent)';
+                  e.target.style.boxShadow = '0 0 0 3px var(--accent-glow), 0 0 20px var(--accent-glow)';
+                  e.target.style.background = 'rgba(16, 16, 24, 0.95)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = 'var(--border)';
+                  e.target.style.boxShadow = 'none';
+                  e.target.style.background = 'rgba(16, 16, 24, 0.8)';
                 }}
               />
-              <span className="material-icons" onClick={triggerSearch} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: '1.2rem', color: 'var(--text-3)', cursor: 'pointer', zIndex: 10 }}>search</span>
+              <span className="material-icons" onClick={triggerSearch} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', fontSize: '1.2rem', color: 'var(--text-3)', cursor: 'pointer', zIndex: 10, transition: 'color 0.2s' }}>search</span>
             </div>
 
-            <div className="navbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div className="navbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center' }} suppressHydrationWarning>
                 {!mounted ? (
                   <button className="btn btn-ghost btn-sm" style={{ visibility: 'hidden', width: '120px' }}>Loading...</button>
                 ) : (
                   user ? (
-                    <button className="btn btn-ghost btn-sm" onClick={logout}>Logout</button>
+                    <button className="btn btn-ghost btn-sm" style={{ background: 'rgba(16, 16, 24, 0.8)', border: '1px solid var(--border)', backdropFilter: 'blur(12px)' }} onClick={logout}>Logout</button>
                   ) : (
                     <>
-                      <button className="btn btn-ghost btn-sm" onClick={openLogin}>Login</button>
+                      <button className="btn btn-ghost btn-sm" style={{ background: 'rgba(16, 16, 24, 0.8)', border: '1px solid var(--border)', backdropFilter: 'blur(12px)' }} onClick={openLogin}>Login</button>
                       <button className="btn jewel-btn btn-sm" onClick={openRegister}>Sign Up</button>
                     </>
                   )

@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../lib/auth';
 import { progressApi, bookmarkApi, historyApi } from '../../lib/api';
-import AdBanner from '../AdBanner';
 
 // ── Vertical Reader ────────────────────────────────────────────────────────────
 export function VerticalReader({ pages, chapterId, mangaId, prevChapter, nextChapter, currentChapter, chapters }) {
@@ -226,20 +225,11 @@ export function VerticalReader({ pages, chapterId, mangaId, prevChapter, nextCha
                 <div className="skeleton" style={{ width: '100%', height: 800 }} />
               )}
             </div>
-            {/* Show an ad banner every 10 pages */}
-            {(i + 1) % 10 === 0 && i !== pages.length - 1 && (
-              <div style={{ width: '100%', maxWidth: '900px', margin: '20px 0' }} onClick={(e) => e.stopPropagation()}>
-                <AdBanner slot="8394012345" />
-              </div>
-            )}
           </React.Fragment>
         ))}
 
         {nextChapter && (
           <div style={{ textAlign: 'center', padding: '80px 0', borderTop: '1px solid var(--border)', width: '100%' }}>
-            <div style={{ marginBottom: 40 }} onClick={(e) => e.stopPropagation()}>
-              <AdBanner slot="8394012345" />
-            </div>
             <p style={{ color: 'var(--text-3)', marginBottom: 20 }}>Finished Chapter {chNum}</p>
             <button
               className="btn btn-primary"

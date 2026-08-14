@@ -82,8 +82,9 @@ function HistoryContent() {
             {history
               .filter((h, index, self) => index === self.findIndex((t) => t.mangaId === h.mangaId))
               .map((h) => {
-                const cover = h.manga?.cover
-                  ? `/api/image?url=${encodeURIComponent(h.manga.cover)}`
+                const rawCover = h.manga?.cover;
+                const cover = rawCover
+                  ? `/api/image?url=${encodeURIComponent(rawCover)}`
                   : '/placeholder-cover.jpg';
                 return (
                   <Link

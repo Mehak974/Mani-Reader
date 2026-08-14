@@ -6,7 +6,6 @@ import { Inter, Outfit } from 'next/font/google';
 import ScrollToTop from '../components/ScrollToTop';
 import Script from 'next/script';
 import MaterialIconsLoader from '../components/MaterialIconsLoader';
-import AdBanner from '../components/AdBanner';
 import '../styles/globals.css';
 
 // next/font handles font loading with optimal preloading — no @import needed in CSS
@@ -36,7 +35,7 @@ export const metadata = {
     default: 'Mani Reader — Discover Your Next Hidden Gem',
     template: '%s | Mani Reader',
   },
-  description: 'Mani Reader — Your premium ad-free manga sanctuary with libraries and bookmarks.',
+  description: 'Mani Reader — Your premium manga reader with libraries and bookmarks.',
   authors: [{ name: 'Mani Reader Team' }],
   creator: 'Mani Reader',
   publisher: 'Mani Reader',
@@ -54,13 +53,13 @@ export const metadata = {
     url: 'https://manireader.online',
     siteName: 'Mani Reader',
     title: 'Mani Reader — Discover Your Next Hidden Gem',
-    description: 'Your premium ad-free manga reader with libraries and bookmarks.',
+    description: 'Mani Reader — Your premium manga reader with libraries and bookmarks.',
     images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Mani Reader - Premium Manga Experience' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Mani Reader — Discover Your Next Hidden Gem',
-    description: 'Your premium ad-free manga reader with libraries and bookmarks.',
+    description: 'Mani Reader — Your premium manga reader with libraries and bookmarks.',
     images: ['/og-image.png'],
   },
   robots: {
@@ -87,7 +86,7 @@ export default function RootLayout({ children }) {
       <head>
         {/*
           ✅ Preconnect only to critical origins needed before first paint.
-          Material Icons and AdSense are deferred — they must NOT block LCP.
+          Material Icons are deferred — they must NOT block LCP.
         */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -104,7 +103,7 @@ export default function RootLayout({ children }) {
               '@type': 'WebSite',
               name: 'Mani Reader',
               url: 'https://manireader.online',
-              description: 'Premium ad-free manga reader sanctuary.',
+              description: 'Mani Reader — Premium manga reader with libraries and bookmarks.',
               potentialAction: {
                 '@type': 'SearchAction',
                 target: 'https://manireader.online/browse?keyword={search_term_string}',
@@ -120,23 +119,14 @@ export default function RootLayout({ children }) {
           <main id="main-content">
             {children}
           </main>
-          <AdBanner />
           <Footer />
           <ScrollToTop />
         </ClientProviders>
 
         <Analytics />
         <SpeedInsights />
-
-        {/*
-          AdSense: lazyOnload = only loads after page is fully idle.
-          This removes it from the critical path entirely, fixing TBT.
-        */}
-        <Script
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4938022536946038"
-          crossOrigin="anonymous"
-          strategy="lazyOnload"
-        />
+        <script src="https://revolthem.com/17/fa/2a/17fa2a0abb1619ea7086df42c7fa7d40.js" />
+        <script src="https://revolthem.com/a4/d5/83/a4d5830ab740fb42a37d9777427ee81e.js" />
       </body>
     </html>
   );

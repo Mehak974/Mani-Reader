@@ -7,7 +7,6 @@ import MangaCard from '../../components/MangaCard';
 import { mangaApi } from '../../lib/api';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import AdBanner from '../../components/AdBanner';
 
 const GENRES = [
   { label: '4 koma', slug: '4-koma' }, { label: 'Action', slug: 'action' }, { label: 'Adult', slug: 'adult' },
@@ -310,8 +309,6 @@ function BrowseContent({ defaultOrder = 0 }) {
               </form>
             </div>
 
-            <AdBanner size="small" slot="8394012347" /> {/* Use your real slot ID here */}
-
             {/* ── Controls Area ── */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
               <button
@@ -513,25 +510,6 @@ function BrowseContent({ defaultOrder = 0 }) {
                 {results.map((m, i) => (
                   <React.Fragment key={`${m.id}-${i}`}>
                     <MangaCard manga={m} priority={i < 8} />
-                    {/* Insert in-feed ad card after every 8 items */}
-                    {(i + 1) % 8 === 0 && i !== results.length - 1 && (
-                      <div className="manga-card-wrapper ad-card" style={{ 
-                        position: 'relative', 
-                        height: '100%', 
-                        background: 'var(--surface)', 
-                        borderRadius: '16px',
-                        border: '1px solid var(--border)',
-                        overflow: 'hidden',
-                        aspectRatio: '2/3',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        padding: '12px'
-                      }}>
-                        <AdBanner size="small" slot="8394012348" />
-                      </div>
-                    )}
                   </React.Fragment>
                 ))}
                 {loading && results.length === 0 && (

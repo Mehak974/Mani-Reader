@@ -2,23 +2,23 @@
 
 /* ── Design Tokens ─────────────────────────────────────────────────────────── */
 :root {
-  --bg: #08080a;
-  --bg-2: #0c0c10;
-  --surface: #12121a;
-  --surface-2: #1a1a2e;
-  --surface-3: #0f0f1a;
-  --border: rgba(155, 89, 182, 0.15);
-  --accent: #7103ba;
-  /* Royal Purple */
-  --accent-2: #3498db;
-  /* Sapphire Blue */
-  --accent-glow: rgba(113, 3, 186, 0.35);
+  --bg: #07070a;
+  --bg-2: #0a0a10;
+  --surface: #101018;
+  --surface-2: #181825;
+  --surface-3: #1e1e30;
+  --border: rgba(139, 92, 246, 0.12);
+  --border-hover: rgba(139, 92, 246, 0.35);
+  --accent: #7c3aed;
+  --accent-2: #2563eb;
+  --accent-soft: rgba(124, 58, 237, 0.18);
+  --accent-glow: rgba(124, 58, 237, 0.45);
   --red: #ff4d6d;
-  --green: #2ecc71;
-  --text: #ffffff;
+  --green: #22c55e;
+  --text: #f8fafc;
   --text-2: #cbd5e1;
   --text-3: #64748b;
-  --radius: 12px;
+  --radius: 14px;
   --radius-lg: 20px;
   --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -101,7 +101,19 @@ button {
 }
 
 .home-page-wrapper {
-  padding-top: 0 !important;
+  padding-top: 100px;
+}
+
+@media (max-width: 1024px) {
+  .home-page-wrapper {
+    padding-top: 90px;
+  }
+}
+
+@media (max-width: 768px) {
+  .home-page-wrapper {
+    padding-top: 80px;
+  }
 }
 
 /* ── Navbar ────────────────────────────────────────────────────────────────── */
@@ -420,6 +432,27 @@ button {
 .manga-grid-lg {
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 20px;
+}
+
+.recent-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .recent-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .carousel-arrow {
+    display: none !important;
+  }
+
+  .popular-carousel {
+    gap: 12px !important;
+  }
 }
 
 .manga-carousel {
@@ -1189,27 +1222,158 @@ button {
 }
 
 /* ── Responsive ────────────────────────────────────────────────────────────── */
-@media (max-width: 768px) {
-  .manga-detail-header {
-    grid-template-columns: 1fr;
-  }
-
-  .manga-detail-cover {
-    max-width: 200px;
-    margin: 0 auto;
+@media (max-width: 1024px) {
+  .container {
+    padding: 0 20px;
   }
 
   .manga-grid {
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 14px;
+  }
+
+  .section-title {
+    font-size: 1.3rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0 16px;
+  }
+
+  .page-wrapper {
+    padding-top: 120px;
+  }
+
+  .manga-detail-header {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding: 24px 0;
+  }
+
+  .manga-detail-cover {
+    max-width: 180px;
+    margin: 0 auto;
+  }
+
+  .manga-detail-meta h1 {
+    font-size: 1.6rem;
+  }
+
+  .manga-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: 12px;
   }
 
-  .navbar-links {
-    display: none;
+  .manga-grid-lg {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 14px;
+  }
+
+  .section {
+    padding-top: 32px;
+    padding-bottom: 32px;
+  }
+
+  .section-title {
+    font-size: 1.2rem;
+  }
+
+  .section-header {
+    margin-bottom: 16px;
+  }
+
+  .navbar {
+    height: auto;
+    min-height: 70px;
+  }
+
+  .navbar-inner {
+    padding: 0 16px;
+  }
+
+  .logo-desktop {
+    height: 56px;
   }
 
   .hero-title {
-    font-size: 2rem;
+    font-size: 1.8rem;
+  }
+
+  .hero-desc {
+    font-size: 0.95rem;
+  }
+
+  .btn {
+    padding: 8px 16px;
+    font-size: 0.8rem;
+  }
+
+  .carousel-arrow {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .carousel-arrow .material-icons {
+    font-size: 1.1rem !important;
+  }
+
+  .popular-card {
+    flex: 0 0 140px !important;
+  }
+
+  .recent-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .genre-simple-link {
+    font-size: 0.8rem;
+  }
+
+  .btn-page {
+    min-width: 40px;
+    height: 40px;
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0 12px;
+  }
+
+  .manga-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .manga-grid-lg {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .section {
+    padding-top: 24px;
+    padding-bottom: 24px;
+  }
+
+  .section-title {
+    font-size: 1.1rem;
+  }
+
+  .popular-card {
+    flex: 0 0 120px !important;
+  }
+
+  .manga-card-title {
+    font-size: 0.85rem !important;
+  }
+
+  .btn-page {
+    min-width: 36px;
+    height: 36px;
+    font-size: 0.8rem;
   }
 }
 

@@ -32,7 +32,6 @@ function validateEnv() {
   console.log('[Server] Environment Configuration:');
   console.log('  NODE_ENV:', process.env.NODE_ENV);
   console.log('  PORT:', process.env.PORT || 5000);
-  console.log('  Image Proxy:', 'Enabled');
 }
 
 // Call before server starts
@@ -60,7 +59,6 @@ const proxyRoutes = require('./routes/proxy.routes');
 const adminRoutes = require('./routes/admin.routes');
 const contactRoutes = require('./routes/contact.routes');
 const userRoutes = require('./routes/user.routes');
-const adRoutes = require('./routes/ad.routes');
 const blogRoutes = require('./routes/blog.routes');
 
 // ── Middlewares ──────────────────────────────────────────────────────────────
@@ -86,8 +84,6 @@ app.use(cors({
 }));
 
 // FIX #3: Re-enable Helmet. It was commented out — all browser security headers were missing.
-// crossOriginResourcePolicy: cross-origin is required so the image proxy can serve images
-// to cross-origin pages without CORP blocking them.
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(morgan(config.nodeEnv === 'production' ? 'combined' : 'dev'));
 app.use(express.json({ limit: '1mb' }));
@@ -111,9 +107,8 @@ const adminMiddleware = require('./middleware/admin');
 app.get('/api/debug-config', adminMiddleware, (req, res) => {
   const config = require('./config/env');
   res.json({
-    imageProxyUrl: config.imageProxyUrl,
     nodeEnv: config.nodeEnv,
-    provider: config.consumet.primary
+    provider: 'local'
   });
 });
 
@@ -140,7 +135,6 @@ app.get('/api/health', (req, res) => {
     status: 'ok',
     service: 'manga-reader-api',
     timestamp: new Date().toISOString(),
-    consumetUrl: config.consumet.url,
   });
 });
 
@@ -158,7 +152,6 @@ app.use('/api/image', proxyRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/user', userRoutes);
-app.use('/api/ads', adRoutes);
 app.use('/api/blog', blogRoutes);
 
 // ── 404 handler ───────────────────────────────────────────────────────────────
@@ -178,12 +171,12 @@ app.use((err, req, res, next) => {
 app.listen(config.port, '0.0.0.0', () => {
   console.log(`\n🚀 Manga Reader API running on http://0.0.0.0:${config.port}`);
   console.log(`   [ManiReader] Debug Config Route is ACTIVE`);
-  console.log(`   Consumet API: ${config.consumet.url}`);
   console.log(`   Environment: ${config.nodeEnv}\n`);
 
   try {
-    const { startPopularMangaSync } = require('./services/mangaService');
+    const { startPopularMangaSync, seedPopularCompleted } = require('./services/mangaService');
     startPopularMangaSync();
+    seedPopularCompleted();
   } catch (err) {
     console.error('[Server] Failed to initialize popular manga scheduler:', err.message);
   }

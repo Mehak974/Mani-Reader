@@ -25,13 +25,6 @@ module.exports = {
   clientUrl: process.env.FRONTEND_URL || process.env.CLIENT_URL || 'https://manireader.online',
   apiUrl: process.env.API_URL || 'https://api.manireader.online',
 
-  consumet: {
-    url: process.env.CONSUMET_URL || 'https://api.consumet.org',
-    primary: process.env.PRIMARY_PROVIDER || 'mangakatana',
-    fallback: process.env.CONSUMET_FALLBACK_PROVIDER || 'mangakakalot',
-    timeout: 30000,
-  },
-
   imageProxyUrl: (() => {
     const api = process.env.API_URL || 'https://api.manireader.online';
     const proxy = process.env.IMAGE_PROXY_URL;

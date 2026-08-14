@@ -1,10 +1,11 @@
-// MANI READER — Service Worker v3
+// MANI READER — Service Worker v4
 // Strategy:
 //  - Cover images & static assets: Cache-First (instant repeat loads)
 //  - API calls: Network-First with 3s timeout fallback to cache
 //  - HTML pages: Network-First (always fresh content)
+//  - JS chunks: NEVER cache — prevents stale module references after deploys
 
-const CACHE_VERSION = 'mani-v3';
+const CACHE_VERSION = 'mani-v4';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
 const API_CACHE = `${CACHE_VERSION}-api`;
@@ -38,18 +39,17 @@ self.addEventListener('activate', (event) => {
 });
 
 function isImageRequest(url) {
-  return (
-    url.pathname.includes('/api/image') ||
-    /\.(png|jpg|jpeg|webp|avif|gif|svg)(\?|$)/i.test(url.pathname)
-  );
+  return /\.(png|jpg|jpeg|webp|avif|gif|svg)(\?|$)/i.test(url.pathname);
 }
 
 function isApiRequest(url) {
-  return url.pathname.startsWith('/api/') && !url.pathname.includes('/api/image');
+  return url.pathname.startsWith('/api/');
 }
 
 function isStaticAsset(url) {
-  return url.pathname.startsWith('/_next/static/') || STATIC_ASSETS.includes(url.pathname);
+  const isNextStatic = url.pathname.startsWith('/_next/static/');
+  const isJsChunk = isNextStatic && /\.js(\?|$)/i.test(url.pathname);
+  return isNextStatic && !isJsChunk ? true : STATIC_ASSETS.includes(url.pathname);
 }
 
 // Network-first with timeout helper

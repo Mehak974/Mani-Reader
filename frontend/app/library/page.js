@@ -86,8 +86,9 @@ function LibraryContent() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {bookmarks.map((bm) => {
-              const coverUrl = bm.manga?.cover
-                ? `/api/image?url=${encodeURIComponent(bm.manga.cover)}`
+              const rawCover = bm.manga?.cover;
+              const coverUrl = rawCover
+                ? `/api/image?url=${encodeURIComponent(rawCover)}`
                 : '/placeholder-cover.jpg';
               const readUrl = `/read/${bm.chapterId}?mangaId=${bm.mangaId}&page=${bm.page || 0}`;
 

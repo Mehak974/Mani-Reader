@@ -4,7 +4,6 @@ import { AuthProvider, useAuth } from '../../../lib/auth';
 import Navbar from '../../../components/Navbar';
 import MangaCard from '../../../components/MangaCard';
 import ChapterList from '../../../components/ChapterList';
-import AdBanner from '../../../components/AdBanner';
 import MangaLoader from '../../../components/MangaLoader';
 import { mangaApi, libraryApi, progressApi, bookmarkApi, getApiServerUrl } from '../../../lib/api';
 
@@ -148,18 +147,15 @@ export default function MangaDetailClient({ id, initialManga, initialChapters })
     const rawCover = manga?.cover || manga?.image;
     if (!rawCover) return '/placeholder-cover.jpg';
     if (!rawCover.startsWith('http')) return rawCover;
+    if (rawCover.includes('/api/image')) return rawCover;
 
-    // Already proxied or known safe direct-hotlink domains — use as-is
     const safeDomains = [
       'image.tmdb.org', 'imgur.com', 'blogspot.com',
       'googleusercontent.com', 'placehold.co', 'wp.com',
       'cloudinary.com', 'i0.wp.com', 'i1.wp.com', 'i2.wp.com', 'i3.wp.com',
     ];
     if (safeDomains.some(d => rawCover.includes(d))) return rawCover;
-    if (rawCover.includes('/api/image') || rawCover.includes('workers.dev')) return rawCover;
 
-    // ✅ Use relative path — works on every hostname/domain in production
-    // (Next.js rewrites /api/* → backend, so no absolute URL needed)
     return `/api/image?url=${encodeURIComponent(rawCover)}`;
   }, [manga?.cover, manga?.image]);
 
@@ -427,8 +423,6 @@ export default function MangaDetailClient({ id, initialManga, initialChapters })
             </div>
           </div>
         </div>
-
-        <AdBanner size="small" slot="YOUR_SLOT_ID_HERE" />
 
         <section className="section" style={{ paddingTop: 0 }}>
           <h2 className="section-title" style={{ marginBottom: 24 }}>

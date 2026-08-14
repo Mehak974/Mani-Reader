@@ -127,17 +127,20 @@ router.get('/browse/filter', optionalAuth, async (req, res) => {
 // GET /api/manga/browse/popular-completed — MUST be before /:id wildcard
 router.get('/browse/popular-completed', optionalAuth, async (req, res) => {
   try {
-    const list = await prisma.popularCompletedManga.findMany({
-      orderBy: { createdAt: 'desc' }
-    });
+    const results = await mangaService.getPopularCompleted(req.user?.userId);
     res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=300');
-    res.json(list.map(m => ({
-      id: m.slug,
-      title: m.title,
-      image: m.imageUrl,
-      mangaDetailLink: `/manga/${m.slug}`,
-      lastChapter: m.chapters
-    })));
+    res.json(results);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/admin/seed/popular-completed — seed popular completed from genre page
+router.post('/admin/seed/popular-completed', authMiddleware, async (req, res) => {
+  try {
+    if (req.user?.role !== 'ADMIN') return res.status(403).json({ error: 'Admin only' });
+    await mangaService.seedPopularCompleted();
+    res.json({ message: 'Popular completed seeded successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
