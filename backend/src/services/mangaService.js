@@ -468,6 +468,17 @@ async function getPopularCompleted(userId = null) {
     } catch (err) {
       console.warn('[MangaService] Fallback scrape for popular completed failed:', err.message);
     }
+
+    try {
+      console.log('[MangaService] getPopularCompleted trying popularity table fallback...');
+      const popular = await getPopularByScore(15, userId);
+      console.log('[MangaService] getPopularCompleted popularity fallback returned:', popular.length);
+      if (popular.length > 0) {
+        return popular;
+      }
+    } catch (err) {
+      console.warn('[MangaService] getPopularCompleted popularity fallback failed:', err.message);
+    }
   }
 
   const mapped = list.map(m => ({

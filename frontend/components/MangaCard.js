@@ -67,15 +67,6 @@ export default function MangaCard({ manga, revealNsfw = false, setRevealNsfw = (
             currentSetRevealNsfw(true);
           }
         }}
-        onMouseEnter={() => {
-          if (!isBlurred) {
-            window.mangaTimeout = setTimeout(() => {
-              fetch(`/api/manga/${slug}`).catch(() => { });
-              fetch(`/api/chapters/${slug}`).catch(() => { });
-            }, 150);
-          }
-        }}
-        onMouseLeave={() => clearTimeout(window.mangaTimeout)}
       >
         <div className="manga-card-cover" style={{ position: 'relative', width: '100%', aspectRatio: '2/3', overflow: 'hidden', borderRadius: '16px', background: 'linear-gradient(180deg, rgba(124,58,237,0.08) 0%, rgba(37,99,235,0.08) 100%)' }}>
           <img

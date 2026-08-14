@@ -65,13 +65,6 @@ export default function RecentlyAddedCard({ manga }) {
       <Link
         href={`/manga/${slug}`}
         style={{ flexShrink: 0 }}
-        onMouseEnter={() => {
-          window.recentTimeout = setTimeout(() => {
-            fetch(`${apiBase}/manga/${slug}`).catch(() => { });
-            fetch(`${apiBase}/chapters/${slug}`).catch(() => { });
-          }, 150);
-        }}
-        onMouseLeave={() => clearTimeout(window.recentTimeout)}
       >
         <div style={{
           width: 'clamp(80px, 20vw, 100px)',
