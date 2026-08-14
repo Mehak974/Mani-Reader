@@ -5,7 +5,7 @@ import api from '../../lib/api';
 export default function PopularCompletedTab() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({ title: '', imageUrl: '', slug: '', chapters: '' });
+  const [form, setForm] = useState({ title: '', image: '', slug: '', chapters: '' });
   
   const fetchItems = () => {
     setLoading(true);
@@ -24,7 +24,7 @@ export default function PopularCompletedTab() {
     try {
       const res = await api.post('/admin/popular-completed', form);
       if (res.status === 200) {
-        setForm({ title: '', imageUrl: '', slug: '', chapters: '' });
+        setForm({ title: '', image: '', slug: '', chapters: '' });
         fetchItems();
       }
     } catch (err) {
@@ -58,7 +58,7 @@ export default function PopularCompletedTab() {
           </div>
           <div>
             <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: 4 }}>Image URL</label>
-            <input required type="text" value={form.imageUrl} onChange={e => setForm({...form, imageUrl: e.target.value})} style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: 8 }} />
+            <input required type="text" value={form.image} onChange={e => setForm({...form, image: e.target.value})} style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: 8 }} />
           </div>
           <div>
             <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: 4 }}>Slug (e.g. mangadex:123 or title-slug)</label>
@@ -88,7 +88,7 @@ export default function PopularCompletedTab() {
             {loading ? <tr><td colSpan="4" style={{ padding: 24, textAlign: 'center' }}>Loading...</td></tr> : 
               items.map(item => (
                 <tr key={item.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                  <td style={{ padding: '12px 16px' }}><img src={item.imageUrl} style={{ width: 40, height: 56, objectFit: 'cover', borderRadius: 4 }} alt="" /></td>
+                  <td style={{ padding: '12px 16px' }}><img src={item.image} style={{ width: 40, height: 56, objectFit: 'cover', borderRadius: 4 }} alt="" /></td>
                   <td style={{ padding: '12px 16px', fontWeight: 600 }}>{item.title}</td>
                   <td style={{ padding: '12px 16px' }}>{item.slug}</td>
                   <td style={{ padding: '12px 16px', textAlign: 'right' }}>

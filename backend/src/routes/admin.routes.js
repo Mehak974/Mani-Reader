@@ -570,9 +570,9 @@ router.get('/popular-completed', async (req, res) => {
 // POST /api/admin/popular-completed
 router.post('/popular-completed', async (req, res) => {
   try {
-    const { title, imageUrl, slug, chapters } = req.body;
+    const { title, image, slug, chapters } = req.body;
     const item = await prisma.popularCompletedManga.create({
-      data: { title, imageUrl, slug, chapters }
+      data: { title, image, slug, chapters }
     });
     
     await prisma.auditLog.create({
