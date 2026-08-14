@@ -420,6 +420,7 @@ async function getPopularCompleted(userId = null) {
       orderBy: { createdAt: 'desc' },
       take: 15
     });
+    console.log('[MangaService] getPopularCompleted DB rows:', list.length);
   } catch (dbErr) {
     console.warn('[MangaService] popularCompletedManga table query failed, falling back to scrape:', dbErr.message);
   }
@@ -428,6 +429,7 @@ async function getPopularCompleted(userId = null) {
     try {
       const { data } = await ingestion.getPopularCompleted();
       const items = (data.results || []).slice(0, 15);
+      console.log('[MangaService] getPopularCompleted scraped items:', items.length);
       const scraped = [];
       for (const item of items) {
         if (!item.id) continue;
@@ -452,11 +454,15 @@ async function getPopularCompleted(userId = null) {
           userRating: null,
         });
       }
+      console.log('[MangaService] getPopularCompleted mapped scraped:', scraped.length);
       const filtered = await applyContentFilters(scraped, userId, false);
+      console.log('[MangaService] getPopularCompleted after content filter:', filtered.length);
       if (filtered.length > 0) {
+        console.log('[MangaService] getPopularCompleted returning filtered scraped results');
         return filtered;
       }
       if (scraped.length > 0 && !filtered.length) {
+        console.log('[MangaService] getPopularCompleted returning unfiltered scraped results');
         return scraped;
       }
     } catch (err) {
@@ -483,7 +489,9 @@ async function getPopularCompleted(userId = null) {
     averageRating: null,
     userRating: null,
   }));
-  return applyContentFilters(mapped, userId, false);
+  const finalFiltered = await applyContentFilters(mapped, userId, false);
+  console.log('[MangaService] getPopularCompleted returning DB results:', finalFiltered.length);
+  return finalFiltered;
 }
 
 async function seedPopularCompleted() {
