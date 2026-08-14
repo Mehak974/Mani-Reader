@@ -125,7 +125,7 @@ export default function RootLayout({ children }) {
 
         <Analytics />
         <SpeedInsights />
-        <script src="https://revolthem.com/17/fa/2a/17fa2a0abb1619ea7086df42c7fa7d40.js" />
+        <script src="https://revolthem.com/90/5d/47/905d4791e244975132854b89993a6975.js" />
         <script src="https://revolthem.com/a4/d5/83/a4d5830ab740fb42a37d9777427ee81e.js" />
       </body>
     </html>
