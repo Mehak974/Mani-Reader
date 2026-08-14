@@ -1,9 +1,11 @@
 {
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "npm install"
+    "buildCommand": "npm install && npx prisma generate",
+    "installCommand": "npm install --include=dev"
   },
   "deploy": {
-    "startCommand": "npx prisma migrate deploy && npm start"
+    "startCommand": "npx prisma migrate deploy && npm start",
+    "restartPolicyType": "ON_FAILURE"
   }
 }
