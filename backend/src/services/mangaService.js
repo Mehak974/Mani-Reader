@@ -426,21 +426,27 @@ async function getPopularCompleted(userId = null) {
         const items = (data.results || []).slice(0, 15);
         for (const item of items) {
           const slug = item.id.replace(/\/$/, '').split('/').pop();
-          await prisma.popularCompletedManga.upsert({
-            where: { slug },
-            update: {
-              title: item.title,
-              image: item.cover || item.image || '',
-              chapters: item.lastChapter || null,
-              updatedAt: new Date()
-            },
-            create: {
-              slug,
-              title: item.title,
-              image: item.cover || item.image || '',
-              chapters: item.lastChapter || null,
-            }
-          });
+          const existing = await prisma.popularCompletedManga.findFirst({ where: { slug } });
+          if (existing) {
+            await prisma.popularCompletedManga.update({
+              where: { id: existing.id },
+              data: {
+                title: item.title,
+                image: item.cover || item.image || '',
+                chapters: item.lastChapter || null,
+                updatedAt: new Date()
+              }
+            });
+          } else {
+            await prisma.popularCompletedManga.create({
+              data: {
+                slug,
+                title: item.title,
+                image: item.cover || item.image || '',
+                chapters: item.lastChapter || null
+              }
+            });
+          }
         }
         list = await prisma.popularCompletedManga.findMany({
           orderBy: { createdAt: 'desc' },
