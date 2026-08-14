@@ -4,7 +4,6 @@ import { useRouter } from 'next/navigation';
 import { AuthProvider, useAuth } from '../../lib/auth';
 import { adminApi } from '../../lib/api';
 import Link from 'next/link';
-import PopularCompletedTab from './PopularCompletedTab';
 
 function StatCard({ icon, label, value, color }) {
   return (
@@ -399,7 +398,6 @@ function AdminDashboardContent() {
         <div style={{ flex: 1, padding: '0 16px', overflowY: 'auto' }}>
           <NavItem id="users" label="User Accounts" icon="group" />
           <NavItem id="manga" label="Manga Data" icon="library_books" />
-          <NavItem id="popular-completed" label="Popular Completed" icon="emoji_events" />
           <NavItem id="vips" label="VIP Subscriptions" icon="verified" />
           <NavItem id="messages" label="User Inquiries" icon="forum" />
           <NavItem id="system" label="System Stats" icon="settings_ethernet" />
@@ -445,10 +443,6 @@ function AdminDashboardContent() {
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }} className="admin-content">
           
 
-
-          {activeTab === 'popular-completed' && (
-            <PopularCompletedTab />
-          )}
 
           {activeTab === 'manga' && (
             <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 20, overflowX: 'auto' }}>

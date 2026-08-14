@@ -174,9 +174,8 @@ app.listen(config.port, '0.0.0.0', () => {
   console.log(`   Environment: ${config.nodeEnv}\n`);
 
   try {
-    const { startPopularMangaSync, seedPopularCompleted } = require('./services/mangaService');
+    const { startPopularMangaSync } = require('./services/mangaService');
     startPopularMangaSync();
-    seedPopularCompleted();
   } catch (err) {
     console.error('[Server] Failed to initialize popular manga scheduler:', err.message);
   }

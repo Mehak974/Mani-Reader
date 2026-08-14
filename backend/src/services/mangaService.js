@@ -413,134 +413,6 @@ async function getRecent(page = 1, userId = null) {
   }
 }
 
-async function getPopularCompleted(userId = null) {
-  let list = [];
-  try {
-    list = await prisma.popularCompletedManga.findMany({
-      orderBy: { createdAt: 'desc' },
-      take: 15
-    });
-    console.log('[MangaService] getPopularCompleted DB rows:', list.length);
-  } catch (dbErr) {
-    console.warn('[MangaService] popularCompletedManga table query failed, falling back to scrape:', dbErr.message);
-  }
-
-  if (!list || list.length === 0) {
-    try {
-      const { data } = await ingestion.getPopularCompleted();
-      const items = (data.results || []).slice(0, 15);
-      console.log('[MangaService] getPopularCompleted scraped items:', items.length);
-      const scraped = [];
-      for (const item of items) {
-        if (!item.id) continue;
-        const slug = item.id.replace(/\/$/, '').split('/').pop();
-        scraped.push({
-          id: slug,
-          title: item.title,
-          cover: item.cover || item.image || '',
-          description: null,
-          status: null,
-          genres: [],
-          nsfw: false,
-          rating: null,
-          lastChapter: item.lastChapter || null,
-          lastChapterId: null,
-          latestChapters: [],
-          updateDate: null,
-          source: 'local',
-          popularity: null,
-          readCount: 0,
-          averageRating: null,
-          userRating: null,
-        });
-      }
-      console.log('[MangaService] getPopularCompleted mapped scraped:', scraped.length);
-      const filtered = await applyContentFilters(scraped, userId, false);
-      console.log('[MangaService] getPopularCompleted after content filter:', filtered.length);
-      if (filtered.length > 0) {
-        console.log('[MangaService] getPopularCompleted returning filtered scraped results');
-        return filtered;
-      }
-      if (scraped.length > 0 && !filtered.length) {
-        console.log('[MangaService] getPopularCompleted returning unfiltered scraped results');
-        return scraped;
-      }
-    } catch (err) {
-      console.warn('[MangaService] Fallback scrape for popular completed failed:', err.message);
-    }
-
-    try {
-      console.log('[MangaService] getPopularCompleted trying popularity table fallback...');
-      const popular = await getPopularByScore(15, userId);
-      console.log('[MangaService] getPopularCompleted popularity fallback returned:', popular.length);
-      if (popular.length > 0) {
-        return popular;
-      }
-    } catch (err) {
-      console.warn('[MangaService] getPopularCompleted popularity fallback failed:', err.message);
-    }
-  }
-
-  const mapped = list.map(m => ({
-    id: m.slug,
-    title: m.title,
-    cover: m.image,
-    description: null,
-    status: null,
-    genres: [],
-    nsfw: false,
-    rating: null,
-    lastChapter: m.chapters,
-    lastChapterId: null,
-    latestChapters: [],
-    updateDate: null,
-    source: 'local',
-    popularity: null,
-    readCount: 0,
-    averageRating: null,
-    userRating: null,
-  }));
-  const finalFiltered = await applyContentFilters(mapped, userId, false);
-  console.log('[MangaService] getPopularCompleted returning DB results:', finalFiltered.length);
-  return finalFiltered.length > 0 ? finalFiltered : [];
-}
-
-async function seedPopularCompleted() {
-  try {
-    const { data } = await ingestion.getPopularCompleted();
-    const items = (data.results || []).slice(0, 15);
-    
-    for (const item of items) {
-      if (!item.id) continue;
-      const slug = item.id.replace(/\/$/, '').split('/').pop();
-      const existing = await prisma.popularCompletedManga.findFirst({ where: { slug } });
-      if (existing) {
-        await prisma.popularCompletedManga.update({
-          where: { id: existing.id },
-          data: {
-            title: item.title,
-            image: item.cover || item.image || '',
-            chapters: item.lastChapter || null,
-            updatedAt: new Date()
-          }
-        });
-      } else {
-        await prisma.popularCompletedManga.create({
-          data: {
-            slug,
-            title: item.title,
-            image: item.cover || item.image || '',
-            chapters: item.lastChapter || null
-          }
-        });
-      }
-    }
-    console.log(`[MangaService] Seeded ${items.length} popular completed manga`);
-  } catch (err) {
-    console.error('[MangaService] seedPopularCompleted failed:', err);
-  }
-}
-
 async function getPopularByScore(limit = 20, userId = null) {
   try {
     const popularRecords = await prisma.popularity.findMany({
@@ -803,12 +675,10 @@ module.exports = {
   getPopular,
   getRecent,
   getPopularByScore,
-  getPopularCompleted,
   browse,
   rateManga,
   getRelated,
   trackSearch,
   refreshMangaInfoBackground,
-  startPopularMangaSync,
-  seedPopularCompleted
+  startPopularMangaSync
 };

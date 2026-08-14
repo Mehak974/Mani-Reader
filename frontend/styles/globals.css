@@ -1319,10 +1319,6 @@ button {
     font-size: 1.1rem !important;
   }
 
-  .popular-card {
-    flex: 0 0 140px !important;
-  }
-
   .recent-grid {
     grid-template-columns: 1fr !important;
   }
@@ -1360,10 +1356,6 @@ button {
 
   .section-title {
     font-size: 1.1rem;
-  }
-
-  .popular-card {
-    flex: 0 0 120px !important;
   }
 
   .manga-card-title {

@@ -157,32 +157,6 @@ async function getPopular(page = 1, genre = null) {
   }
 }
 
-async function getPopularCompleted() {
-  const scraper = SOURCE_SCRAPERS[provider];
-  if (!scraper) return { data: { results: [] } };
-
-  const urls = [
-    'https://www.manganato.gg/genre/adventure?filter=8',
-    'https://www.manganato.gg/genre/fantasy?filter=8',
-    'https://www.manganato.gg/genre/action?filter=8',
-  ];
-
-  for (const url of urls) {
-    try {
-      console.log('[Ingestion] Trying popular-completed URL:', url);
-      const { items } = await scraper.getGenrePage(url);
-      const results = items.map(mapMangaFormat);
-      console.log('[Ingestion] popular-completed scraped', results.length, 'items from', url);
-      if (results.length > 0) return { data: { results } };
-    } catch (err) {
-      console.warn('[Ingestion] popular-completed scrape failed for', url, ':', err.message);
-    }
-  }
-
-  console.error('[Ingestion] manganato getPopularCompleted failed for all URLs');
-  return { data: { results: [] } };
-}
-
 async function getRecent(page = 1) {
   const scraper = SOURCE_SCRAPERS[provider];
   if (!scraper) return { data: { results: [] } };
@@ -228,7 +202,6 @@ module.exports = {
   getChapterPages,
   getRecent,
   getPopular,
-  getPopularCompleted,
   browseManga,
   provider,
 };
