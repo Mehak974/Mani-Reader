@@ -502,7 +502,7 @@ async function getPopularCompleted(userId = null) {
   }));
   const finalFiltered = await applyContentFilters(mapped, userId, false);
   console.log('[MangaService] getPopularCompleted returning DB results:', finalFiltered.length);
-  return finalFiltered;
+  return finalFiltered.length > 0 ? finalFiltered : [];
 }
 
 async function seedPopularCompleted() {
