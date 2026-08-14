@@ -425,44 +425,45 @@ async function getPopularCompleted(userId = null) {
   }
 
   if (!list || list.length === 0) {
-    try {
-      const { data } = await ingestion.getPopularCompleted();
-      const items = (data.results || []).slice(0, 15);
-      for (const item of items) {
-        const slug = item.id.replace(/\/$/, '').split('/').pop();
-        const existing = await prisma.popularCompletedManga.findFirst({ where: { slug } });
-        if (existing) {
-          await prisma.popularCompletedManga.update({
-            where: { id: existing.id },
-            data: {
-              title: item.title,
-              image: item.cover || item.image || '',
-              chapters: item.lastChapter || null,
-              updatedAt: new Date()
-            }
-          });
-        } else {
-          await prisma.popularCompletedManga.create({
-            data: {
-              slug,
-              title: item.title,
-              image: item.cover || item.image || '',
-              chapters: item.lastChapter || null
-            }
-          });
-        }
-      }
       try {
-        list = await prisma.popularCompletedManga.findMany({
-          orderBy: { createdAt: 'desc' },
-          take: 15
-        });
-      } catch (dbErr2) {
-        console.warn('[MangaService] popularCompletedManga table still unavailable after seed:', dbErr2.message);
+        const { data } = await ingestion.getPopularCompleted();
+        const items = (data.results || []).slice(0, 15);
+        for (const item of items) {
+          if (!item.id) continue;
+          const slug = item.id.replace(/\/$/, '').split('/').pop();
+          const existing = await prisma.popularCompletedManga.findFirst({ where: { slug } });
+          if (existing) {
+            await prisma.popularCompletedManga.update({
+              where: { id: existing.id },
+              data: {
+                title: item.title,
+                image: item.cover || item.image || '',
+                chapters: item.lastChapter || null,
+                updatedAt: new Date()
+              }
+            });
+          } else {
+            await prisma.popularCompletedManga.create({
+              data: {
+                slug,
+                title: item.title,
+                image: item.cover || item.image || '',
+                chapters: item.lastChapter || null
+              }
+            });
+          }
+        }
+        try {
+          list = await prisma.popularCompletedManga.findMany({
+            orderBy: { createdAt: 'desc' },
+            take: 15
+          });
+        } catch (dbErr2) {
+          console.warn('[MangaService] popularCompletedManga table still unavailable after seed:', dbErr2.message);
+        }
+      } catch (err) {
+        console.warn('[MangaService] Fallback scrape for popular completed failed:', err.message);
       }
-    } catch (err) {
-      console.warn('[MangaService] Fallback scrape for popular completed failed:', err.message);
-    }
   }
 
   const mapped = list.map(m => ({
@@ -493,6 +494,7 @@ async function seedPopularCompleted() {
     const items = (data.results || []).slice(0, 15);
     
     for (const item of items) {
+      if (!item.id) continue;
       const slug = item.id.replace(/\/$/, '').split('/').pop();
       const existing = await prisma.popularCompletedManga.findFirst({ where: { slug } });
       if (existing) {

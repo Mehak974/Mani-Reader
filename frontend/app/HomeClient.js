@@ -88,12 +88,19 @@ export default function HomeClient({ initialData = {} }) {
     setPopularLoading(true);
     const serverUrl = getApiServerUrl();
     fetch(`${serverUrl}/api/manga/browse/popular-completed`)
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error(`popular-completed HTTP ${r.status}`);
+        return r.json();
+      })
       .then(data => {
         const list = Array.isArray(data) ? data.filter(m => !m.nsfw) : [];
+        console.log('[HomeClient] popular-completed loaded:', list.length, 'items');
         setPopularCompleted(list);
       })
-      .catch(() => {})
+      .catch(err => {
+        console.error('[HomeClient] popular-completed fetch failed:', err);
+        setPopularCompleted([]);
+      })
       .finally(() => setPopularLoading(false));
   }, []);
 

@@ -22,7 +22,7 @@ export default function RecentlyAddedCard({ manga }) {
   if (!manga) return null;
 
   const rawCover = manga.image || manga.cover;
-  const safeDomains = ['image.tmdb.org', 'imgur.com', 'blogspot.com', 'googleusercontent.com', 'placehold.co', 'wp.com', 'cloudinary.com', 'i0.wp.com', 'i1.wp.com', 'i2.wp.com', 'i3.wp.com', 'img-r1.2xstorage.com', 'img-r2.2xstorage.com', 'storage.waitst.com'];
+  const safeDomains = ['image.tmdb.org', 'imgur.com', 'blogspot.com', 'googleusercontent.com', 'placehold.co', 'wp.com', 'cloudinary.com', 'i0.wp.com', 'i1.wp.com', 'i2.wp.com', 'i3.wp.com', 'img-r1.2xstorage.com', 'img-r2.2xstorage.com', 'imgs-2.2xstorage.com', 'storage.waitst.com', '2xstorage.com'];
 
   let targetUrl = rawCover;
   if (rawCover && rawCover.includes('/api/image')) {
