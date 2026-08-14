@@ -24,6 +24,7 @@ function getCoverUrl(manga) {
     'image.tmdb.org', 'imgur.com', 'blogspot.com', 'googleusercontent.com',
     'placehold.co', 'wp.com', 'cloudinary.com',
     'i0.wp.com', 'i1.wp.com', 'i2.wp.com', 'i3.wp.com',
+    'img-r1.2xstorage.com', 'img-r2.2xstorage.com', 'storage.waitst.com',
   ];
   if (safeDomains.some(d => rawCover.includes(d))) return rawCover;
 

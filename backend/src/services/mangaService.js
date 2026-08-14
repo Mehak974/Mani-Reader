@@ -415,10 +415,42 @@ async function getRecent(page = 1, userId = null) {
 
 async function getPopularCompleted(userId = null) {
   try {
-    const list = await prisma.popularCompletedManga.findMany({
+    let list = await prisma.popularCompletedManga.findMany({
       orderBy: { createdAt: 'desc' },
       take: 15
     });
+
+    if (!list || list.length === 0) {
+      try {
+        const { data } = await ingestion.getPopularCompleted();
+        const items = (data.results || []).slice(0, 15);
+        for (const item of items) {
+          const slug = item.id.replace(/\/$/, '').split('/').pop();
+          await prisma.popularCompletedManga.upsert({
+            where: { slug },
+            update: {
+              title: item.title,
+              image: item.cover || item.image || '',
+              chapters: item.lastChapter || null,
+              updatedAt: new Date()
+            },
+            create: {
+              slug,
+              title: item.title,
+              image: item.cover || item.image || '',
+              chapters: item.lastChapter || null,
+            }
+          });
+        }
+        list = await prisma.popularCompletedManga.findMany({
+          orderBy: { createdAt: 'desc' },
+          take: 15
+        });
+      } catch (err) {
+        console.warn('[MangaService] Fallback scrape for popular completed failed:', err.message);
+      }
+    }
+
     const mapped = list.map(m => ({
       id: m.slug,
       title: m.title,

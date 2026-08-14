@@ -10,8 +10,11 @@ const nextConfig = {
     ],
   },
   async rewrites() {
+    const apiHost = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.manireader.online';
+    const cleaned = apiHost.endsWith('/') ? apiHost.slice(0, -1) : apiHost;
+    const base = cleaned.endsWith('/api') ? cleaned.slice(0, -4) : cleaned;
     return [
-      { source: '/api/:path*', destination: `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000'}/api/:path*` },
+      { source: '/api/:path*', destination: `${base}/api/:path*` },
     ];
   },
 };
